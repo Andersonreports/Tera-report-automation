@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/jagana/Desktop/TERA-Report-Automation/**)",
+      "Bash(ls /Users/jagana/Desktop/TERA-report-app/backend/*.txt)",
+      "Read(//Users/jagana/Desktop/TERA-report-app/front end/**)",
+      "Bash(curl -s \"http://127.0.0.1:8000/load-draft/manual\")",
+      "Bash(curl -s -X POST \"http://127.0.0.1:8000/save-draft/manual\" -H \"Content-Type: application/json\" -d '{\"\"Patient Name\"\": \"\"Test\"\"}')",
+      "Bash(gh auth:*)",
+      "Bash(ssh -T git@github.com)"
+    ],
+    "additionalDirectories": [
+      "/Users/jagana/Desktop/TERA-Report-Automation",
+      "/Users/jagana/Desktop/TERA-report-app/front end",
+      "/Users/jagana/Desktop/TERA-report-app"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+# Environment
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Generated reports and temp files
+backend/reports/
+backend/temp/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

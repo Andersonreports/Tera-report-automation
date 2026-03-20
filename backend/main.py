@@ -34,9 +34,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.join(os.path.dirname(BASE_DIR), "front end")
+ROOT_DIR     = os.path.dirname(BASE_DIR)
 
-TEMP_DIR = os.path.join(BASE_DIR, "temp")
+TEMP_DIR   = os.path.join(BASE_DIR, "temp")
 REPORT_DIR = os.path.join(BASE_DIR, "reports")
 
 os.makedirs(TEMP_DIR, exist_ok=True)
@@ -44,13 +46,30 @@ os.makedirs(REPORT_DIR, exist_ok=True)
 
 app.mount("/reports", StaticFiles(directory=REPORT_DIR), name="reports")
 
-FRONTEND_PATH = os.path.join(os.path.dirname(BASE_DIR), "front end", "dashboard_copy.html")
+# Serve root-level static assets (logo, icons, images)
+if os.path.exists(ROOT_DIR):
+    app.mount("/static", StaticFiles(directory=ROOT_DIR), name="static")
 
 @app.get("/")
 def root():
-    if os.path.exists(FRONTEND_PATH):
-        return FileResponse(FRONTEND_PATH, media_type="text/html")
+    p = os.path.join(FRONTEND_DIR, "login.html")
+    if os.path.exists(p):
+        return FileResponse(p, media_type="text/html")
     return {"status": "TERA backend running"}
+
+@app.get("/home")
+def home():
+    p = os.path.join(FRONTEND_DIR, "home page.html")
+    if os.path.exists(p):
+        return FileResponse(p, media_type="text/html")
+    return {"status": "not found"}
+
+@app.get("/dashboard")
+def dashboard():
+    p = os.path.join(FRONTEND_DIR, "dashboard_copy.html")
+    if os.path.exists(p):
+        return FileResponse(p, media_type="text/html")
+    return {"status": "not found"}
 
 
 # -------- Preview Report --------

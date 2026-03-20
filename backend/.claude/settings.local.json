@@ -7,7 +7,10 @@
       "Bash(curl -s \"http://127.0.0.1:8000/load-draft/manual\")",
       "Bash(curl -s -X POST \"http://127.0.0.1:8000/save-draft/manual\" -H \"Content-Type: application/json\" -d '{\"\"Patient Name\"\": \"\"Test\"\"}')",
       "Bash(gh auth:*)",
-      "Bash(ssh -T git@github.com)"
+      "Bash(ssh -T git@github.com)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git config:*)"
     ],
     "additionalDirectories": [
       "/Users/jagana/Desktop/TERA-Report-Automation",

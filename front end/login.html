@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login – Anderson Report Automation</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #F58220;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-bar {
+            width: 100%;
+            background: #fff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .logo-bar img {
+            width: 100%;
+            height: auto;
+            max-height: 90px;
+            object-fit: contain;
+            object-position: left center;
+            display: block;
+            background: #fff;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            margin-top: 110px;
+        }
+
+        .card h2 {
+            color: #1F497D;
+            font-size: 22px;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+        .card p.subtitle {
+            color: #888;
+            font-size: 13px;
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 5px;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 18px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        input:focus {
+            border-color: #1F497D;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+        .password-wrapper input {
+            padding-right: 40px;
+        }
+        .toggle-pw {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            cursor: pointer;
+            font-size: 15px;
+            color: #888;
+            user-select: none;
+        }
+
+        button.login-btn {
+            width: 100%;
+            padding: 13px;
+            background: #1F497D;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 4px;
+        }
+        button.login-btn:hover { background: #163a66; }
+        button.login-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+        .error-msg {
+            background: #fde8e8;
+            color: #c0392b;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="logo-bar">
+    <!-- ⚠️ UPDATE THIS PATH if you move the file -->
+    <img src="../backend/logo.png" alt="Anderson Diagnostics & Labs" onerror="this.style.display='none'">
+</div>
+
+<div class="card">
+    <h2>Welcome Back</h2>
+    <p class="subtitle">Sign in to Anderson Report Automation</p>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <label for="email">Email Address</label>
+    <input type="email" id="email" placeholder="Enter your email" autocomplete="username">
+
+    <label for="password">Password</label>
+    <div class="password-wrapper">
+        <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
+        <span class="toggle-pw" onclick="togglePassword()">👁</span>
+    </div>
+
+    <button class="login-btn" id="loginBtn" onclick="handleLogin()">Sign In</button>
+</div>
+
+<script>
+    // ─── Supabase config ───────────────────────────────────────────
+    const SUPABASE_URL  = "https://wriaonorqjhmofwrhqlp.supabase.co"
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc"
+    // ──────────────────────────────────────────────────────────────
+
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
+
+    // If already logged in, redirect to home
+    sb.auth.getSession().then(({ data }) => {
+        if (data.session) window.location.href = "/home"
+    })
+
+    async function handleLogin() {
+        const email    = document.getElementById("email").value.trim()
+        const password = document.getElementById("password").value
+        const btn      = document.getElementById("loginBtn")
+        const errBox   = document.getElementById("errorMsg")
+
+        errBox.style.display = "none"
+
+        if (!email || !password) {
+            showError("Please enter both email and password.")
+            return
+        }
+
+        btn.disabled = true
+        btn.textContent = "Signing in…"
+
+        const { data, error } = await sb.auth.signInWithPassword({ email, password })
+
+        if (error) {
+            showError("Invalid email or password.")
+            btn.disabled = false
+            btn.textContent = "Sign In"
+            return
+        }
+
+        // Get role from profiles table
+        const { data: profile } = await sb.from("profiles")
+            .select("role, full_name")
+            .eq("id", data.user.id)
+            .single()
+
+        if (profile) {
+            localStorage.setItem("tera_role",      profile.role)
+            localStorage.setItem("tera_user_name", profile.full_name || email)
+        }
+
+        window.location.href = "/home"
+    }
+
+    function showError(msg) {
+        const box = document.getElementById("errorMsg")
+        box.textContent = msg
+        box.style.display = "block"
+    }
+
+    function togglePassword() {
+        const pw = document.getElementById("password")
+        pw.type = pw.type === "password" ? "text" : "password"
+    }
+
+    document.addEventListener("keydown", e => {
+        if (e.key === "Enter") handleLogin()
+    })
+</script>
+</body>
+</html>

@@ -17,6 +17,7 @@ import difflib
 import pdfplumber
 
 from tera_template import TERAReportGenerator
+from pgta_template import PGTAReportTemplate
 from fastapi.staticfiles import StaticFiles
 from supabase_client import supabase
 from supabase_client import upload_pdf, save_report
@@ -67,6 +68,13 @@ def home():
 @app.get("/dashboard")
 def dashboard():
     p = os.path.join(FRONTEND_DIR, "dashboard_copy.html")
+    if os.path.exists(p):
+        return FileResponse(p, media_type="text/html")
+    return {"status": "not found"}
+
+@app.get("/pgta")
+def pgta_page():
+    p = os.path.join(FRONTEND_DIR, "pgta.html")
     if os.path.exists(p):
         return FileResponse(p, media_type="text/html")
     return {"status": "not found"}
@@ -358,5 +366,124 @@ def load_draft(draft_type: str):
         return {"data": result.data["data"] if result.data else None}
     except Exception as e:
         return {"data": None, "error": str(e)}
+
+
+# ======== PGTA Report Endpoints ========
+
+PGTA_ASSETS_DIR = os.path.join(BASE_DIR, "assets", "pgta")
+
+def _pgta_safe_name(name: str) -> str:
+    return re.sub(r'[^a-zA-Z0-9 ]', '', str(name).strip()).replace(' ', '_')
+
+def _build_pgta_file_name(patient_info: dict, with_logo: bool) -> str:
+    patient  = _pgta_safe_name(patient_info.get("patient_name", "Unknown"))
+    sample   = _pgta_safe_name(patient_info.get("sample_number", "S0"))
+    logo     = "with_logo" if with_logo else "without_logo"
+    return f"PGTA/{patient}_{sample}_PGTA_report_{logo}.pdf"
+
+@app.post("/pgta/preview")
+async def pgta_preview(data: dict):
+    file_id  = str(uuid.uuid4()) + ".pdf"
+    filepath = os.path.join(TEMP_DIR, file_id)
+    with_logo = data.get("logo_option", "with_logo") == "with_logo"
+    patient_info = data.get("patient_info", {})
+    embryos      = data.get("embryos", [])
+    gen = PGTAReportTemplate(assets_dir=PGTA_ASSETS_DIR)
+    gen.generate_pdf(filepath, patient_info, embryos, show_logo=with_logo)
+    return {"preview_url": f"/preview-file/{file_id}"}
+
+@app.post("/pgta/generate")
+async def pgta_generate(data: dict):
+    try:
+        with_logo    = data.get("logo_option", "with_logo") == "with_logo"
+        patient_info = data.get("patient_info", {})
+        embryos      = data.get("embryos", [])
+        file_id      = str(uuid.uuid4()) + ".pdf"
+        pdf_path     = os.path.join(REPORT_DIR, file_id)
+        gen = PGTAReportTemplate(assets_dir=PGTA_ASSETS_DIR)
+        gen.generate_pdf(pdf_path, patient_info, embryos, show_logo=with_logo)
+        if not os.path.exists(pdf_path):
+            return {"error": "PDF not generated"}
+        file_name = _build_pgta_file_name(patient_info, with_logo)
+        file_url  = upload_pdf(pdf_path, file_name)
+        try:
+            save_report(None, file_url, "pgta")
+        except Exception as db_err:
+            print(f"DB save skipped: {db_err}")
+        return {"status": "success", "file_url": file_url}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/pgta/generate-bulk")
+async def pgta_generate_bulk(request: Request):
+    data = await request.json()
+    output_files = []
+    errors = []
+    for row in data:
+        patient_name = row.get("patient_info", {}).get("patient_name", "Unknown")
+        try:
+            with_logo    = row.get("logo_option", "with_logo") == "with_logo"
+            patient_info = row.get("patient_info", {})
+            embryos      = row.get("embryos", [])
+            file_id      = str(uuid.uuid4()) + ".pdf"
+            pdf_path     = os.path.join(REPORT_DIR, file_id)
+            gen = PGTAReportTemplate(assets_dir=PGTA_ASSETS_DIR)
+            gen.generate_pdf(pdf_path, patient_info, embryos, show_logo=with_logo)
+            file_name = _build_pgta_file_name(patient_info, with_logo)
+            file_url  = upload_pdf(pdf_path, file_name)
+            try:
+                save_report(None, file_url, "pgta")
+            except Exception as db_err:
+                print(f"DB save skipped for {patient_name}: {db_err}")
+            output_files.append({"patient": patient_name, "file_url": file_url})
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            errors.append({"patient": patient_name, "error": str(e)})
+    return {"generated": output_files, "errors": errors}
+
+@app.post("/pgta/upload-excel")
+async def pgta_upload_excel(file: UploadFile = File(...)):
+    """Parse PGTA bulk Excel — groups rows by patient (same Sample_Number)"""
+    df = pd.read_excel(file.file)
+    # Replace NaN with None
+    df = df.where(pd.notnull(df), None)
+    patients = {}
+    for _, row in df.iterrows():
+        sn = str(row.get("Sample_Number") or "").strip()
+        if not sn:
+            continue
+        if sn not in patients:
+            patients[sn] = {
+                "patient_info": {
+                    "patient_name":         str(row.get("Patient_Name") or ""),
+                    "spouse_name":          str(row.get("Spouse_Name") or ""),
+                    "pin":                  str(row.get("PIN") or ""),
+                    "age":                  str(row.get("Age") or ""),
+                    "sample_number":        sn,
+                    "referring_clinician":  str(row.get("Referring_Clinician") or ""),
+                    "biopsy_date":          str(row.get("Biopsy_Date") or ""),
+                    "hospital_clinic":      str(row.get("Hospital_Clinic") or ""),
+                    "sample_collection_date": str(row.get("Sample_Collection_Date") or ""),
+                    "specimen":             str(row.get("Specimen") or ""),
+                    "sample_receipt_date":  str(row.get("Sample_Receipt_Date") or ""),
+                    "biopsy_performed_by":  str(row.get("Biopsy_Performed_By") or ""),
+                    "report_date":          str(row.get("Report_Date") or ""),
+                    "indication":           str(row.get("Indication") or ""),
+                },
+                "embryos": []
+            }
+        patients[sn]["embryos"].append({
+            "embryo_id":          str(row.get("Embryo_ID") or f"PS{len(patients[sn]['embryos'])+1}"),
+            "embryo_id_detail":   str(row.get("Embryo_ID") or f"PS{len(patients[sn]['embryos'])+1}"),
+            "result_summary":     str(row.get("Result_Summary") or ""),
+            "result_description": str(row.get("Result_Description") or ""),
+            "autosomes":          str(row.get("Autosomes") or "Normal"),
+            "sex_chromosomes":    str(row.get("Sex_Chromosomes") or "Normal"),
+            "interpretation":     str(row.get("Interpretation") or ""),
+            "mtcopy":             str(row.get("MTcopy") or "NA"),
+            "chromosome_statuses": {str(i): "N" for i in range(1, 23)},
+            "mosaic_percentages":  {}
+        })
+    return {"patients": list(patients.values())}
 
 

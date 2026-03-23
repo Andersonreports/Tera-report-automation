@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PGTA Report Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#F58220;min-height:100vh;}
+
+/* Header */
+.logo-bar{width:100%;background:#fff;position:fixed;top:0;left:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,0.15);}
+.logo-bar img{width:100%;height:auto;max-height:90px;object-fit:contain;object-position:left center;display:block;}
+
+/* Page container */
+.page-wrap{padding:110px 20px 40px 20px;max-width:1200px;margin:0 auto;}
+
+/* Top bar */
+.top-bar{display:flex;align-items:center;gap:16px;margin-bottom:20px;}
+.btn-home{background:#1F497D;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+.btn-home:hover{background:#163a66;}
+.page-title{color:#fff;font-size:22px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.3);}
+
+/* Card */
+.card{background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:24px;margin-bottom:20px;}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:2px solid #1F497D;margin-bottom:24px;}
+.tab-btn{padding:10px 22px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:600;color:#666;border-radius:8px 8px 0 0;transition:all 0.2s;}
+.tab-btn.active{background:#1F497D;color:#fff;}
+.tab-btn:not(.active):hover{background:#e8f0fb;color:#1F497D;}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* Section headers */
+.section-title{font-size:14px;font-weight:700;color:#1F497D;border-left:4px solid #F58220;padding-left:10px;margin:20px 0 12px;}
+
+/* Form grid */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;}
+.form-grid.three{grid-template-columns:1fr 1fr 1fr;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:12px;font-weight:600;color:#555;}
+input[type="text"],input[type="date"],select,textarea{width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;outline:none;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:#1F497D;}
+textarea{resize:vertical;min-height:60px;}
+
+/* Options bar */
+.options-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px;background:#f0f4ff;border-radius:8px;margin-bottom:16px;}
+.options-bar label{font-size:13px;font-weight:600;color:#1F497D;}
+.options-bar select{width:auto;padding:6px 10px;font-size:13px;}
+
+/* Embryo count */
+.embryo-count-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;background:#fff8f0;border:1px solid #F58220;border-radius:8px;}
+.embryo-count-bar label{font-size:13px;font-weight:700;color:#c0392b;}
+.embryo-count-bar input{width:70px;padding:6px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:14px;font-weight:700;text-align:center;}
+
+/* Embryo accordion */
+.embryo-block{border:1.5px solid #ddd;border-radius:8px;margin-bottom:12px;overflow:hidden;}
+.embryo-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#1F497D;color:#fff;cursor:pointer;font-size:13px;font-weight:700;}
+.embryo-header:hover{background:#163a66;}
+.embryo-body{padding:16px;display:none;}
+.embryo-body.open{display:block;}
+
+/* Chromosome grid */
+.chr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;}
+.chr-cell{display:flex;flex-direction:column;gap:3px;align-items:center;background:#f9f9f9;border:1px solid #e0e0e0;border-radius:6px;padding:6px;}
+.chr-cell label{font-size:11px;font-weight:700;color:#1F497D;}
+.chr-cell select{width:100%;padding:3px 4px;font-size:11px;border-radius:4px;border:1px solid #ccc;}
+.chr-cell input{width:100%;padding:3px 4px;font-size:11px;border-radius:4px;border:1px solid #ccc;text-align:center;}
+.chr-cell .chr-label{font-size:10px;color:#888;margin-top:1px;}
+
+/* Summary table */
+.summary-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
+.summary-table th{background:#1F497D;color:#fff;padding:8px;text-align:left;}
+.summary-table td{padding:7px 8px;border-bottom:1px solid #eee;}
+.summary-table tr:nth-child(even) td{background:#f9f9f9;}
+
+/* Buttons */
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.btn-primary{background:#1F497D;color:#fff;}
+.btn-primary:hover{background:#163a66;}
+.btn-success{background:#196F3D;color:#fff;}
+.btn-success:hover{background:#145a32;}
+.btn-warning{background:#F58220;color:#fff;}
+.btn-warning:hover{background:#d46f18;}
+.btn-secondary{background:#6c757d;color:#fff;}
+.btn-secondary:hover{background:#5a6268;}
+.btn:disabled{opacity:0.6;cursor:not-allowed;}
+
+/* Preview */
+.preview-container{margin-top:16px;border:1px solid #ddd;border-radius:8px;overflow:hidden;display:none;}
+.preview-container iframe{width:100%;height:600px;border:none;}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#1F497D;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 15px rgba(0,0,0,0.3);}
+.toast.error{background:#c0392b;}
+.toast.success{background:#196F3D;}
+
+/* Result */
+.result-box{margin-top:16px;padding:14px;border-radius:8px;font-size:13px;display:none;}
+.result-box.success{background:#e8f5e9;border:1px solid #196F3D;color:#196F3D;}
+.result-box.error{background:#fde8e8;border:1px solid #c0392b;color:#c0392b;}
+
+/* Bulk */
+.upload-area{border:2px dashed #1F497D;border-radius:8px;padding:30px;text-align:center;cursor:pointer;transition:background 0.2s;}
+.upload-area:hover{background:#e8f0fb;}
+.upload-area input{display:none;}
+.bulk-table-wrap{overflow-x:auto;margin-top:16px;}
+.bulk-table{width:100%;border-collapse:collapse;font-size:12px;}
+.bulk-table th{background:#1F497D;color:#fff;padding:7px 10px;white-space:nowrap;}
+.bulk-table td{padding:6px 10px;border-bottom:1px solid #eee;white-space:nowrap;}
+.bulk-table tr.selected td{background:#e8f0fb;}
+
+/* Draft modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:500;}
+.modal{background:#fff;border-radius:12px;padding:24px;max-width:500px;width:90%;margin:80px auto;max-height:70vh;overflow-y:auto;}
+.modal h3{color:#1F497D;margin-bottom:16px;}
+.draft-item{padding:10px 14px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;cursor:pointer;font-size:13px;}
+.draft-item:hover{background:#e8f0fb;border-color:#1F497D;}
+
+@media(max-width:700px){
+  .form-grid{grid-template-columns:1fr;}
+  .form-grid.three{grid-template-columns:1fr 1fr;}
+  .chr-grid{grid-template-columns:repeat(3,1fr);}
+}
+</style>
+</head>
+<body>
+
+<div class="logo-bar">
+  <img src="/static/backend/logo.png" alt="Anderson Diagnostics" onerror="this.style.display='none'">
+</div>
+
+<div class="page-wrap">
+  <div class="top-bar">
+    <a href="/home" class="btn-home">&#8592; Home</a>
+    <div class="page-title">PGTA Report Generator</div>
+  </div>
+
+  <div class="card">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('manual')">Manual Entry</button>
+      <button class="tab-btn" onclick="switchTab('bulk')">Bulk Upload</button>
+    </div>
+
+    <!-- ===== MANUAL ENTRY TAB ===== -->
+    <div id="tab-manual" class="tab-pane active">
+
+      <!-- Options -->
+      <div class="options-bar">
+        <label>Logo:</label>
+        <select id="logoOption">
+          <option value="with_logo">With Logo</option>
+          <option value="without_logo">Without Logo</option>
+        </select>
+      </div>
+
+      <!-- Patient Info -->
+      <div class="section-title">Patient Information</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Patient Name *</label>
+          <input type="text" id="patientName" placeholder="Mrs. Example (PNM00001)">
+        </div>
+        <div class="form-group">
+          <label>Spouse Name</label>
+          <input type="text" id="spouseName" placeholder="Mr. Example" value="w/o">
+        </div>
+        <div class="form-group">
+          <label>PIN</label>
+          <input type="text" id="pin" placeholder="PIN12345">
+        </div>
+        <div class="form-group">
+          <label>Age</label>
+          <input type="text" id="age" placeholder="30 Years">
+        </div>
+        <div class="form-group">
+          <label>Sample Number *</label>
+          <input type="text" id="sampleNumber" placeholder="123456">
+        </div>
+        <div class="form-group">
+          <label>Referring Clinician</label>
+          <input type="text" id="referringClinician" placeholder="Dr. Example">
+        </div>
+        <div class="form-group">
+          <label>Biopsy Date (DD-MM-YYYY)</label>
+          <input type="text" id="biopsyDate" placeholder="01-01-2026">
+        </div>
+        <div class="form-group">
+          <label>Hospital / Clinic</label>
+          <input type="text" id="hospitalClinic" placeholder="Example Hospital">
+        </div>
+        <div class="form-group">
+          <label>Sample Collection Date (DD-MM-YYYY)</label>
+          <input type="text" id="sampleCollectionDate" placeholder="01-01-2026">
+        </div>
+        <div class="form-group">
+          <label>Specimen</label>
+          <input type="text" id="specimen" placeholder="Day 6 Trophectoderm Biopsy">
+        </div>
+        <div class="form-group">
+          <label>Sample Receipt Date (DD-MM-YYYY)</label>
+          <input type="text" id="sampleReceiptDate" placeholder="01-01-2026">
+        </div>
+        <div class="form-group">
+          <label>Biopsy Performed By</label>
+          <input type="text" id="biopsyPerformedBy" placeholder="Dr. Example">
+        </div>
+        <div class="form-group">
+          <label>Report Date (DD-MM-YYYY)</label>
+          <input type="text" id="reportDate" placeholder="01-01-2026">
+        </div>
+        <div class="form-group full">
+          <label>Indication</label>
+          <textarea id="indication" placeholder="Enter clinical indication..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Results Summary Comment (optional)</label>
+          <textarea id="resultsSummaryComment" placeholder="Optional comment below results table..."></textarea>
+        </div>
+      </div>
+
+      <!-- Embryo Section -->
+      <div class="section-title">Embryo Results</div>
+      <div class="embryo-count-bar">
+        <label>Number of Embryos:</label>
+        <input type="number" id="embryoCount" min="1" max="20" value="1">
+        <button class="btn btn-warning" onclick="buildEmbryoForms()">Update Forms</button>
+      </div>
+
+      <!-- Embryo forms container -->
+      <div id="embryoForms"></div>
+
+      <!-- Buttons -->
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="previewReport()">&#128065; Preview</button>
+        <button class="btn btn-success" onclick="generateReport()">&#9654; Generate Report</button>
+        <button class="btn btn-warning" onclick="saveDraft()">&#128190; Save Draft</button>
+        <button class="btn btn-secondary" onclick="openDraftPicker()">&#128065; Load Draft</button>
+      </div>
+
+      <div id="previewContainer" class="preview-container">
+        <iframe id="previewFrame"></iframe>
+      </div>
+      <div id="manualResult" class="result-box"></div>
+    </div><!-- end tab-manual -->
+
+    <!-- ===== BULK UPLOAD TAB ===== -->
+    <div id="tab-bulk" class="tab-pane">
+      <div class="options-bar">
+        <label>Logo:</label>
+        <select id="bulkLogoOption">
+          <option value="with_logo">With Logo</option>
+          <option value="without_logo">Without Logo</option>
+        </select>
+        <a href="/pgta-template" class="btn btn-secondary" style="text-decoration:none;padding:7px 14px;font-size:12px;" onclick="downloadTemplate(event)">&#11123; Download Template</a>
+      </div>
+
+      <div class="upload-area" onclick="document.getElementById('bulkFile').click()">
+        <input type="file" id="bulkFile" accept=".xlsx,.xls" onchange="handleBulkUpload(event)">
+        <div style="font-size:32px;margin-bottom:8px;">&#128196;</div>
+        <div style="font-size:14px;font-weight:700;color:#1F497D;">Click to upload Excel file</div>
+        <div style="font-size:12px;color:#888;margin-top:4px;">Supported: .xlsx, .xls</div>
+      </div>
+
+      <div id="bulkPreview" style="display:none;">
+        <div class="section-title">Patients Found (<span id="bulkCount">0</span>)</div>
+        <div class="bulk-table-wrap">
+          <table class="bulk-table">
+            <thead><tr>
+              <th>#</th><th>Patient Name</th><th>Sample No</th><th>Embryos</th><th>Report Date</th>
+            </tr></thead>
+            <tbody id="bulkTableBody"></tbody>
+          </table>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-success" onclick="generateBulk()">&#9654; Generate All Reports</button>
+        </div>
+        <div id="bulkResult" class="result-box"></div>
+      </div>
+    </div><!-- end tab-bulk -->
+  </div><!-- end card -->
+</div><!-- end page-wrap -->
+
+<!-- Draft Picker Modal -->
+<div class="modal-overlay" id="draftModal" onclick="closeDraftPicker(event)">
+  <div class="modal">
+    <h3>&#128190; Load Draft</h3>
+    <div id="draftList"></div>
+    <button class="btn btn-secondary" onclick="document.getElementById('draftModal').style.display='none'" style="margin-top:12px;">Cancel</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── API URL ─────────────────────────────────────────────────────────────────
+const API = (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost")
+    ? "http://127.0.0.1:8000"
+    : "https://tera-report-automation.onrender.com";
+
+// ─── Supabase Auth Check ──────────────────────────────────────────────────────
+const SUPABASE_URL  = "https://wriaonorqjhmofwrhqlp.supabase.co"
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc"
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
+sb.auth.getSession().then(({ data }) => {
+    if (!data.session) window.location.href = "/"
+})
+
+// ─── Tab Switching ────────────────────────────────────────────────────────────
+function switchTab(name) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'))
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+    document.getElementById('tab-' + name).classList.add('active')
+    event.target.classList.add('active')
+}
+
+// ─── Chromosome Status Options ────────────────────────────────────────────────
+const CHR_STATUSES = ["N","G","L","SG","SL","M","MG","ML","SMG","SML","SL/SG","SG/SL","SML/SMG","SMG/SML"]
+const RESULT_SUMMARY_OPTIONS = [
+    "Normal chromosome complement",
+    "Mosaic chromosome complement",
+    "Inconclusive",
+    "Low DNA concentration"
+]
+const INTERPRETATION_OPTIONS = [
+    "Euploid","Aneuploid","Mosaic Low Level","Mosaic High Level",
+    "Complex Mosaic","Inconclusive","Low DNA concentration"
+]
+const RESULT_DESC_OPTIONS = [
+    "The embryo contains normal chromosome complement",
+    "The embryo contains abnormal chromosome complement",
+    "The embryo contains mosaic chromosome complement",
+    "Inconclusive",
+    "Low DNA concentration"
+]
+const SEX_CHR_OPTIONS = ["Normal","Abnormal","Mosaic"]
+
+// ─── Build Embryo Forms ───────────────────────────────────────────────────────
+function buildEmbryoForms(existingData) {
+    const count   = parseInt(document.getElementById('embryoCount').value) || 1
+    const container = document.getElementById('embryoForms')
+    container.innerHTML = ''
+    for (let i = 0; i < count; i++) {
+        const e = (existingData && existingData[i]) ? existingData[i] : {}
+        container.appendChild(createEmbryoBlock(i + 1, e))
+    }
+}
+
+function createEmbryoBlock(num, data) {
+    data = data || {}
+    const block = document.createElement('div')
+    block.className = 'embryo-block'
+    block.id = `embryo-block-${num}`
+
+    // Summary row
+    const rs  = data.result_summary  || ''
+    const int = data.interpretation  || ''
+
+    block.innerHTML = `
+    <div class="embryo-header" onclick="toggleEmbryo(${num})">
+        <span>Embryo ${num} — <span id="ehdr-${num}">${rs || 'PS'+num}</span></span>
+        <span>&#9660;</span>
+    </div>
+    <div class="embryo-body${num===1?' open':''}" id="embryo-body-${num}">
+        <div class="form-grid three">
+            <div class="form-group">
+                <label>Embryo ID (Summary)</label>
+                <input type="text" id="e${num}-id" value="${data.embryo_id||'PS'+num}" oninput="updateEmbryoHeader(${num})">
+            </div>
+            <div class="form-group">
+                <label>Embryo ID (Detail Page)</label>
+                <input type="text" id="e${num}-id-detail" value="${data.embryo_id_detail||'PS'+num}">
+            </div>
+            <div class="form-group">
+                <label>MT Copy</label>
+                <input type="text" id="e${num}-mtcopy" value="${data.mtcopy||'NA'}">
+            </div>
+        </div>
+        <div class="form-grid three" style="margin-top:10px;">
+            <div class="form-group">
+                <label>Result Summary</label>
+                <select id="e${num}-result-summary" onchange="updateEmbryoHeader(${num})">
+                    ${RESULT_SUMMARY_OPTIONS.map(o=>`<option value="${o}"${rs===o?' selected':''}>${o}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Interpretation</label>
+                <select id="e${num}-interpretation">
+                    ${INTERPRETATION_OPTIONS.map(o=>`<option value="${o}"${int===o?' selected':''}>${o}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Autosomes</label>
+                <input type="text" id="e${num}-autosomes" value="${data.autosomes||'Normal'}">
+            </div>
+        </div>
+        <div class="form-grid" style="margin-top:10px;">
+            <div class="form-group">
+                <label>Result Description</label>
+                <select id="e${num}-result-desc">
+                    ${RESULT_DESC_OPTIONS.map(o=>`<option value="${o}"${(data.result_description||'')==o?' selected':''}>${o}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Sex Chromosomes</label>
+                <select id="e${num}-sex-chr">
+                    ${SEX_CHR_OPTIONS.map(o=>`<option value="${o}"${(data.sex_chromosomes||'Normal')===o?' selected':''}>${o}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+        <div class="form-group full" style="margin-top:10px;">
+            <label>Inconclusive Comment (if applicable)</label>
+            <textarea id="e${num}-inconclusive" rows="2">${data.inconclusive_comment||''}</textarea>
+        </div>
+
+        <!-- Chromosome Status Grid -->
+        <div class="section-title" style="margin-top:16px;">Chromosome Statuses (1–22)</div>
+        <div style="font-size:11px;color:#888;margin-bottom:6px;">Status: N=Normal, G=Gain, L=Loss, SG=Small Gain, SL=Small Loss, M=Mosaic, MG/ML=Mosaic Gain/Loss, etc. | Mosaic%: enter if mosaic</div>
+        <div class="chr-grid" id="chr-grid-${num}">
+            ${buildChrGrid(num, data.chromosome_statuses||{}, data.mosaic_percentages||{})}
+        </div>
+    </div>`
+    return block
+}
+
+function buildChrGrid(embryoNum, statuses, mosaics) {
+    let html = ''
+    for (let c = 1; c <= 22; c++) {
+        const cs = statuses[String(c)] || 'N'
+        const mp = mosaics[String(c)] || ''
+        html += `<div class="chr-cell">
+            <label>Chr ${c}</label>
+            <select id="e${embryoNum}-chr${c}-status">
+                ${CHR_STATUSES.map(s=>`<option value="${s}"${cs===s?' selected':''}>${s}</option>`).join('')}
+            </select>
+            <input type="text" id="e${embryoNum}-chr${c}-mosaic" placeholder="Mosaic%" value="${mp}">
+        </div>`
+    }
+    return html
+}
+
+function toggleEmbryo(num) {
+    const body = document.getElementById(`embryo-body-${num}`)
+    body.classList.toggle('open')
+}
+
+function updateEmbryoHeader(num) {
+    const id  = document.getElementById(`e${num}-id`)?.value || `PS${num}`
+    const rs  = document.getElementById(`e${num}-result-summary`)?.value || ''
+    const hdr = document.getElementById(`ehdr-${num}`)
+    if (hdr) hdr.textContent = `${id} — ${rs}`
+}
+
+// ─── Collect Form Data ────────────────────────────────────────────────────────
+function getPatientInfo() {
+    return {
+        patient_name:          document.getElementById('patientName').value.trim(),
+        spouse_name:           document.getElementById('spouseName').value.trim(),
+        pin:                   document.getElementById('pin').value.trim(),
+        age:                   document.getElementById('age').value.trim(),
+        sample_number:         document.getElementById('sampleNumber').value.trim(),
+        referring_clinician:   document.getElementById('referringClinician').value.trim(),
+        biopsy_date:           document.getElementById('biopsyDate').value.trim(),
+        hospital_clinic:       document.getElementById('hospitalClinic').value.trim(),
+        sample_collection_date: document.getElementById('sampleCollectionDate').value.trim(),
+        specimen:              document.getElementById('specimen').value.trim(),
+        sample_receipt_date:   document.getElementById('sampleReceiptDate').value.trim(),
+        biopsy_performed_by:   document.getElementById('biopsyPerformedBy').value.trim(),
+        report_date:           document.getElementById('reportDate').value.trim(),
+        indication:            document.getElementById('indication').value.trim(),
+        results_summary_comment: document.getElementById('resultsSummaryComment').value.trim()
+    }
+}
+
+function getEmbryos() {
+    const count = parseInt(document.getElementById('embryoCount').value) || 1
+    const embryos = []
+    for (let i = 1; i <= count; i++) {
+        const chrStatuses = {}, mosaicPct = {}
+        for (let c = 1; c <= 22; c++) {
+            chrStatuses[String(c)] = document.getElementById(`e${i}-chr${c}-status`)?.value || 'N'
+            mosaicPct[String(c)]   = document.getElementById(`e${i}-chr${c}-mosaic`)?.value || ''
+        }
+        embryos.push({
+            embryo_id:           document.getElementById(`e${i}-id`)?.value || `PS${i}`,
+            embryo_id_detail:    document.getElementById(`e${i}-id-detail`)?.value || `PS${i}`,
+            result_summary:      document.getElementById(`e${i}-result-summary`)?.value || '',
+            interpretation:      document.getElementById(`e${i}-interpretation`)?.value || '',
+            result_description:  document.getElementById(`e${i}-result-desc`)?.value || '',
+            autosomes:           document.getElementById(`e${i}-autosomes`)?.value || 'Normal',
+            sex_chromosomes:     document.getElementById(`e${i}-sex-chr`)?.value || 'Normal',
+            mtcopy:              document.getElementById(`e${i}-mtcopy`)?.value || 'NA',
+            inconclusive_comment: document.getElementById(`e${i}-inconclusive`)?.value || '',
+            chromosome_statuses: chrStatuses,
+            mosaic_percentages:  mosaicPct
+        })
+    }
+    return embryos
+}
+
+// ─── Preview ──────────────────────────────────────────────────────────────────
+async function previewReport() {
+    const pi = getPatientInfo()
+    if (!pi.patient_name) { showToast('Enter Patient Name first', 'error'); return }
+    showToast('Generating preview…')
+    try {
+        const res = await fetch(`${API}/pgta/preview`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ patient_info: pi, embryos: getEmbryos(), logo_option: document.getElementById('logoOption').value })
+        })
+        const json = await res.json()
+        if (json.preview_url) {
+            document.getElementById('previewFrame').src = API + json.preview_url
+            document.getElementById('previewContainer').style.display = 'block'
+            showToast('Preview ready!', 'success')
+        } else {
+            showToast(json.error || 'Preview failed', 'error')
+        }
+    } catch(e) { showToast('Server error: ' + e.message, 'error') }
+}
+
+// ─── Generate ─────────────────────────────────────────────────────────────────
+async function generateReport() {
+    const pi = getPatientInfo()
+    if (!pi.patient_name) { showToast('Enter Patient Name first', 'error'); return }
+    const btn = event.target
+    btn.disabled = true; btn.textContent = 'Generating…'
+    const result = document.getElementById('manualResult')
+    result.style.display = 'none'
+    try {
+        const res = await fetch(`${API}/pgta/generate`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ patient_info: pi, embryos: getEmbryos(), logo_option: document.getElementById('logoOption').value })
+        })
+        const json = await res.json()
+        if (json.file_url) {
+            result.className = 'result-box success'
+            result.innerHTML = `✅ Report generated! <a href="${json.file_url}" target="_blank" style="color:#196F3D;font-weight:700;">Download PDF</a>`
+            result.style.display = 'block'
+            showToast('Report generated!', 'success')
+        } else {
+            result.className = 'result-box error'
+            result.innerHTML = `❌ ${json.error || 'Generation failed'}`
+            result.style.display = 'block'
+            showToast(json.error || 'Error', 'error')
+        }
+    } catch(e) {
+        showToast('Server error: ' + e.message, 'error')
+    } finally {
+        btn.disabled = false; btn.textContent = '▶ Generate Report'
+    }
+}
+
+// ─── Draft ────────────────────────────────────────────────────────────────────
+function buildDraftKey() {
+    const name = document.getElementById('patientName').value.trim().replace(/[^a-zA-Z0-9 ]/g,'').replace(/ /g,'_') || 'Unknown'
+    const sn   = document.getElementById('sampleNumber').value.trim().replace(/[^a-zA-Z0-9]/g,'_') || 'S0'
+    return `${name}_${sn}_PGTA_report_draft`
+}
+
+function saveDraft() {
+    const draft = {
+        patient_info: getPatientInfo(),
+        embryos: getEmbryos(),
+        embryo_count: parseInt(document.getElementById('embryoCount').value) || 1,
+        logo_option: document.getElementById('logoOption').value
+    }
+    const key = buildDraftKey()
+    localStorage.setItem(key, JSON.stringify(draft))
+    // Also save to Supabase
+    fetch(`${API}/save-draft/${encodeURIComponent(key)}`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(draft)
+    }).catch(() => {})
+    showToast('Draft saved!', 'success')
+}
+
+function openDraftPicker() {
+    const keys = Object.keys(localStorage).filter(k => k.endsWith('_PGTA_report_draft'))
+    const list = document.getElementById('draftList')
+    if (keys.length === 0) {
+        list.innerHTML = '<div style="color:#888;font-size:13px;">No drafts found.</div>'
+    } else {
+        list.innerHTML = keys.map(k =>
+            `<div class="draft-item" onclick="loadDraft('${k}')">${k.replace(/_PGTA_report_draft$/,'').replace(/_/g,' ')}</div>`
+        ).join('')
+    }
+    document.getElementById('draftModal').style.display = 'block'
+}
+
+function closeDraftPicker(e) {
+    if (!e || e.target.id === 'draftModal') {
+        document.getElementById('draftModal').style.display = 'none'
+    }
+}
+
+function loadDraft(key) {
+    const raw = localStorage.getItem(key)
+    if (!raw) { showToast('Draft not found.', 'error'); return }
+    const d = JSON.parse(raw)
+    fillForm(d)
+    document.getElementById('draftModal').style.display = 'none'
+    showToast('Draft loaded!', 'success')
+}
+
+function fillForm(d) {
+    const pi = d.patient_info || {}
+    document.getElementById('patientName').value        = pi.patient_name || ''
+    document.getElementById('spouseName').value         = pi.spouse_name || 'w/o'
+    document.getElementById('pin').value                = pi.pin || ''
+    document.getElementById('age').value                = pi.age || ''
+    document.getElementById('sampleNumber').value       = pi.sample_number || ''
+    document.getElementById('referringClinician').value = pi.referring_clinician || ''
+    document.getElementById('biopsyDate').value         = pi.biopsy_date || ''
+    document.getElementById('hospitalClinic').value     = pi.hospital_clinic || ''
+    document.getElementById('sampleCollectionDate').value = pi.sample_collection_date || ''
+    document.getElementById('specimen').value           = pi.specimen || ''
+    document.getElementById('sampleReceiptDate').value  = pi.sample_receipt_date || ''
+    document.getElementById('biopsyPerformedBy').value  = pi.biopsy_performed_by || ''
+    document.getElementById('reportDate').value         = pi.report_date || ''
+    document.getElementById('indication').value         = pi.indication || ''
+    document.getElementById('resultsSummaryComment').value = pi.results_summary_comment || ''
+    if (d.logo_option) document.getElementById('logoOption').value = d.logo_option
+    if (d.embryo_count) document.getElementById('embryoCount').value = d.embryo_count
+    buildEmbryoForms(d.embryos || [])
+}
+
+// ─── Bulk Upload ──────────────────────────────────────────────────────────────
+let bulkPatients = []
+
+async function handleBulkUpload(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    const form = new FormData()
+    form.append('file', file)
+    showToast('Parsing Excel…')
+    try {
+        const res = await fetch(`${API}/pgta/upload-excel`, { method:'POST', body: form })
+        const json = await res.json()
+        if (json.patients) {
+            bulkPatients = json.patients
+            renderBulkTable(bulkPatients)
+            document.getElementById('bulkPreview').style.display = 'block'
+            showToast(`${bulkPatients.length} patient(s) loaded`, 'success')
+        } else {
+            showToast(json.error || 'Parse error', 'error')
+        }
+    } catch(e) { showToast('Server error: ' + e.message, 'error') }
+}
+
+function renderBulkTable(patients) {
+    document.getElementById('bulkCount').textContent = patients.length
+    const tbody = document.getElementById('bulkTableBody')
+    tbody.innerHTML = patients.map((p, i) => {
+        const pi = p.patient_info
+        return `<tr>
+            <td>${i+1}</td>
+            <td>${pi.patient_name||'-'}</td>
+            <td>${pi.sample_number||'-'}</td>
+            <td>${p.embryos.length}</td>
+            <td>${pi.report_date||'-'}</td>
+        </tr>`
+    }).join('')
+}
+
+async function generateBulk() {
+    if (!bulkPatients.length) { showToast('No patients loaded', 'error'); return }
+    const logo = document.getElementById('bulkLogoOption').value
+    const btn  = event.target
+    btn.disabled = true; btn.textContent = 'Generating…'
+    const result = document.getElementById('bulkResult')
+    result.style.display = 'none'
+    try {
+        const payload = bulkPatients.map(p => ({ ...p, logo_option: logo }))
+        const res = await fetch(`${API}/pgta/generate-bulk`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+        })
+        const json = await res.json()
+        const ok = json.generated || []
+        const err = json.errors || []
+        result.className = err.length ? 'result-box error' : 'result-box success'
+        let html = `✅ ${ok.length} report(s) generated`
+        if (ok.length) html += '<br>' + ok.map(r=>`<a href="${r.file_url}" target="_blank" style="display:block;margin-top:4px;">${r.patient}</a>`).join('')
+        if (err.length) html += `<br>❌ ${err.length} failed: ` + err.map(r=>`${r.patient}: ${r.error}`).join(', ')
+        result.innerHTML = html
+        result.style.display = 'block'
+        showToast(`${ok.length} done, ${err.length} errors`, ok.length ? 'success' : 'error')
+    } catch(e) { showToast('Server error: ' + e.message, 'error') }
+    finally { btn.disabled = false; btn.textContent = '▶ Generate All Reports' }
+}
+
+function downloadTemplate() {
+    window.open('/static/backend/../pgta-template', '_blank')
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg, type) {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className = 'toast' + (type ? ' ' + type : '')
+    t.style.display = 'block'
+    clearTimeout(t._timer)
+    t._timer = setTimeout(() => { t.style.display = 'none' }, 3000)
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    // Set today's date as default report date
+    const today = new Date()
+    const dd = String(today.getDate()).padStart(2,'0')
+    const mm = String(today.getMonth()+1).padStart(2,'0')
+    const yyyy = today.getFullYear()
+    document.getElementById('reportDate').value = `${dd}-${mm}-${yyyy}`
+    buildEmbryoForms()
+})
+</script>
+</body>
+</html>

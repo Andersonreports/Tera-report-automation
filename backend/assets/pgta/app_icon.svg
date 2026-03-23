@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Background Circle -->
+  <circle cx="64" cy="64" r="60" fill="#2563EB" stroke="#1E40AF" stroke-width="4"/>
+  
+  <!-- DNA Helix Left Strand -->
+  <path d="M40 25 Q55 45 40 64 Q25 83 40 103" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- DNA Helix Right Strand -->
+  <path d="M88 25 Q73 45 88 64 Q103 83 88 103" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Connecting Rungs -->
+  <line x1="44" y1="35" x2="84" y2="35" stroke="#93C5FD" stroke-width="4" stroke-linecap="round"/>
+  <line x1="38" y1="50" x2="90" y2="50" stroke="#93C5FD" stroke-width="4" stroke-linecap="round"/>
+  <line x1="40" y1="64" x2="88" y2="64" stroke="#93C5FD" stroke-width="4" stroke-linecap="round"/>
+  <line x1="38" y1="78" x2="90" y2="78" stroke="#93C5FD" stroke-width="4" stroke-linecap="round"/>
+  <line x1="44" y1="93" x2="84" y2="93" stroke="#93C5FD" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- PGT-A Text -->
+  <text x="64" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1E40AF">PGT-A</text>
+</svg>

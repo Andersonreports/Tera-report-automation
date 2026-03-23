@@ -715,8 +715,21 @@
 
                 <div class="buttons">
                     <button onclick="saveDraft()">Save Draft</button>
-                    <button onclick="loadDraft()">Load Draft</button>
+                    <button onclick="openDraftPicker()">Load Draft</button>
                     <button onclick="document.querySelectorAll('#manual .form-grid input').forEach(i=>i.value=''); document.querySelectorAll('#manual .form-grid select').forEach(s=>s.selectedIndex=0)">Clear Form</button>
+                </div>
+
+                <!-- Draft Picker Modal -->
+                <div id="draftPickerOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
+                    <div style="background:#fff;border-radius:12px;padding:28px 24px;width:420px;max-height:70vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,0.2);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <h3 style="color:#1F497D;font-size:16px;margin:0;">Select a Draft</h3>
+                            <span onclick="closeDraftPicker()" style="cursor:pointer;font-size:20px;color:#888;">&times;</span>
+                        </div>
+                        <input type="text" id="draftSearch" oninput="filterDrafts()" placeholder="Search by patient name..." style="width:100%;padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:12px;outline:none;">
+                        <div id="draftList" style="display:flex;flex-direction:column;gap:8px;"></div>
+                        <div id="draftEmpty" style="color:#888;font-size:13px;text-align:center;display:none;padding:20px 0;">No drafts found.</div>
+                    </div>
                 </div>
 
                 <div class="generate-box">
@@ -1095,7 +1108,9 @@
 
     <!----scripting starts here--->
     <script>
-        const API = "http://127.0.0.1:8000";
+        const API = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+            ? "http://127.0.0.1:8000"
+            : "https://tera-report-automation.onrender.com";
 
         function showToast(message, type = "success") {
             let container = document.getElementById("toast-container");
@@ -1312,12 +1327,79 @@
             return `${patient}_${n}${suffix}_biopsy_TERA_report_draft`
         }
 
+        let allDrafts = []
+
+        async function openDraftPicker() {
+            const overlay = document.getElementById("draftPickerOverlay")
+            overlay.style.display = "flex"
+            document.getElementById("draftSearch").value = ""
+            document.getElementById("draftList").innerHTML = '<div style="color:#888;font-size:13px;text-align:center;padding:20px 0;">Loading drafts...</div>'
+
+            try {
+                const res = await fetch(API + "/list-drafts")
+                const result = await res.json()
+                allDrafts = result.drafts || []
+                renderDraftList(allDrafts)
+            } catch (e) {
+                // fallback to localStorage
+                allDrafts = Object.keys(localStorage)
+                    .filter(k => k.endsWith("_TERA_report_draft"))
+                    .map(k => ({ draft_type: k, source: "local" }))
+                renderDraftList(allDrafts)
+            }
+        }
+
+        function closeDraftPicker() {
+            document.getElementById("draftPickerOverlay").style.display = "none"
+        }
+
+        function filterDrafts() {
+            const q = document.getElementById("draftSearch").value.toLowerCase()
+            const filtered = allDrafts.filter(d => d.draft_type.toLowerCase().includes(q))
+            renderDraftList(filtered)
+        }
+
+        function renderDraftList(drafts) {
+            const list = document.getElementById("draftList")
+            const empty = document.getElementById("draftEmpty")
+            list.innerHTML = ""
+            if (drafts.length === 0) { empty.style.display = "block"; return }
+            empty.style.display = "none"
+            drafts.forEach(d => {
+                const label = d.draft_type.replace(/_TERA_report_draft$/, "").replace(/_/g, " ")
+                const btn = document.createElement("button")
+                btn.textContent = label
+                btn.style.cssText = "text-align:left;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;background:#f9f9f9;cursor:pointer;font-size:13px;transition:0.2s;"
+                btn.onmouseover = () => btn.style.background = "#e8f0fb"
+                btn.onmouseout  = () => btn.style.background = "#f9f9f9"
+                btn.onclick = () => selectDraft(d.draft_type)
+                list.appendChild(btn)
+            })
+        }
+
+        async function selectDraft(key) {
+            try {
+                const res = await fetch(API + "/load-draft/" + encodeURIComponent(key))
+                const result = await res.json()
+                if (result.data) { fillManualForm(result.data); showToast("Draft loaded!") }
+                else {
+                    const local = localStorage.getItem(key)
+                    if (local) { fillManualForm(JSON.parse(local)); showToast("Draft loaded from local storage.") }
+                    else showToast("Draft not found.", "error")
+                }
+            } catch (e) {
+                const local = localStorage.getItem(key)
+                if (local) { fillManualForm(JSON.parse(local)); showToast("Draft loaded from local storage.") }
+            }
+            closeDraftPicker()
+        }
+
         async function saveDraft() {
             const data = collectManualData()
             const key = buildDraftKey(data)
             localStorage.setItem(key, JSON.stringify(data))
             try {
-                await fetch("http://127.0.0.1:8000/save-draft/" + encodeURIComponent(key), {
+                await fetch(API + "/save-draft/" + encodeURIComponent(key), {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(data)
@@ -1331,7 +1413,7 @@
             const data = collectManualData()
             const key = buildDraftKey(data)
             try {
-                const res = await fetch("http://127.0.0.1:8000/load-draft/" + encodeURIComponent(key))
+                const res = await fetch(API + "/load-draft/" + encodeURIComponent(key))
                 const result = await res.json()
                 if (result.data) { fillManualForm(result.data); showToast("Draft loaded!"); return }
             } catch (e) {}
@@ -1350,7 +1432,7 @@
             const key = buildDraftKey(row)
             localStorage.setItem(key, JSON.stringify(row))
             try {
-                await fetch("http://127.0.0.1:8000/save-draft/" + encodeURIComponent(key), {
+                await fetch(API + "/save-draft/" + encodeURIComponent(key), {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(row)
@@ -1426,7 +1508,7 @@
             }
             localStorage.setItem("tera_compare_draft", JSON.stringify(data))
             try {
-                await fetch("http://127.0.0.1:8000/save-draft/compare", {
+                await fetch(API + "/save-draft/compare", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(data)
@@ -1438,7 +1520,7 @@
         }
         async function loadCompareDraft() {
             try {
-                const res = await fetch("http://127.0.0.1:8000/load-draft/compare")
+                const res = await fetch(API + "/load-draft/compare")
                 const result = await res.json()
                 if (result.data) {
                     document.getElementById("pdf1").value = result.data.pdf1 || ""

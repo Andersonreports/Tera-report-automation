@@ -343,6 +343,14 @@ async def save_draft(draft_type: str, request: Request):
     except Exception as e:
         return {"status": "error", "error": str(e)}
 
+@app.get("/list-drafts")
+def list_drafts():
+    try:
+        result = supabase.table("drafts").select("draft_type, updated_at").order("updated_at", desc=True).execute()
+        return {"drafts": result.data or []}
+    except Exception as e:
+        return {"drafts": [], "error": str(e)}
+
 @app.get("/load-draft/{draft_type}")
 def load_draft(draft_type: str):
     try:

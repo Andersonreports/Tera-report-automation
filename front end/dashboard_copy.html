@@ -624,7 +624,12 @@
 <!---html starts here--->
 
 <body>
-    <div class="header">TERA Report Generator</div>
+    <div style="display:flex;align-items:center;gap:16px;margin:30px 30px 0 30px;">
+        <a href="/home" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#f1f1f7;border-radius:8px;text-decoration:none;color:#1F497D;font-size:13px;font-weight:600;border:1.5px solid #ddd;transition:0.2s;" onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='#f1f1f7'">
+            &#8592; Home
+        </a>
+        <div class="header" style="margin:0;">TERA Report Generator</div>
+    </div>
     <div class="tabs">
 
         <button class="tab active" onclick="openTab('manual', this)">
@@ -720,8 +725,8 @@
                 </div>
 
                 <!-- Draft Picker Modal -->
-                <div id="draftPickerOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
-                    <div style="background:#fff;border-radius:12px;padding:28px 24px;width:420px;max-height:70vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,0.2);">
+                <div id="draftPickerOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;">
+                    <div style="background:#fff;border-radius:12px;padding:28px 24px;width:420px;max-height:70vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,0.2);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                             <h3 style="color:#1F497D;font-size:16px;margin:0;">Select a Draft</h3>
                             <span onclick="closeDraftPicker()" style="cursor:pointer;font-size:20px;color:#888;">&times;</span>
@@ -1329,24 +1334,16 @@
 
         let allDrafts = []
 
-        async function openDraftPicker() {
+        function openDraftPicker() {
             const overlay = document.getElementById("draftPickerOverlay")
-            overlay.style.display = "flex"
+            overlay.style.display = "block"
             document.getElementById("draftSearch").value = ""
-            document.getElementById("draftList").innerHTML = '<div style="color:#888;font-size:13px;text-align:center;padding:20px 0;">Loading drafts...</div>'
 
-            try {
-                const res = await fetch(API + "/list-drafts")
-                const result = await res.json()
-                allDrafts = result.drafts || []
-                renderDraftList(allDrafts)
-            } catch (e) {
-                // fallback to localStorage
-                allDrafts = Object.keys(localStorage)
-                    .filter(k => k.endsWith("_TERA_report_draft"))
-                    .map(k => ({ draft_type: k, source: "local" }))
-                renderDraftList(allDrafts)
-            }
+            allDrafts = Object.keys(localStorage)
+                .filter(k => k.endsWith("_TERA_report_draft"))
+                .map(k => ({ key: k, label: k.replace(/_TERA_report_draft$/, "").replace(/_/g, " ") }))
+
+            renderDraftList(allDrafts)
         }
 
         function closeDraftPicker() {
@@ -1355,42 +1352,31 @@
 
         function filterDrafts() {
             const q = document.getElementById("draftSearch").value.toLowerCase()
-            const filtered = allDrafts.filter(d => d.draft_type.toLowerCase().includes(q))
-            renderDraftList(filtered)
+            renderDraftList(allDrafts.filter(d => d.label.toLowerCase().includes(q)))
         }
 
         function renderDraftList(drafts) {
-            const list = document.getElementById("draftList")
+            const list  = document.getElementById("draftList")
             const empty = document.getElementById("draftEmpty")
             list.innerHTML = ""
             if (drafts.length === 0) { empty.style.display = "block"; return }
             empty.style.display = "none"
             drafts.forEach(d => {
-                const label = d.draft_type.replace(/_TERA_report_draft$/, "").replace(/_/g, " ")
                 const btn = document.createElement("button")
-                btn.textContent = label
-                btn.style.cssText = "text-align:left;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;background:#f9f9f9;cursor:pointer;font-size:13px;transition:0.2s;"
+                btn.textContent = d.label
+                btn.style.cssText = "text-align:left;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;background:#f9f9f9;cursor:pointer;font-size:13px;width:100%;transition:0.2s;"
                 btn.onmouseover = () => btn.style.background = "#e8f0fb"
                 btn.onmouseout  = () => btn.style.background = "#f9f9f9"
-                btn.onclick = () => selectDraft(d.draft_type)
+                btn.onclick = () => selectDraft(d.key)
                 list.appendChild(btn)
             })
         }
 
-        async function selectDraft(key) {
-            try {
-                const res = await fetch(API + "/load-draft/" + encodeURIComponent(key))
-                const result = await res.json()
-                if (result.data) { fillManualForm(result.data); showToast("Draft loaded!") }
-                else {
-                    const local = localStorage.getItem(key)
-                    if (local) { fillManualForm(JSON.parse(local)); showToast("Draft loaded from local storage.") }
-                    else showToast("Draft not found.", "error")
-                }
-            } catch (e) {
-                const local = localStorage.getItem(key)
-                if (local) { fillManualForm(JSON.parse(local)); showToast("Draft loaded from local storage.") }
-            }
+        function selectDraft(key) {
+            const raw = localStorage.getItem(key)
+            if (!raw) { showToast("Draft not found.", "error"); return }
+            fillManualForm(JSON.parse(raw))
+            showToast("Draft loaded!")
             closeDraftPicker()
         }
 

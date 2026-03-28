@@ -368,6 +368,62 @@ def load_draft(draft_type: str):
         return {"data": None, "error": str(e)}
 
 
+# ======== PGTA CNV Image Upload ========
+
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/pgta/upload-cnv")
+async def pgta_upload_cnv(file: UploadFile = File(...)):
+    """Upload a CNV chart image and return a temp filename"""
+    try:
+        ext = os.path.splitext(file.filename)[1].lower()
+        if ext not in (".png", ".jpg", ".jpeg"):
+            return {"error": "Only PNG/JPG images are supported"}
+        filename = str(uuid.uuid4()) + ext
+        filepath = os.path.join(UPLOAD_DIR, filename)
+        contents = await file.read()
+        with open(filepath, "wb") as f:
+            f.write(contents)
+        return {"filename": filename}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def _resolve_cnv_paths(embryos: list) -> list:
+    """Resolve CNV image filenames to full server paths for the template engine"""
+    for embryo in embryos:
+        cnv_filename = embryo.pop("cnv_image_filename", "") or ""
+        if cnv_filename:
+            full_path = os.path.join(UPLOAD_DIR, cnv_filename)
+            if os.path.exists(full_path):
+                embryo["cnv_image_path"] = full_path
+    return embryos
+
+
+# ======== PGTA Excel Template Download ========
+
+@app.get("/pgta-template")
+def pgta_template_download():
+    """Generate and download a PGTA bulk upload Excel template"""
+    columns = [
+        "Patient_Name", "Spouse_Name", "PIN", "Age", "Sample_Number",
+        "Referring_Clinician", "Biopsy_Date", "Hospital_Clinic",
+        "Sample_Collection_Date", "Specimen", "Sample_Receipt_Date",
+        "Biopsy_Performed_By", "Report_Date", "Indication",
+        "Embryo_ID", "Result_Summary", "Result_Description",
+        "Autosomes", "Sex_Chromosomes", "Interpretation", "MTcopy"
+    ]
+    df = pd.DataFrame(columns=columns)
+    filepath = os.path.join(TEMP_DIR, "PGTA_Bulk_Upload_Template.xlsx")
+    df.to_excel(filepath, index=False)
+    return FileResponse(
+        filepath,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename="PGTA_Bulk_Upload_Template.xlsx"
+    )
+
+
 # ======== PGTA Report Endpoints ========
 
 PGTA_ASSETS_DIR = os.path.join(BASE_DIR, "assets", "pgta")
@@ -387,7 +443,7 @@ async def pgta_preview(data: dict):
     filepath = os.path.join(TEMP_DIR, file_id)
     with_logo = data.get("logo_option", "with_logo") == "with_logo"
     patient_info = data.get("patient_info", {})
-    embryos      = data.get("embryos", [])
+    embryos      = _resolve_cnv_paths(data.get("embryos", []))
     gen = PGTAReportTemplate(assets_dir=PGTA_ASSETS_DIR)
     gen.generate_pdf(filepath, patient_info, embryos, show_logo=with_logo)
     return {"preview_url": f"/preview-file/{file_id}"}
@@ -397,7 +453,7 @@ async def pgta_generate(data: dict):
     try:
         with_logo    = data.get("logo_option", "with_logo") == "with_logo"
         patient_info = data.get("patient_info", {})
-        embryos      = data.get("embryos", [])
+        embryos      = _resolve_cnv_paths(data.get("embryos", []))
         file_id      = str(uuid.uuid4()) + ".pdf"
         pdf_path     = os.path.join(REPORT_DIR, file_id)
         gen = PGTAReportTemplate(assets_dir=PGTA_ASSETS_DIR)
@@ -424,7 +480,7 @@ async def pgta_generate_bulk(request: Request):
         try:
             with_logo    = row.get("logo_option", "with_logo") == "with_logo"
             patient_info = row.get("patient_info", {})
-            embryos      = row.get("embryos", [])
+            embryos      = _resolve_cnv_paths(row.get("embryos", []))
             file_id      = str(uuid.uuid4()) + ".pdf"
             pdf_path     = os.path.join(REPORT_DIR, file_id)
             gen = PGTAReportTemplate(assets_dir=PGTA_ASSETS_DIR)

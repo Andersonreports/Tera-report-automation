@@ -4,976 +4,1459 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PGT-A Report Generator</title>
-
-<!-- Bootstrap 5 -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<!-- Font Awesome 6 -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ---------- THEME VARIABLES ---------- */
 :root {
-  --app-bg: #e8e8e8;
-  --panel-bg: #f5f5f5;
-  --header-bg: #3a3a3a;
-  --tab-bg: #d0d0d0;
-  --tab-active: #4a86c8;
-  --field-bg: #ffffff;
-  --border: #c0c0c0;
-  --text: #222;
-  --label: #333;
-  --brand-blue: #1F497D;
-  --brand-green: #196F3D;
-  --brand-orange: #F58220;
+    --bg-accent: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    --panel-bg: rgba(255,255,255,0.7);
+    --panel-border: rgba(255,255,255,0.5);
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --success: #10b981;
+    --input-bg: rgba(255,255,255,0.9);
+    --input-border: #d1d5db;
+    --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+    --border-radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-accent: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        --panel-bg: rgba(30,41,59,0.5);
+        --panel-border: rgba(255,255,255,0.1);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --input-bg: rgba(15,23,42,0.6);
+        --input-border: #334155;
+        --shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+    }
 }
 
-* { box-sizing: border-box; }
-body { margin: 0; padding: 0; background: var(--app-bg); font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 13px; color: var(--text); overflow: hidden; height: 100vh; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;font-size:14px;background:var(--bg-accent);color:var(--text-main);min-height:100vh;}
 
-/* ── Top header bar ───────────────────────────── */
-.app-header {
-  background: var(--field-bg); display: flex; align-items: center;
-  justify-content: space-between; padding: 8px 20px;
-  border-bottom: 1px solid var(--border); height: 48px; flex-shrink: 0;
-}
-.app-header .app-title { font-size: 20px; font-weight: 700; color: #222; display: flex; align-items: center; gap: 10px; }
-.app-header .app-title a { color: var(--brand-blue); text-decoration: none; font-size: 14px; }
-.app-header .template-sel { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.app-header .template-sel select { padding: 3px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
+.glass-panel{background:var(--panel-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--panel-border);box-shadow:var(--shadow);border-radius:var(--border-radius);}
 
-/* ── Tab bar ──────────────────────────────────── */
-.tab-bar {
-  display: flex; align-items: center; justify-content: center;
-  gap: 0; padding: 8px 20px; background: var(--app-bg); flex-shrink: 0;
-}
-.tab-btn {
-  padding: 7px 24px; font-size: 13px; font-weight: 600; cursor: pointer;
-  border: 1px solid #999; background: var(--tab-bg); color: #333;
-  transition: all .15s; white-space: nowrap; display: flex; align-items: center; gap: 6px;
-}
-.tab-btn:first-child { border-radius: 6px 0 0 6px; }
-.tab-btn:last-child { border-radius: 0 6px 6px 0; }
-.tab-btn:not(:first-child) { border-left: none; }
-.tab-btn:hover { background: #bdd4ee; }
-.tab-btn.active { background: var(--tab-active); color: #fff; border-color: #3a70a8; }
+/* Header */
+.header{font-size:26px;font-weight:700;background:linear-gradient(to right,var(--primary),#8b5cf6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px;}
 
-/* ── Main two-panel layout ────────────────────── */
-.main-container {
-  display: flex; flex: 1; overflow: hidden;
-  height: calc(100vh - 48px - 46px); /* minus header and tabs */
-}
-.left-panel {
-  flex: 1; display: flex; flex-direction: column; overflow: hidden;
-  border-right: 1px solid var(--border);
-}
-.right-panel {
-  width: 420px; min-width: 350px; display: flex; flex-direction: column;
-  background: var(--panel-bg);
-}
+/* Tabs */
+.tabs{display:flex;gap:10px;padding:0 30px;margin-bottom:16px;}
+.tab{background:var(--input-bg);border:1px solid var(--panel-border);padding:9px 18px;font-size:13px;font-weight:500;cursor:pointer;border-radius:8px;color:var(--text-muted);transition:var(--transition);font-family:inherit;}
+.tab:hover{transform:translateY(-1px);color:var(--text-main);}
+.tab.active{background:var(--primary);color:white;border-color:var(--primary);box-shadow:0 4px 12px rgba(59,130,246,0.3);}
+.tab-content{display:none;animation:fadeIn 0.35s ease-out forwards;}
+.tab-content.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
-/* ── Left panel sections ──────────────────────── */
-.form-scroll { flex: 1; overflow-y: auto; padding: 12px 16px; }
+/* Manual entry 2-panel */
+.manual-container{display:grid;grid-template-columns:540px 1fr;gap:20px;margin:0 30px;height:calc(100vh - 180px);}
+.form-panel{padding:20px;overflow-y:auto;height:100%;}
+.panel-title{font-size:15px;font-weight:600;border-bottom:1px solid var(--input-border);padding-bottom:10px;margin-bottom:16px;color:var(--text-main);}
+.section-hdr{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin:18px 0 10px 0;padding:5px 10px;background:rgba(59,130,246,0.08);border-left:3px solid var(--primary);border-radius:0 4px 4px 0;}
 
-.section-header {
-  font-size: 12px; font-weight: 700; color: #444; background: #ddd;
-  padding: 5px 12px; border: 1px solid var(--border); border-radius: 4px 4px 0 0;
-  margin-top: 10px; margin-bottom: 0; text-transform: capitalize;
-}
-.section-body {
-  border: 1px solid var(--border); border-top: none; background: var(--field-bg);
-  padding: 10px 14px; border-radius: 0 0 4px 4px; margin-bottom: 8px;
-}
+/* Form grid 160px label | 1fr input */
+.form-grid{display:grid;grid-template-columns:155px 1fr;row-gap:9px;column-gap:14px;align-items:center;}
+.form-grid label{text-align:right;font-size:12px;font-weight:500;color:var(--text-muted);line-height:1.3;}
 
-/* ── Form rows (label left, input right) ──────── */
-.form-row {
-  display: flex; align-items: center; margin-bottom: 6px; gap: 8px;
+/* Inputs */
+input[type="text"],input[type="number"],select,textarea{
+    height:34px;padding:0 10px;font-size:13px;font-family:inherit;
+    border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-main);
+    border-radius:6px;transition:var(--transition);width:100%;
 }
-.form-row label {
-  width: 170px; min-width: 170px; text-align: right; font-size: 12px;
-  font-weight: 600; color: var(--label); padding-right: 4px; white-space: nowrap;
-}
-.form-row input, .form-row select, .form-row textarea {
-  flex: 1; padding: 4px 8px; border: 1px solid var(--border); border-radius: 3px;
-  font-size: 12px; font-family: inherit; background: var(--field-bg);
-}
-.form-row textarea { resize: vertical; min-height: 36px; }
-.form-row input:focus, .form-row select:focus, .form-row textarea:focus {
-  outline: none; border-color: var(--tab-active); box-shadow: 0 0 0 2px rgba(74,134,200,0.2);
-}
+textarea{height:auto;min-height:56px;padding:7px 10px;resize:vertical;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,0.15);}
 
-/* ── Embryo section ───────────────────────────── */
-.embryo-header-bar {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
-  flex-wrap: wrap;
-}
-.embryo-header-bar label { font-weight: 700; font-size: 12px; color: #c0392b; }
-.embryo-header-bar input { width: 60px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 3px; text-align: center; font-size: 12px; }
-.embryo-header-bar button { font-size: 11px; }
+/* Summary table */
+.sum-table{width:100%;border-collapse:collapse;font-size:12px;}
+.sum-table th{background:rgba(0,0,0,0.03);font-weight:600;text-align:left;border-bottom:2px solid var(--input-border);padding:7px 6px;white-space:nowrap;}
+.sum-table td{padding:3px 3px;border-bottom:1px solid var(--input-border);vertical-align:middle;}
+.sum-table select,.sum-table input{height:28px;font-size:11px;padding:0 5px;}
 
-.embryo-panel {
-  border: 1px solid #bbb; border-radius: 4px; margin-bottom: 8px; background: var(--field-bg);
-}
-.embryo-panel-header {
-  padding: 6px 12px; background: #5a5a5a; color: #fff; font-size: 12px;
-  font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;
-  border-radius: 4px 4px 0 0; user-select: none;
-}
-.embryo-panel-header .toggle-icon { transition: transform .2s; }
-.embryo-panel-header.collapsed .toggle-icon { transform: rotate(-90deg); }
-.embryo-panel-body { padding: 10px 14px; display: block; }
-.embryo-panel-body.hidden { display: none; }
+/* Embryo form */
+.emb-form{border:1px solid var(--input-border);border-radius:8px;margin-bottom:10px;overflow:hidden;}
+.emb-form-hdr{background:rgba(59,130,246,0.07);padding:8px 14px;font-size:12px;font-weight:600;color:var(--primary);cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;}
+.emb-form-body{padding:14px;}
+.emb-form-body.hidden{display:none;}
+.collapse-icon{transition:transform 0.2s;font-size:10px;}
+.emb-form.collapsed .collapse-icon{transform:rotate(-90deg);}
 
 /* Chromosome grid */
-.chr-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-top: 4px; }
-.chr-cell {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  background: #f0f0f0; border: 1px solid #ddd; border-radius: 4px; padding: 4px 3px;
-}
-.chr-cell .chr-label { font-size: 9px; font-weight: 700; color: #555; }
-.chr-cell select, .chr-cell input {
-  width: 100%; padding: 1px 2px; font-size: 9px; border: 1px solid #ccc;
-  border-radius: 2px; text-align: center;
-}
-.chr-cell .mosaic-label { font-size: 8px; color: #999; }
+.chr-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;margin-top:6px;}
+.chr-row{display:flex;align-items:center;gap:5px;}
+.chr-num{width:24px;font-size:11px;font-weight:600;color:var(--text-muted);flex-shrink:0;text-align:right;}
+.chr-row select{flex:1;height:26px;font-size:10px;padding:0 3px;}
+.chr-row input{width:52px;height:26px;font-size:10px;padding:0 5px;flex-shrink:0;}
 
-/* ── Results Summary Table (Page 1) ───────────── */
-.summary-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.summary-table th {
-  background: #5a5a5a; color: #fff; padding: 6px 8px; font-size: 11px;
-  font-weight: 600; text-align: left; border: 1px solid #444;
-}
-.summary-table td { padding: 4px 6px; border: 1px solid #ccc; }
-.summary-table td input, .summary-table td select {
-  width: 100%; padding: 3px 5px; border: 1px solid #ccc; border-radius: 2px;
-  font-size: 11px; font-family: inherit;
-}
+/* Buttons */
+button{font-family:inherit;font-size:13px;font-weight:500;padding:7px 14px;border:1px solid var(--input-border);background:var(--input-bg);border-radius:6px;cursor:pointer;color:var(--text-main);transition:var(--transition);display:inline-flex;align-items:center;gap:5px;}
+button:hover{background:var(--input-border);transform:translateY(-1px);}
+.btn-primary{background:var(--primary);color:white;border:none;font-weight:600;}
+.btn-primary:hover{background:var(--primary-hover);color:white;box-shadow:0 4px 12px rgba(59,130,246,0.3);}
+.btn-success{background:var(--success);color:white;border:none;font-weight:600;}
+.btn-success:hover{background:#059669;color:white;}
+.btn-danger{background:#ef4444;color:white;border:none;}
+.btn-danger:hover{background:#dc2626;color:white;}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;}
 
-/* CNV upload */
-.cnv-upload-box {
-  border: 1px dashed #aaa; border-radius: 4px; padding: 8px; text-align: center;
-  cursor: pointer; background: #fafafa; margin-top: 4px; font-size: 11px;
-}
-.cnv-upload-box:hover { border-color: var(--tab-active); background: #eef4fb; }
-.cnv-upload-box .cnv-filename { font-size: 10px; color: var(--brand-green); font-weight: 600; margin-top: 3px; }
-.cnv-upload-box .cnv-preview-img { max-width: 100%; max-height: 80px; margin-top: 4px; border-radius: 3px; }
+/* Gen options bar */
+.gen-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:14px;border:1px solid var(--input-border);border-radius:8px;background:rgba(59,130,246,0.03);margin-top:10px;}
+.gen-bar label{font-size:12px;font-weight:500;color:var(--text-muted);}
+.gen-bar select{width:auto;min-width:140px;}
 
-/* ── Bottom action bar ────────────────────────── */
-.bottom-bar {
-  border-top: 1px solid var(--border); background: var(--panel-bg);
-  padding: 8px 16px; flex-shrink: 0;
-}
-.action-btns { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-.action-btns button {
-  padding: 5px 14px; font-size: 12px; font-weight: 600; border: 1px solid #999;
-  border-radius: 4px; cursor: pointer; background: #e8e8e8; color: #333;
-  display: flex; align-items: center; gap: 5px;
-}
-.action-btns button:hover { background: #d0d0d0; }
-.action-btns .btn-generate {
-  background: #4a86c8; color: #fff; border-color: #3a70a8; font-size: 13px; padding: 6px 20px;
-}
-.action-btns .btn-generate:hover { background: #3a70a8; }
+/* CNV upload row */
+.cnv-row{display:flex;align-items:center;gap:8px;}
+.cnv-name{font-size:11px;color:var(--text-muted);font-style:italic;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
-.gen-section-title { font-weight: 700; font-size: 12px; color: #444; margin-bottom: 6px; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
-.gen-options { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12px; }
-.gen-options label { font-weight: 600; color: #555; }
-.gen-options select { padding: 3px 6px; border: 1px solid var(--border); border-radius: 3px; font-size: 12px; }
-.gen-status { font-size: 11px; color: #888; margin-top: 4px; }
+/* Dropzone */
+.dropzone{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px dashed var(--input-border);border-radius:8px;background:rgba(255,255,255,0.5);cursor:pointer;font-size:13px;color:var(--text-muted);transition:var(--transition);width:100%;}
+.dropzone:hover{border-color:var(--primary);background:rgba(59,130,246,0.05);color:var(--primary);}
+.dropzone svg{flex-shrink:0;}
 
-/* ── Right panel (Preview) ────────────────────── */
-.preview-header {
-  padding: 8px 14px; background: #ddd; border-bottom: 1px solid var(--border);
-  font-size: 13px; font-weight: 700; color: #333; flex-shrink: 0;
-}
-.preview-subheader {
-  padding: 6px 14px; background: #eee; border-bottom: 1px solid var(--border);
-  font-size: 12px; font-weight: 700; color: #444; flex-shrink: 0;
-}
-.preview-body { flex: 1; overflow: hidden; padding: 6px; background: #ccc; }
-.preview-body iframe { width: 100%; height: 100%; border: none; background: #fff; }
-.preview-footer {
-  padding: 6px 14px; border-top: 1px solid var(--border); background: #ddd;
-  text-align: center; flex-shrink: 0;
-}
-.preview-footer button {
-  padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid #999;
-  border-radius: 4px; cursor: pointer; background: #e0e0e0; display: inline-flex;
-  align-items: center; gap: 5px;
-}
-.preview-footer button:hover { background: #ccc; }
+/* Preview panel */
+.preview-panel{padding:20px;height:100%;display:flex;flex-direction:column;}
+.preview-title{font-weight:600;font-size:15px;margin-bottom:10px;}
+.preview-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+#previewFrame{flex:1;border:1px solid var(--input-border);border-radius:8px;width:100%;background:white;}
 
-/* ── Alert inline ─────────────────────────────── */
-.result-alert {
-  padding: 8px 12px; border-radius: 4px; font-size: 12px; margin-top: 6px; display: none;
-}
-.result-alert.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; display: block; }
-.result-alert.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; display: block; }
+/* Bulk */
+.bulk-outer{margin:0 30px;}
+.bulk-blk{padding:18px;margin-bottom:14px;}
+.bulk-blk h3{font-size:14px;font-weight:600;margin-bottom:12px;}
 
-/* ── Color coded selects ──────────────────────── */
-.color-black { color: #000 !important; }
-.color-red   { color: #ff0000 !important; }
-.color-blue  { color: #0000ff !important; }
+.bulk-panels{display:grid;grid-template-columns:1fr 370px 1.5fr;height:680px;border:1px solid var(--input-border);border-radius:var(--border-radius);overflow:hidden;background:var(--input-bg);box-shadow:var(--shadow);margin:0 30px 16px 30px;}
 
-/* ── Bulk upload ──────────────────────────────── */
-.upload-area {
-  border: 2px dashed #999; border-radius: 8px; padding: 28px; text-align: center;
-  cursor: pointer; background: #fafafa; transition: all .2s;
-}
-.upload-area:hover { border-color: var(--tab-active); background: #eef4fb; }
-.bulk-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
-.bulk-table th { background: #5a5a5a; color: #fff; padding: 6px 10px; text-align: left; font-size: 11px; }
-.bulk-table td { padding: 5px 10px; border-bottom: 1px solid #ddd; }
+.pat-panel{border-right:1px solid var(--input-border);display:flex;flex-direction:column;overflow:hidden;}
+.pat-panel-hdr{padding:12px 14px;font-weight:600;font-size:13px;border-bottom:1px solid var(--input-border);background:rgba(0,0,0,0.02);flex-shrink:0;}
+.pat-search{padding:8px 14px;border-bottom:1px solid var(--input-border);flex-shrink:0;}
+.pat-scroll{flex:1;overflow-y:auto;}
+.pat-scroll table{width:100%;border-collapse:collapse;}
+.pat-scroll th{background:rgba(0,0,0,0.03);font-weight:600;text-align:left;border-bottom:2px solid var(--input-border);padding:7px 10px;position:sticky;top:0;z-index:10;font-size:11px;}
+.pat-scroll td{padding:9px 10px;border-bottom:1px solid var(--input-border);font-size:12px;cursor:pointer;}
+.pat-scroll tr:hover td{background:rgba(59,130,246,0.05);}
+.pat-scroll tr.sel td{background:rgba(59,130,246,0.1);font-weight:500;}
+.pat-footer{padding:10px;border-top:1px solid var(--input-border);flex-shrink:0;}
 
-/* ── Compare tab ──────────────────────────────── */
-.compare-box {
-  border: 2px dashed #aaa; border-radius: 8px; padding: 20px; text-align: center;
-  cursor: pointer; background: #fafafa; flex: 1; min-height: 80px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-}
-.compare-box:hover { border-color: var(--tab-active); background: #eef4fb; }
-#compareResultFrame { width: 100%; min-height: 400px; border: 1px solid #ccc; border-radius: 4px; }
+.bulk-editor{padding:14px;height:100%;overflow-y:auto;border-right:1px solid var(--input-border);background:rgba(0,0,0,0.01);}
+.bulk-preview{padding:14px;height:100%;display:flex;flex-direction:column;overflow:hidden;}
 
-/* ── Draft modal ──────────────────────────────── */
-.modal-overlay {
-  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.4); z-index: 2000; align-items: center; justify-content: center;
-}
-.modal-overlay.show { display: flex; }
-.modal-box {
-  background: #fff; border-radius: 8px; width: 420px; max-height: 70vh;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.3); overflow: hidden;
-}
-.modal-box-header {
-  padding: 10px 16px; background: #5a5a5a; color: #fff; font-weight: 700;
-  font-size: 14px; display: flex; justify-content: space-between; align-items: center;
-}
-.modal-box-header .close-btn { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; }
-.modal-box-body { padding: 12px 16px; overflow-y: auto; max-height: 50vh; }
-.draft-item {
-  padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 5px;
-  cursor: pointer; font-size: 12px;
-}
-.draft-item:hover { background: #eef4fb; border-color: var(--tab-active); }
+/* Compare */
+.cmp-outer{margin:0 30px;}
+.cmp-info{padding:14px;margin-bottom:14px;font-size:13px;}
+.cmp-sel{display:grid;grid-template-columns:1fr 1fr auto;gap:16px;padding:18px;}
+.cmp-sel .pdf-box{display:flex;flex-direction:column;gap:6px;}
+.cmp-workspace{display:grid;grid-template-columns:1fr 1fr 300px;gap:18px;margin-bottom:20px;}
+.pdf-view{height:600px;width:100%;border:1px solid var(--input-border);background:var(--input-bg);border-radius:8px;}
+.diff-panel{padding:18px;display:flex;flex-direction:column;}
+.diff-box{border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);padding:14px;flex:1;overflow:auto;margin-bottom:12px;font-size:12px;line-height:1.7;min-height:300px;}
+.cmp-nav{display:flex;align-items:center;gap:12px;padding:10px 18px;border-radius:8px;margin-bottom:14px;}
 
-/* ── Toast ────────────────────────────────────── */
-.toast-popup {
-  position: fixed; bottom: 16px; right: 16px; padding: 10px 18px;
-  border-radius: 6px; font-size: 13px; font-weight: 600; color: #fff;
-  z-index: 3000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-.toast-popup.show { display: block; animation: fadeInUp .3s; }
-.toast-popup.success { background: #28a745; }
-.toast-popup.error { background: #dc3545; }
-.toast-popup.info { background: #4a86c8; }
+/* Guide */
+.guide-outer{margin:0 30px;padding:20px;height:calc(100vh - 190px);overflow-y:auto;}
+.guide-hdr{background:linear-gradient(135deg,var(--primary),#8b5cf6);color:white;padding:22px;border-radius:10px;text-align:center;margin-bottom:18px;}
+.guide-hdr h1{font-size:22px;font-weight:700;margin-bottom:4px;}
+.guide-hdr p{font-size:13px;opacity:0.9;}
+.guide-card{padding:18px;margin-bottom:14px;border-left:4px solid var(--primary);}
+.guide-card h3{margin:0 0 12px 0;color:var(--primary);font-size:14px;}
+.guide-card ul{padding-left:18px;line-height:2;font-size:13px;}
+.guide-tip{background:rgba(59,130,246,0.09);border-left:4px solid var(--primary);padding:14px;margin-top:14px;border-radius:0 8px 8px 0;font-size:13px;}
 
-@keyframes fadeInUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+/* Radio */
+.radio-group{display:inline-flex;align-items:center;gap:14px;}
+.radio-label{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;}
+input[type="radio"]{width:15px;height:15px;accent-color:var(--primary);}
 
-@media (max-width: 900px) {
-  .main-container { flex-direction: column; }
-  .right-panel { width: 100%; min-width: 0; height: 350px; }
-  .chr-grid { grid-template-columns: repeat(4, 1fr); }
-  .form-row label { width: 130px; min-width: 130px; }
-}
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:9000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:white;border-radius:12px;padding:26px;width:460px;max-height:70vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,0.2);}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.modal-hdr h3{margin:0;font-size:15px;color:var(--primary);}
+.modal-close{cursor:pointer;font-size:20px;color:var(--text-muted);background:none;border:none;padding:0;line-height:1;}
+
+/* Scrollbars */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--input-border);border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted);}
+
+/* Toast */
+#toast-container{position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;gap:8px;z-index:9999;}
+.toast{background:var(--panel-bg);backdrop-filter:blur(12px);border-left:4px solid var(--success);color:var(--text-main);padding:12px 18px;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.1);font-weight:500;font-size:13px;animation:slideIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards;opacity:0;transform:translateX(110%);max-width:300px;}
+.toast.error{border-left-color:#ef4444;}
+@keyframes slideIn{to{transform:translateX(0);opacity:1;}}
+@keyframes slideOut{to{transform:translateX(110%);opacity:0;}}
+
+/* Editor buttons */
+.editor-btns{display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--input-border);}
+#statusBar{text-align:center;font-size:11px;color:var(--text-muted);padding:3px;font-style:italic;margin-top:6px;}
 </style>
 </head>
 <body>
 
-<!-- ── Header ──────────────────────────────────────── -->
-<div class="app-header">
-  <div class="app-title">
-    <a href="/home"><i class="fa fa-arrow-left"></i></a>
-    PGT-A Report Generator
-  </div>
-  <div class="template-sel">
-    <label>Select Template:</label>
-    <select id="templateSel"><option>PGT-A</option></select>
-  </div>
-</div>
+<!-- TOAST -->
+<div id="toast-container"></div>
 
-<!-- ── Tab bar ─────────────────────────────────────── -->
-<div class="tab-bar">
-  <div class="tab-btn active" onclick="switchTab('manual', this)">
-    <i class="fa-solid fa-pen-to-square"></i> Manual Entry
-  </div>
-  <div class="tab-btn" onclick="switchTab('bulk', this)">
-    <i class="fa-solid fa-table-cells"></i> Bulk Upload
-  </div>
-  <div class="tab-btn" onclick="switchTab('compare', this)">
-    <i class="fa-solid fa-code-compare"></i> Report Comparison
-  </div>
-  <div class="tab-btn" onclick="switchTab('guide', this)">
-    <i class="fa-solid fa-circle-info"></i> User Guide
+<!-- DRAFT MODAL -->
+<div class="modal-overlay" id="draftModal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3>Load Draft</h3>
+      <button class="modal-close" onclick="closeDraftModal()">&#215;</button>
+    </div>
+    <input type="text" id="draftSearchInput" placeholder="Search patient name..." oninput="filterDraftList()" style="margin-bottom:10px;">
+    <div id="draftListItems"></div>
+    <p id="draftEmpty" style="color:var(--text-muted);text-align:center;display:none;padding:16px 0;font-size:13px;">No drafts found.</p>
   </div>
 </div>
 
-<!-- ── Main container ──────────────────────────────── -->
-<div class="main-container">
+<!-- HEADER -->
+<div style="display:flex;align-items:center;gap:14px;margin:22px 30px 10px 30px;flex-wrap:wrap;">
+  <a href="/home" style="display:inline-flex;align-items:center;gap:6px;padding:6px 13px;background:rgba(255,255,255,0.8);border-radius:8px;text-decoration:none;color:#1F497D;font-size:13px;font-weight:600;border:1.5px solid #ddd;backdrop-filter:blur(8px);transition:0.2s;" onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='rgba(255,255,255,0.8)'">
+    &#8592; Home
+  </a>
+  <div class="header">PGT-A Report Generator</div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+    <label style="font-size:12px;color:var(--text-muted);font-weight:500;">Template:</label>
+    <select id="templateSelector" style="width:auto;min-width:170px;height:32px;">
+      <option value="PGT-A">PGT-A</option>
+      <option value="PGT-M" disabled>PGT-M (Coming Soon)</option>
+      <option value="NIPT" disabled>NIPT (Coming Soon)</option>
+    </select>
+  </div>
+</div>
 
-  <!-- LEFT PANEL -->
-  <div class="left-panel">
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="openTab('manual',this)">&#128196; Manual Entry</button>
+  <button class="tab" onclick="openTab('bulk',this)">&#128196; Bulk Upload</button>
+  <button class="tab" onclick="openTab('compare',this)">&#128269; Report Comparison</button>
+  <button class="tab" onclick="openTab('guide',this)">&#8505; User Guide</button>
+</div>
 
-    <!-- ============ MANUAL ENTRY TAB ============ -->
-    <div class="tab-content" id="tab-manual">
-      <div class="form-scroll" id="manualScroll">
+<!-- ======================================================= MANUAL ENTRY ======================================================= -->
+<div id="manual" class="tab-content active">
+  <div class="manual-container">
 
-        <!-- Patient Information -->
-        <div class="section-header">Patient Information</div>
-        <div class="section-body">
-          <div class="form-row"><label>Patient Name:</label><input type="text" id="patientName" placeholder=""></div>
-          <div class="form-row"><label>Spouse Name:</label><input type="text" id="spouseName" value="w/o"></div>
-          <div class="form-row"><label>PIN:</label><input type="text" id="pin"></div>
-          <div class="form-row"><label>Age:</label><input type="text" id="age"></div>
-          <div class="form-row"><label>Sample Number:</label><input type="text" id="sampleNumber"></div>
-          <div class="form-row"><label>Referring Clinician:</label><input type="text" id="referringClinician"></div>
-          <div class="form-row"><label>Biopsy Date:</label><input type="text" id="biopsyDate" placeholder="DD-MM-YYYY"></div>
-          <div class="form-row"><label>Hospital/Clinic:</label><input type="text" id="hospitalClinic"></div>
-          <div class="form-row"><label>Sample Collection Date:</label><input type="text" id="sampleCollectionDate" placeholder="DD-MM-YYYY"></div>
-          <div class="form-row"><label>Specimen:</label><input type="text" id="specimen" value="DAY 5 TROPHECTODERM BIOPSY"></div>
-          <div class="form-row"><label>Sample Receipt Date:</label><input type="text" id="sampleReceiptDate" placeholder="DD-MM-YYYY"></div>
-          <div class="form-row"><label>Biopsy Performed By:</label><input type="text" id="biopsyPerformedBy"></div>
-          <div class="form-row"><label>Report Date:</label><input type="text" id="reportDate" placeholder="DD-MM-YYYY"></div>
-          <div class="form-row"><label>Indication:</label><textarea id="indication" rows="2"></textarea></div>
-        </div>
+    <!-- LEFT: Form Panel -->
+    <div class="form-panel glass-panel">
+      <div class="panel-title">Patient Information</div>
+      <div class="form-grid">
+        <label>Patient Name:</label>
+        <input type="text" id="patient_name" placeholder="Full name" oninput="schedulePreview()">
 
-        <!-- Page 1: Results Summary Table -->
-        <div class="section-header">Page 1 : Results Summary</div>
-        <div class="section-body">
-          <div class="embryo-header-bar">
-            <label>Number of Embryos:</label>
-            <input type="number" id="embryoCount" min="1" max="20" value="1">
-            <button onclick="rebuildAll()"><i class="fa-solid fa-rotate"></i> Update</button>
-            <button onclick="copyLastEmbryo()"><i class="fa-solid fa-copy"></i> Copy Last Embryo</button>
-          </div>
-          <table class="summary-table">
-            <thead>
-              <tr><th>S. No.</th><th>Embryo ID</th><th>Result (Summary)</th><th>MTcopy</th><th>Interpretation</th></tr>
-            </thead>
-            <tbody id="summaryTableBody"></tbody>
-          </table>
-          <div class="form-row" style="margin-top:8px;">
-            <label>Comment:</label>
-            <textarea id="resultsSummaryComment" rows="2" placeholder="Optional comment below results table on page 1"></textarea>
-          </div>
-        </div>
+        <label>Spouse Name:</label>
+        <input type="text" id="spouse_name" value="w/o" oninput="schedulePreview()">
 
-        <!-- Page 4+: Embryo Details -->
-        <div class="section-header">Page 4+ : Embryo Details</div>
-        <div class="section-body">
-          <div id="embryoForms"></div>
-        </div>
+        <label>PIN:</label>
+        <input type="text" id="pin" oninput="schedulePreview()">
 
-      </div><!-- /form-scroll -->
+        <label>Age:</label>
+        <input type="text" id="age" placeholder="e.g. 32" oninput="schedulePreview()">
 
-      <!-- Bottom action bar -->
-      <div class="bottom-bar">
-        <div class="action-btns">
-          <button onclick="saveDraft()"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
-          <button onclick="openDraftPicker()"><i class="fa-solid fa-folder-open"></i> Load Draft</button>
-          <button onclick="saveDraft()"><i class="fa-solid fa-database"></i> Save Data</button>
-          <button onclick="clearForm()"><i class="fa-solid fa-eraser"></i> Clear Form</button>
-        </div>
-        <div class="gen-section-title">Fast Report Generation</div>
-        <div class="gen-options">
-          <label>Branding:</label>
-          <select id="logoOption">
-            <option value="with_logo">With Logo</option>
-            <option value="without_logo">Without Logo</option>
-          </select>
-          <label>Grid lines:</label>
-          <select id="gridOption">
-            <option value="no_grid">No Grid</option>
-            <option value="with_grid">With Grid</option>
-          </select>
-          <button class="btn-generate" onclick="generateReport()">
-            <i class="fa-solid fa-play"></i> Generate Report(s)
-          </button>
-        </div>
-        <div id="manualResult" class="result-alert"></div>
-        <div class="gen-status" id="genStatus">No data loaded</div>
+        <label>Sample Number:</label>
+        <input type="text" id="sample_number" oninput="schedulePreview()">
+
+        <label>Referring Clinician:</label>
+        <input type="text" id="referring_clinician" oninput="schedulePreview()">
+
+        <label>Biopsy Date:</label>
+        <input type="text" id="biopsy_date" placeholder="DD-MM-YYYY" oninput="schedulePreview()">
+
+        <label>Hospital / Clinic:</label>
+        <input type="text" id="hospital_clinic" oninput="schedulePreview()">
+
+        <label>Sample Collection Date:</label>
+        <input type="text" id="sample_collection_date" placeholder="DD-MM-YYYY" oninput="schedulePreview()">
+
+        <label>Specimen:</label>
+        <input type="text" id="specimen" value="DAY 5 TROPHECTODERM BIOPSY" oninput="schedulePreview()">
+
+        <label>Sample Receipt Date:</label>
+        <input type="text" id="sample_receipt_date" placeholder="DD-MM-YYYY" oninput="schedulePreview()">
+
+        <label>Biopsy Performed By:</label>
+        <input type="text" id="biopsy_performed_by" oninput="schedulePreview()">
+
+        <label>Report Date:</label>
+        <input type="text" id="report_date" placeholder="DD-MM-YYYY" oninput="schedulePreview()">
+
+        <label style="align-self:start;margin-top:6px;">Indication:</label>
+        <textarea id="indication" rows="2" placeholder="Clinical indication..." oninput="schedulePreview()"></textarea>
       </div>
-    </div><!-- /tab-manual -->
 
-    <!-- ============ BULK UPLOAD TAB ============ -->
-    <div class="tab-content" id="tab-bulk" style="display:none;">
-      <div class="form-scroll">
-        <div class="section-header">Bulk Upload</div>
-        <div class="section-body">
-          <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;">
-            <label style="font-weight:600;">Logo:</label>
-            <select id="bulkLogoOption" style="padding:3px 6px;border:1px solid var(--border);border-radius:3px;font-size:12px;">
+      <!-- Page 1: Results Summary -->
+      <div class="section-hdr">Page 1 — Results Summary</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+        <label style="font-size:12px;font-weight:500;">Number of Embryos:</label>
+        <input type="number" id="embryoCount" min="1" max="20" value="1" style="width:65px;" onchange="updateEmbryoForms(this.value)">
+        <button onclick="copyLastEmbryo()" title="Duplicate last embryo" style="font-size:12px;padding:5px 10px;">&#128203; Copy Last Embryo</button>
+      </div>
+      <div style="overflow-x:auto;margin-bottom:10px;">
+        <table class="sum-table" id="summaryTable">
+          <thead>
+            <tr>
+              <th style="width:72px;">Embryo ID</th>
+              <th style="min-width:196px;">Result (Summary)</th>
+              <th style="min-width:160px;">Interpretation</th>
+              <th style="width:72px;">MTcopy</th>
+            </tr>
+          </thead>
+          <tbody id="summaryTableBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:12px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:4px;">Results Summary Comment (optional):</label>
+        <textarea id="results_summary_comment" rows="2" placeholder="Optional comment below table on page 1" oninput="schedulePreview()"></textarea>
+      </div>
+
+      <!-- Page 4+: Embryo Details -->
+      <div class="section-hdr">Page 4+ — Embryo Details</div>
+      <div id="embryoForms"></div>
+
+      <!-- Action Buttons -->
+      <div class="btns">
+        <button onclick="saveDraft()">&#128190; Save Draft</button>
+        <button onclick="openDraftModal()">&#128193; Load Draft</button>
+        <button onclick="saveData()">&#11015; Save Data</button>
+        <button onclick="clearForm()" style="color:#ef4444;border-color:#fca5a5;">&#128465; Clear Form</button>
+      </div>
+
+      <!-- Generation Bar -->
+      <div class="gen-bar">
+        <label>Branding:</label>
+        <select id="logoOption" onchange="schedulePreview()">
+          <option value="with_logo">With Logo</option>
+          <option value="without_logo">Without Logo</option>
+        </select>
+        <label>Grid Lines:</label>
+        <select id="gridOption" onchange="schedulePreview()">
+          <option value="no_grid">No Grid</option>
+          <option value="with_grid">With Grid Lines</option>
+        </select>
+        <button class="btn-primary" onclick="generateManualReport()" style="margin-left:auto;">&#9654; Generate Report</button>
+      </div>
+      <div id="statusBar"></div>
+    </div>
+
+    <!-- RIGHT: Preview Panel -->
+    <div class="preview-panel glass-panel">
+      <div class="preview-title">Live PDF Preview</div>
+      <div class="preview-toolbar">
+        <button onclick="refreshPreview()">&#8635; Refresh Preview</button>
+        <span id="previewStatus" style="font-size:11px;color:var(--text-muted);font-style:italic;"></span>
+      </div>
+      <iframe id="previewFrame" scrolling="yes"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= BULK UPLOAD ======================================================= -->
+<div id="bulk" class="tab-content">
+  <div class="bulk-outer">
+    <!-- Step 1 -->
+    <div class="bulk-blk glass-panel">
+      <h3>1. Load Excel File</h3>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label class="dropzone" for="bulkExcelFile" style="flex:1;min-width:240px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+          <span id="bulkFileName">Click to browse or drag Excel file (.xlsx)</span>
+          <input type="file" id="bulkExcelFile" accept=".xlsx,.xls" style="display:none;" onchange="uploadBulkExcel(this)">
+        </label>
+        <a href="/pgta-template" download style="text-decoration:none;">
+          <button type="button">&#11015; Download Template</button>
+        </a>
+      </div>
+    </div>
+
+    <!-- Step 2: Review header -->
+    <div class="bulk-blk glass-panel">
+      <h3>2. Review / Edit Patients</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;gap:8px;">
+          <button onclick="selectAllPats()">Select All</button>
+          <button onclick="deselectAllPats()">Deselect All</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="saveBulkDraft()">&#128190; Save Bulk Draft</button>
+          <button onclick="loadBulkDraft()">&#128193; Load Bulk Draft</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3-Panel -->
+  <div class="bulk-panels">
+    <!-- Panel 1: Patient List -->
+    <div class="pat-panel">
+      <div class="pat-panel-hdr">Patients</div>
+      <div class="pat-search">
+        <input type="text" id="patientSearch" placeholder="&#128269; Search patient name..." oninput="filterPats()" style="margin:0;height:30px;font-size:12px;">
+      </div>
+      <div class="pat-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:32px;"><input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)"></th>
+              <th style="width:36px;">#</th>
+              <th>Patient Name</th>
+              <th style="width:52px;">Emb.</th>
+            </tr>
+          </thead>
+          <tbody id="bulkPatBody"></tbody>
+        </table>
+      </div>
+      <div class="pat-footer">
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;align-items:center;gap:7px;">
+            <label style="font-size:11px;font-weight:500;white-space:nowrap;min-width:60px;">Branding:</label>
+            <select id="bulkLogoOption" style="flex:1;height:28px;font-size:12px;" onchange="updateBulkPreview()">
               <option value="with_logo">With Logo</option>
               <option value="without_logo">Without Logo</option>
             </select>
-            <button onclick="downloadTemplate()" style="padding:4px 12px;font-size:11px;border:1px solid #999;border-radius:4px;cursor:pointer;background:#e8e8e8;">
-              <i class="fa-solid fa-download"></i> Download Template
-            </button>
           </div>
-
-          <label class="upload-area d-block" onclick="document.getElementById('bulkFile').click()">
-            <input type="file" id="bulkFile" accept=".xlsx,.xls" style="display:none;" onchange="handleBulkUpload(event)">
-            <i class="fa-solid fa-file-excel fa-2x" style="color:#28a745;margin-bottom:6px;display:block;"></i>
-            <div style="font-weight:600;color:#555;">Click to upload Excel file</div>
-            <div style="font-size:11px;color:#999;margin-top:4px;">Supported: .xlsx, .xls</div>
-          </label>
-
-          <div id="bulkPreview" style="display:none;">
-            <div style="font-weight:700;font-size:12px;margin-top:12px;color:#444;">
-              Patients Found: <span id="bulkCount" style="background:#5a5a5a;color:#fff;padding:1px 8px;border-radius:10px;font-size:11px;">0</span>
-            </div>
-            <table class="bulk-table">
-              <thead><tr><th>#</th><th>Patient Name</th><th>Sample No</th><th>Embryos</th><th>Report Date</th></tr></thead>
-              <tbody id="bulkTableBody"></tbody>
-            </table>
-            <div style="margin-top:8px;">
-              <button class="btn-generate" onclick="generateBulk()" style="padding:5px 16px;font-size:12px;border:1px solid #3a70a8;border-radius:4px;cursor:pointer;background:#4a86c8;color:#fff;font-weight:600;">
-                <i class="fa-solid fa-play"></i> Generate All Reports
-              </button>
-            </div>
-            <div id="bulkResult" class="result-alert"></div>
+          <div style="display:flex;align-items:center;gap:7px;">
+            <label style="font-size:11px;font-weight:500;white-space:nowrap;min-width:60px;">Grid Lines:</label>
+            <select id="bulkGridOption" style="flex:1;height:28px;font-size:12px;" onchange="updateBulkPreview()">
+              <option value="no_grid">No Grid</option>
+              <option value="with_grid">With Grid Lines</option>
+            </select>
           </div>
         </div>
       </div>
-    </div><!-- /tab-bulk -->
-
-    <!-- ============ COMPARE TAB ============ -->
-    <div class="tab-content" id="tab-compare" style="display:none;">
-      <div class="form-scroll">
-        <div class="section-header">Report Comparison</div>
-        <div class="section-body">
-          <p style="font-size:12px;color:#666;margin-bottom:12px;">
-            Upload two PGTA PDF reports to compare them. Differences in patient info, embryo data, and report content will be highlighted.
-          </p>
-          <div style="display:flex;gap:12px;margin-bottom:12px;">
-            <div class="compare-box" onclick="document.getElementById('compareFile1').click()">
-              <input type="file" id="compareFile1" accept=".pdf" style="display:none;" onchange="updateCompareLabel(1,event)">
-              <i class="fa-solid fa-file-pdf" style="font-size:24px;color:#5a5a5a;margin-bottom:4px;"></i>
-              <div style="font-weight:600;font-size:12px;color:#555;">Left PDF (Manual)</div>
-              <div id="compareLabel1" style="font-size:10px;color:var(--brand-green);margin-top:3px;">No file selected</div>
-            </div>
-            <div class="compare-box" onclick="document.getElementById('compareFile2').click()">
-              <input type="file" id="compareFile2" accept=".pdf" style="display:none;" onchange="updateCompareLabel(2,event)">
-              <i class="fa-solid fa-file-pdf" style="font-size:24px;color:var(--brand-orange);margin-bottom:4px;"></i>
-              <div style="font-weight:600;font-size:12px;color:#555;">Right PDF (Automated)</div>
-              <div id="compareLabel2" style="font-size:10px;color:var(--brand-green);margin-top:3px;">No file selected</div>
-            </div>
-          </div>
-          <button onclick="comparePDFs()" style="padding:5px 16px;font-size:12px;border:1px solid #3a70a8;border-radius:4px;cursor:pointer;background:#4a86c8;color:#fff;font-weight:600;">
-            <i class="fa-solid fa-magnifying-glass-chart"></i> Run Comparison
-          </button>
-          <div id="compareResultContainer" style="display:none;margin-top:12px;">
-            <iframe id="compareResultFrame"></iframe>
-          </div>
-        </div>
-      </div>
-    </div><!-- /tab-compare -->
-
-    <!-- ============ USER GUIDE TAB ============ -->
-    <div class="tab-content" id="tab-guide" style="display:none;">
-      <div class="form-scroll">
-        <div class="section-header">User Guide</div>
-        <div class="section-body" style="font-size:12px;line-height:1.7;color:#444;">
-          <h4 style="font-size:14px;color:#333;">Overview</h4>
-          <p>The PGT-A Report Generator creates professional Preimplantation Genetic Testing for Aneuploidies (PGT-A) reports in PDF format.</p>
-
-          <h4 style="font-size:14px;color:#333;margin-top:14px;">Manual Entry</h4>
-          <ol>
-            <li>Fill in <b>Patient Information</b> (Patient Name and Sample Number are required).</li>
-            <li>Set the <b>Number of Embryos</b> and click <b>Update</b>.</li>
-            <li>For each embryo, fill in the Summary, Interpretation, and Chromosome Statuses (1-22).</li>
-            <li>Optionally upload a <b>CNV Chart Image</b> (PNG/JPG) for each embryo.</li>
-            <li>Use <b>Copy Last Embryo</b> to duplicate the previous embryo's data.</li>
-            <li>Click <b>Preview</b> to see the report, or <b>Generate Report(s)</b> to produce the final PDF.</li>
-          </ol>
-
-          <h4 style="font-size:14px;color:#333;margin-top:14px;">Bulk Upload</h4>
-          <ol>
-            <li>Download the <b>Excel Template</b>.</li>
-            <li>Fill in one row per embryo. Patients are grouped by <b>Sample_Number</b>.</li>
-            <li>Upload the completed file and click <b>Generate All Reports</b>.</li>
-          </ol>
-
-          <h4 style="font-size:14px;color:#333;margin-top:14px;">Report Comparison</h4>
-          <p>Upload two PDF reports (manual and automated) to compare them. Differences in text, patient data, and embryo results are highlighted.</p>
-
-          <h4 style="font-size:14px;color:#333;margin-top:14px;">Chromosome Status Codes</h4>
-          <table style="border-collapse:collapse;font-size:11px;margin-top:4px;">
-            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">N</td><td style="padding:2px 10px;border:1px solid #ddd;">Normal</td></tr>
-            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">G / L</td><td style="padding:2px 10px;border:1px solid #ddd;">Gain / Loss</td></tr>
-            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">SG / SL</td><td style="padding:2px 10px;border:1px solid #ddd;">Segmental Gain / Loss</td></tr>
-            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">M</td><td style="padding:2px 10px;border:1px solid #ddd;">Mosaic</td></tr>
-            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">MG / ML</td><td style="padding:2px 10px;border:1px solid #ddd;">Mosaic Gain / Loss</td></tr>
-            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">SMG / SML</td><td style="padding:2px 10px;border:1px solid #ddd;">Segmental Mosaic Gain / Loss</td></tr>
-          </table>
-
-          <h4 style="font-size:14px;color:#333;margin-top:14px;">Drafts</h4>
-          <p>Use <b>Save Draft</b> to save your work locally. Use <b>Load Draft</b> to restore a previous session.</p>
-        </div>
-      </div>
-    </div><!-- /tab-guide -->
-
-  </div><!-- /left-panel -->
-
-  <!-- RIGHT PANEL: Preview -->
-  <div class="right-panel">
-    <div class="preview-header">Report Preview</div>
-    <div class="preview-subheader">Report Preview (PDF)</div>
-    <div class="preview-body">
-      <iframe id="previewFrame" src="about:blank"></iframe>
     </div>
-    <div class="preview-footer">
-      <button onclick="previewReport()"><i class="fa-solid fa-rotate"></i> Refresh Preview</button>
+
+    <!-- Panel 2: Editor -->
+    <div class="bulk-editor" id="bulkEditorPanel">
+      <div class="panel-title" style="margin-bottom:10px;">Patient Editor</div>
+      <div id="bulkEditorContent" style="color:var(--text-muted);text-align:center;padding:40px 0;font-style:italic;font-size:13px;">Select a patient from the list to edit</div>
+    </div>
+
+    <!-- Panel 3: Preview -->
+    <div class="bulk-preview">
+      <div class="panel-title" style="margin-bottom:10px;">Live Preview</div>
+      <iframe id="bulkPreviewFrame" style="flex:1;border:1px solid var(--input-border);border-radius:8px;width:100%;background:white;" scrolling="yes"></iframe>
     </div>
   </div>
 
-</div><!-- /main-container -->
-
-<!-- ── Draft Modal ───────────────────────────────── -->
-<div class="modal-overlay" id="draftModal">
-  <div class="modal-box">
-    <div class="modal-box-header">
-      <span><i class="fa-solid fa-folder-open"></i> Load Draft</span>
-      <button class="close-btn" onclick="closeDraftPicker()">&times;</button>
+  <!-- Step 3: Generate -->
+  <div class="bulk-outer">
+    <div class="bulk-blk glass-panel">
+      <h3>3. Generate Reports</h3>
+      <div class="btns">
+        <button class="btn-primary" onclick="generateSelectedBulk()">&#9654; Generate Selected</button>
+        <button class="btn-success" onclick="generateAllBulk()">&#10003; Generate All</button>
+      </div>
+      <div id="bulkDownloadLinks" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+      <div id="bulkProgress" style="display:none;margin-top:8px;font-size:12px;color:var(--text-muted);"></div>
     </div>
-    <div class="modal-box-body" id="draftList"></div>
   </div>
 </div>
 
-<!-- ── Toast ─────────────────────────────────────── -->
-<div class="toast-popup" id="toastPopup"></div>
+<!-- ======================================================= REPORT COMPARISON ======================================================= -->
+<div id="compare" class="tab-content">
+  <div class="cmp-outer">
+    <div class="cmp-info glass-panel">
+      Compare two PGT-A PDFs — auto-generated vs reference. Upload both PDFs and click <b>Compare PDFs</b> for a side-by-side view and automated text diff.
+    </div>
+    <div class="cmp-sel glass-panel">
+      <div class="pdf-box">
+        <label style="font-size:12px;font-weight:500;color:var(--text-muted);">Auto-Generated PDF (Left)</label>
+        <label class="dropzone" for="comparePdf1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5z"/></svg>
+          <span id="pdf1Name">Click to select auto-generated PDF</span>
+          <input type="file" id="comparePdf1" accept=".pdf" style="display:none;" onchange="document.getElementById('pdf1Name').textContent=this.files[0]?.name||'Click to select auto-generated PDF'">
+        </label>
+      </div>
+      <div class="pdf-box">
+        <label style="font-size:12px;font-weight:500;color:var(--text-muted);">Reference PDF (Right)</label>
+        <label class="dropzone" for="comparePdf2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5z"/></svg>
+          <span id="pdf2Name">Click to select reference PDF</span>
+          <input type="file" id="comparePdf2" accept=".pdf" style="display:none;" onchange="document.getElementById('pdf2Name').textContent=this.files[0]?.name||'Click to select reference PDF'">
+        </label>
+      </div>
+      <div style="display:flex;align-items:flex-end;">
+        <button class="btn-primary" onclick="comparePDFs()" style="width:100%;justify-content:center;">&#128269; Compare PDFs</button>
+      </div>
+    </div>
+    <div class="cmp-nav glass-panel">
+      <button onclick="navigatePage(-1)">&#8592; Prev Page</button>
+      <span id="pageIndicator" style="font-size:13px;color:var(--text-muted);">Page 1 / —</span>
+      <button onclick="navigatePage(1)">Next Page &#8594;</button>
+    </div>
+    <div class="cmp-workspace">
+      <iframe id="leftPDF" class="pdf-view"></iframe>
+      <iframe id="rightPDF" class="pdf-view"></iframe>
+      <div class="diff-panel glass-panel">
+        <h4 style="margin:0 0 10px 0;font-size:13px;font-weight:600;">Auto Diff Summary</h4>
+        <div class="diff-box" id="diffBox">Click Compare PDFs to run the automatic analysis.</div>
+        <button onclick="exportDiff()">&#11015; Export Diff as HTML</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= USER GUIDE ======================================================= -->
+<div id="guide" class="tab-content">
+  <div class="guide-outer glass-panel">
+    <div class="guide-hdr">
+      <h1>PGT-A Report Generator — User Guide</h1>
+      <p>Pre-Implantation Genetic Testing for Aneuploidies</p>
+    </div>
+
+    <div class="guide-card glass-panel">
+      <h3>1. Manual Report Entry</h3>
+      <ul>
+        <li><b>Patient Information:</b> Fill all 14 patient fields. Use DD-MM-YYYY for all dates.</li>
+        <li><b>Page 1 — Results Summary:</b> Set the number of embryos, then for each row enter Embryo ID, Result Summary (color-coded), Interpretation (color-coded), and MTcopy.</li>
+        <li><b>Page 4+ — Embryo Details:</b> Per embryo: Result Description, Autosomes, Sex Chromosomes, CNV chart upload, Inconclusive Comment, and all 22 chromosome statuses with mosaic %.</li>
+        <li><b>Color Coding:</b> <span style="color:#dc2626;font-weight:600;">Red</span> = Abnormal/Aneuploid/Multiple. <span style="color:#2563eb;font-weight:600;">Blue</span> = Mosaic. <b>Black</b> = Normal/Euploid.</li>
+        <li><b>Copy Last Embryo:</b> Increments count and copies all data from the last embryo.</li>
+        <li><b>Live Preview:</b> Auto-updates 1.2 seconds after you stop typing. Click Refresh Preview to force update.</li>
+        <li><b>Save Draft / Load Draft:</b> Saves work as a named cloud draft; reload from any browser session.</li>
+        <li><b>Generate Report:</b> Creates a downloadable PDF uploaded to Supabase storage.</li>
+      </ul>
+    </div>
+
+    <div class="guide-card glass-panel">
+      <h3>2. Bulk Upload & Batch Processing</h3>
+      <ul>
+        <li><b>Download Template:</b> Use the button to get the correct Excel template with all required columns.</li>
+        <li><b>Import:</b> Upload your Excel (.xlsx). Rows with the same Sample_Number are grouped as one patient's embryos.</li>
+        <li><b>Review:</b> Click a patient in the list to load their data into the middle editor panel.</li>
+        <li><b>Edit:</b> Modify patient info and embryo data; live preview updates automatically.</li>
+        <li><b>CNV Charts:</b> Upload CNV images per embryo directly in the editor.</li>
+        <li><b>Generate Selected:</b> Generates reports for checked patients. <b>Generate All:</b> Processes all patients.</li>
+        <li><b>Save Bulk Draft:</b> Preserves all edited bulk data for later continuation.</li>
+      </ul>
+    </div>
+
+    <div class="guide-card glass-panel">
+      <h3>3. Report Comparison</h3>
+      <ul>
+        <li>Upload two PDFs — auto-generated (left) and reference (right).</li>
+        <li>Click <b>Compare PDFs</b> to render both side by side.</li>
+        <li>Use <b>Prev / Next Page</b> to navigate through report pages.</li>
+        <li>The <b>Auto Diff Summary</b> shows text differences extracted from both PDFs.</li>
+        <li>Click <b>Export Diff as HTML</b> to save the diff report for documentation.</li>
+      </ul>
+    </div>
+
+    <div class="guide-card glass-panel">
+      <h3>4. Color Coding System</h3>
+      <ul>
+        <li><b style="color:#dc2626;">Red:</b> CNV status G/L/SG/SL. Aneuploid, Chaotic embryo, Multiple chromosomal abnormalities result.</li>
+        <li><b style="color:#2563eb;">Blue:</b> CNV status M/MG/ML/SMG/SML and combined states. Low/High/Complex level mosaic, Mosaic chromosome complement.</li>
+        <li><b>Black:</b> CNV status N (Normal). Normal chromosome complement, Euploid, Inconclusive, Low DNA.</li>
+      </ul>
+    </div>
+
+    <div class="guide-card glass-panel">
+      <h3>5. Excel File Format (Bulk Upload)</h3>
+      <ul>
+        <li><b>Patient columns:</b> Patient_Name, Spouse_Name, PIN, Age, Sample_Number, Referring_Clinician, Biopsy_Date, Hospital_Clinic, Sample_Collection_Date, Specimen, Sample_Receipt_Date, Biopsy_Performed_By, Report_Date, Indication</li>
+        <li><b>Per-embryo columns:</b> Embryo_ID, Result_Summary, Result_Description, Autosomes, Sex_Chromosomes, Interpretation, MTcopy</li>
+        <li>Rows with the same <b>Sample_Number</b> are grouped as one patient's multiple embryos.</li>
+        <li>Use the <b>Download Template</b> button for the correct format with all column headers pre-filled.</li>
+      </ul>
+    </div>
+
+    <div class="guide-card glass-panel">
+      <h3>6. Chromosome Status Codes</h3>
+      <ul>
+        <li><b>N</b> — Normal (black)</li>
+        <li><b>G / L</b> — Gain / Loss, non-mosaic (red)</li>
+        <li><b>SG / SL</b> — Single chromosome gain/loss (red)</li>
+        <li><b>M</b> — Mosaic (blue)</li>
+        <li><b>MG / ML</b> — Mosaic gain/loss (blue)</li>
+        <li><b>SMG / SML</b> — Single mosaic gain/loss (blue)</li>
+        <li><b>SL/SG, SG/SL, SML/SMG, SMG/SML</b> — Combined mosaic states (blue)</li>
+      </ul>
+    </div>
+
+    <div class="guide-card glass-panel">
+      <h3>7. Productivity Tips</h3>
+      <ul>
+        <li><b>Copy Last Embryo:</b> Use this to quickly duplicate embryo data when multiple embryos have similar results.</li>
+        <li><b>Collapse/Expand:</b> Click any embryo header to collapse its details — useful when managing many embryos.</li>
+        <li><b>Drafts:</b> Drafts are stored in the cloud — load from any device or browser.</li>
+        <li><b>Results Summary Comment:</b> Optional free-text that appears below the page 1 results table.</li>
+        <li><b>Inconclusive Comment:</b> Appears beneath the CNV chart on page 4+ for inconclusive results.</li>
+      </ul>
+    </div>
+
+    <div class="guide-card glass-panel">
+      <h3>8. Quick Start</h3>
+      <ul>
+        <li><b>Manual:</b> Fill patient details → Set embryo count → Fill Page 1 summary rows → Fill Page 4+ embryo details → Generate Report</li>
+        <li><b>Bulk:</b> Download template → Fill data → Upload Excel → Select/edit patients → Generate Selected or Generate All</li>
+        <li><b>Comparison:</b> Upload two PDFs → Click Compare PDFs → Navigate pages → Export diff if needed</li>
+        <li>Use <b>Save Draft</b> at any point to preserve your work in progress.</li>
+      </ul>
+    </div>
+
+    <div class="guide-tip">
+      <b>Pro Tip:</b> The live preview updates automatically while you type — no need to click Refresh every time. Use the search box in Bulk Upload to quickly find patients by name in large batches.
+    </div>
+
+    <p style="text-align:center;color:var(--text-muted);margin-top:22px;font-size:11px;">
+      PGT-A Clinical Reporting Suite v2.0 &nbsp;|&nbsp; © 2026 Andrology Center &nbsp;|&nbsp; TERA Report App
+    </p>
+  </div>
+</div>
 
 <script>
-// ─── API URL ─────────────────────────────────────────────────────────────────
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
 const API = (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost")
     ? "http://127.0.0.1:8000"
     : "https://tera-report-automation.onrender.com";
 
-// ─── Supabase Auth Check ─────────────────────────────────────────────────────
-const SUPABASE_URL  = "https://wriaonorqjhmofwrhqlp.supabase.co"
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc"
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
-sb.auth.getSession().then(({ data }) => {
-    if (!data.session) window.location.href = "/"
-})
+let previewTimer = null;
+let bulkPreviewTimer = null;
+let embryoCount = 1;
+let embryoCnvFiles = {};    // idx → uploaded filename
+let bulkPatients = [];      // [{patient_info, embryos, checked}]
+let selectedBulkIdx = null;
 
-// ─── Tab switching ───────────────────────────────────────────────────────────
-function switchTab(name, btn) {
-    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none')
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
-    document.getElementById('tab-' + name).style.display = 'flex'
-    btn.classList.add('active')
+const CHR_STATUSES = ["N","G","L","SG","SL","M","MG","ML","SMG","SML","SL/SG","SG/SL","SML/SMG","SMG/SML"];
+
+const RESULT_SUMMARY_OPTS = [
+    {text:"Normal chromosome complement", color:"black"},
+    {text:"Multiple chromosomal abnormalities", color:"red"},
+    {text:"Mosaic chromosome complement", color:"blue"},
+    {text:"Inconclusive", color:"black"},
+    {text:"Low DNA concentration", color:"black"},
+];
+
+const INTERP_OPTS = [
+    {text:"Euploid", color:"black"},
+    {text:"Aneuploid", color:"red"},
+    {text:"NA", color:"black"},
+    {text:"Chaotic embryo", color:"red"},
+    {text:"Low level mosaic", color:"blue"},
+    {text:"High level mosaic", color:"blue"},
+    {text:"Complex mosaic", color:"blue"},
+    {text:"Inconclusive", color:"black"},
+    {text:"Low DNA", color:"black"},
+];
+
+const RESULT_DESC_OPTS = [
+    {text:"The embryo contains normal chromosome complement", color:"black"},
+    {text:"The embryo contains abnormal chromosome complement", color:"black"},
+    {text:"The embryo contains mosaic chromosome complement", color:"black"},
+    {text:"Inconclusive", color:"black"},
+];
+
+const SEX_CHR_OPTS = [
+    {text:"Normal", color:"black"},
+    {text:"Abnormal", color:"red"},
+    {text:"Mosaic", color:"blue"},
+];
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function showToast(msg, type="success") {
+    const c = document.getElementById("toast-container");
+    const t = document.createElement("div");
+    t.className = "toast" + (type==="error" ? " error" : "");
+    t.textContent = msg;
+    c.appendChild(t);
+    void t.offsetWidth;
+    setTimeout(() => {
+        t.style.animation = "slideOut 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards";
+        setTimeout(() => t.remove(), 300);
+    }, 3000);
 }
 
-// ─── Dropdown options with color coding ──────────────────────────────────────
-const CHR_STATUSES = ["N","G","L","SG","SL","M","MG","ML","SMG","SML","SL/SG","SG/SL","SML/SMG","SMG/SML"]
-
-const RESULT_SUMMARY_OPTIONS = [
-    { v: "Normal chromosome complement",       c: "black" },
-    { v: "Multiple chromosomal abnormalities",  c: "red"   },
-    { v: "Mosaic chromosome complement",        c: "blue"  },
-    { v: "Inconclusive",                        c: "black" },
-    { v: "Low DNA concentration",               c: "black" }
-]
-const INTERPRETATION_OPTIONS = [
-    { v: "NA",                    c: "black" },
-    { v: "Euploid",               c: "black" },
-    { v: "Aneuploid",             c: "red"   },
-    { v: "Chaotic embryo",        c: "red"   },
-    { v: "Low level mosaic",      c: "blue"  },
-    { v: "High level mosaic",     c: "blue"  },
-    { v: "Complex mosaic",        c: "blue"  },
-    { v: "Inconclusive",          c: "black" },
-    { v: "Low DNA concentration", c: "black" }
-]
-const RESULT_DESC_OPTIONS = [
-    "The embryo contains normal chromosome complement",
-    "The embryo contains abnormal chromosome complement",
-    "The embryo contains mosaic chromosome complement",
-    "Inconclusive",
-    "Low DNA concentration"
-]
-const SEX_CHR_OPTIONS = [
-    { v: "Normal",   c: "black" },
-    { v: "Abnormal", c: "red"   },
-    { v: "Mosaic",   c: "blue"  }
-]
-
-function buildColorOpts(opts, sel) {
-    return opts.map(o => `<option value="${o.v}" class="color-${o.c}"${sel===o.v?' selected':''}>${o.v}</option>`).join('')
-}
-function applySelColor(el) {
-    const opt = el.options[el.selectedIndex]
-    el.className = el.className.replace(/color-\w+/g, '')
-    if (opt) { const c = Array.from(opt.classList).find(x=>x.startsWith('color-')); if(c) el.classList.add(c) }
+function openTab(id, el) {
+    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    el.classList.add("active");
 }
 
-// ─── CNV Image Upload ────────────────────────────────────────────────────────
-const cnvImagePaths = {}
-async function uploadCNV(num, input) {
-    const file = input.files[0]; if (!file) return
-    const form = new FormData(); form.append('file', file)
+function makeColorSelect(opts, selectedVal, onChange) {
+    const sel = document.createElement("select");
+    sel.style.cssText = "width:100%;font-family:inherit;";
+    for (const opt of opts) {
+        const o = document.createElement("option");
+        o.value = opt.text || opt;
+        o.textContent = opt.text || opt;
+        if (opt.color) o.style.color = opt.color;
+        sel.appendChild(o);
+    }
+    if (selectedVal) sel.value = selectedVal;
+    applySelColor(sel, opts);
+    sel.addEventListener("change", () => { applySelColor(sel, opts); if (onChange) onChange(); });
+    return sel;
+}
+
+function applySelColor(sel, opts) {
+    const found = opts.find(o => (o.text||o) === sel.value);
+    sel.style.color = found ? (found.color||"black") : "black";
+}
+
+function todayStr() {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+}
+
+/* ============================================================
+   EMBRYO FORMS — MANUAL ENTRY
+   ============================================================ */
+function updateEmbryoForms(count) {
+    count = Math.max(1, Math.min(20, parseInt(count) || 1));
+    embryoCount = count;
+    document.getElementById("embryoCount").value = count;
+    updateSummaryTable(count);
+    reRenderEmbryoForms(count);
+    schedulePreview();
+}
+
+function updateSummaryTable(count) {
+    const tbody = document.getElementById("summaryTableBody");
+    // Add rows
+    for (let i = tbody.rows.length; i < count; i++) {
+        const tr = tbody.insertRow();
+
+        // Embryo ID
+        const c0 = tr.insertCell();
+        const eid = document.createElement("input"); eid.type="text"; eid.value=`PS${i+1}`;
+        eid.style.cssText="width:100%;height:28px;font-size:11px;padding:0 5px;";
+        eid.oninput = schedulePreview;
+        c0.appendChild(eid);
+
+        // Result Summary
+        const c1 = tr.insertCell();
+        const rs = makeColorSelect(RESULT_SUMMARY_OPTS, "Normal chromosome complement", schedulePreview);
+        rs.style.height="28px"; rs.style.fontSize="11px";
+        c1.appendChild(rs);
+
+        // Interpretation
+        const c2 = tr.insertCell();
+        const interp = makeColorSelect(INTERP_OPTS, "Euploid", schedulePreview);
+        interp.style.height="28px"; interp.style.fontSize="11px";
+        c2.appendChild(interp);
+
+        // MTcopy
+        const c3 = tr.insertCell();
+        const mt = document.createElement("input"); mt.type="text"; mt.value="NA";
+        mt.style.cssText="width:100%;height:28px;font-size:11px;padding:0 5px;";
+        mt.oninput = schedulePreview;
+        c3.appendChild(mt);
+    }
+    // Remove extra rows
+    while (tbody.rows.length > count) tbody.deleteRow(tbody.rows.length - 1);
+}
+
+function reRenderEmbryoForms(count) {
+    const prev = collectEmbryoDetails();
+    const container = document.getElementById("embryoForms");
+    container.innerHTML = "";
+    embryoCnvFiles = {};
+    for (let i = 0; i < count; i++) {
+        container.appendChild(createEmbryoForm(i, prev[i] || {}));
+    }
+}
+
+function createEmbryoForm(idx, prev={}) {
+    const wrap = document.createElement("div");
+    wrap.className = "emb-form";
+
+    const hdr = document.createElement("div");
+    hdr.className = "emb-form-hdr";
+    hdr.innerHTML = `<span>Embryo ${idx+1} — Page 4+ Details</span><span class="collapse-icon">&#9660;</span>`;
+    hdr.onclick = () => {
+        wrap.querySelector(".emb-form-body").classList.toggle("hidden");
+        wrap.classList.toggle("collapsed");
+    };
+
+    const body = document.createElement("div");
+    body.className = "emb-form-body";
+
+    const grid = document.createElement("div");
+    grid.className = "form-grid";
+    grid.style.marginBottom = "12px";
+
+    // Embryo ID detail
+    appendField(grid, "Embryo ID (Page 4):", "text", prev.embryo_id_detail||`PS${idx+1}`, "embryo_id_detail", idx);
+    // Result Description
+    appendSelectField(grid, "Result Description:", RESULT_DESC_OPTS, prev.result_description||RESULT_DESC_OPTS[0].text, "result_description", idx);
+    // Autosomes
+    appendField(grid, "Autosomes:", "text", prev.autosomes||"", "autosomes", idx, "e.g. Normal or del(3p)");
+    // Sex Chromosomes
+    appendSelectField(grid, "Sex Chromosomes:", SEX_CHR_OPTS, prev.sex_chromosomes||"Normal", "sex_chromosomes", idx);
+
+    // CNV Chart Upload
+    const cnvLbl = document.createElement("label");
+    cnvLbl.textContent = "CNV Chart:";
+    const cnvRow = document.createElement("div");
+    cnvRow.className = "cnv-row";
+    const cnvBtn = document.createElement("button");
+    cnvBtn.type = "button"; cnvBtn.innerHTML = "&#128247; Select Chart"; cnvBtn.style.fontSize="11px"; cnvBtn.style.padding="4px 10px";
+    const cnvFileInp = document.createElement("input");
+    cnvFileInp.type="file"; cnvFileInp.accept=".png,.jpg,.jpeg"; cnvFileInp.style.display="none";
+    const cnvName = document.createElement("span");
+    cnvName.className = "cnv-name";
+    cnvName.textContent = prev.cnv_image_filename ? "Previously uploaded" : "No chart selected";
+    if (prev.cnv_image_filename) embryoCnvFiles[idx] = prev.cnv_image_filename;
+    cnvBtn.onclick = () => cnvFileInp.click();
+    cnvFileInp.onchange = async (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        cnvName.textContent = "Uploading...";
+        const fd = new FormData(); fd.append("file", file);
+        try {
+            const r = await fetch(API+"/pgta/upload-cnv", {method:"POST", body:fd});
+            const d = await r.json();
+            if (d.filename) { embryoCnvFiles[idx]=d.filename; cnvName.textContent=file.name; showToast("CNV chart uploaded"); schedulePreview(); }
+            else { cnvName.textContent="Upload failed"; showToast(d.error||"Upload failed","error"); }
+        } catch(e) { cnvName.textContent="Error"; showToast("Upload error","error"); }
+    };
+    cnvRow.appendChild(cnvBtn); cnvRow.appendChild(cnvFileInp); cnvRow.appendChild(cnvName);
+    grid.appendChild(cnvLbl); grid.appendChild(cnvRow);
+
+    // Inconclusive Comment
+    const icLbl = document.createElement("label");
+    icLbl.textContent = "Inconclusive Comment:"; icLbl.style.alignSelf="start"; icLbl.style.marginTop="6px";
+    const icTa = document.createElement("textarea");
+    icTa.rows=2; icTa.value=prev.inconclusive_comment||"";
+    icTa.placeholder="Comment for inconclusive result (under CNV chart)";
+    icTa.dataset.field="inconclusive_comment"; icTa.dataset.embryoIdx=idx;
+    icTa.oninput = schedulePreview;
+    grid.appendChild(icLbl); grid.appendChild(icTa);
+
+    body.appendChild(grid);
+
+    // Chromosome section
+    const chrSec = document.createElement("div");
+    const chrHdrDiv = document.createElement("div");
+    chrHdrDiv.className="section-hdr"; chrHdrDiv.style.marginTop="0"; chrHdrDiv.style.marginBottom="6px";
+    chrHdrDiv.textContent = "Chromosome Details (Chr 1–22)";
+    chrSec.appendChild(chrHdrDiv);
+
+    const colHdr = document.createElement("div");
+    colHdr.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;margin-bottom:3px;";
+    for (let h=0;h<2;h++) {
+        const d = document.createElement("div");
+        d.style.cssText="display:flex;gap:5px;font-size:10px;font-weight:700;color:var(--text-muted);padding-bottom:3px;border-bottom:1px solid var(--input-border);";
+        d.innerHTML=`<span style="width:24px;">#</span><span style="flex:1;">Status</span><span style="width:52px;">Mosaic%</span>`;
+        colHdr.appendChild(d);
+    }
+    chrSec.appendChild(colHdr);
+
+    const chrGrid = document.createElement("div");
+    chrGrid.className = "chr-grid";
+    const prevSt = prev.chromosome_statuses || {};
+    const prevMo = prev.mosaic_percentages || {};
+    for (let c=1; c<=22; c++) {
+        const row = document.createElement("div"); row.className="chr-row";
+        const num = document.createElement("span"); num.className="chr-num"; num.textContent=c;
+        const stSel = document.createElement("select");
+        stSel.style.cssText="flex:1;height:26px;font-size:10px;padding:0 3px;font-family:inherit;";
+        stSel.dataset.field=`chr_status_${c}`; stSel.dataset.embryoIdx=idx;
+        CHR_STATUSES.forEach(s => { const o=document.createElement("option"); o.value=s; o.textContent=s; stSel.appendChild(o); });
+        stSel.value = prevSt[String(c)] || "N";
+        stSel.onchange = schedulePreview;
+        const moInp = document.createElement("input");
+        moInp.type="text"; moInp.placeholder="%"; moInp.value=prevMo[String(c)]||"";
+        moInp.style.cssText="width:52px;height:26px;font-size:10px;padding:0 5px;flex-shrink:0;";
+        moInp.dataset.field=`mosaic_pct_${c}`; moInp.dataset.embryoIdx=idx;
+        moInp.oninput = schedulePreview;
+        row.appendChild(num); row.appendChild(stSel); row.appendChild(moInp);
+        chrGrid.appendChild(row);
+    }
+    chrSec.appendChild(chrGrid);
+    body.appendChild(chrSec);
+    wrap.appendChild(hdr); wrap.appendChild(body);
+    return wrap;
+}
+
+function appendField(grid, labelTxt, type, val, field, idx, placeholder) {
+    const lbl = document.createElement("label"); lbl.textContent = labelTxt;
+    const inp = document.createElement("input"); inp.type=type; inp.value=val||"";
+    if (placeholder) inp.placeholder=placeholder;
+    inp.dataset.field=field; inp.dataset.embryoIdx=idx; inp.oninput=schedulePreview;
+    grid.appendChild(lbl); grid.appendChild(inp);
+}
+
+function appendSelectField(grid, labelTxt, opts, selectedVal, field, idx) {
+    const lbl = document.createElement("label"); lbl.textContent = labelTxt;
+    const sel = makeColorSelect(opts, selectedVal, schedulePreview);
+    sel.dataset.field=field; sel.dataset.embryoIdx=idx;
+    grid.appendChild(lbl); grid.appendChild(sel);
+}
+
+function collectEmbryoDetails() {
+    return Array.from(document.querySelectorAll("#embryoForms .emb-form")).map((form, idx) => {
+        const get = f => { const el=form.querySelector(`[data-field="${f}"]`); return el?el.value:""; };
+        const chrSt={}, mosPct={};
+        for (let c=1;c<=22;c++) { chrSt[String(c)]=get(`chr_status_${c}`)||"N"; mosPct[String(c)]=get(`mosaic_pct_${c}`)||""; }
+        return {
+            embryo_id_detail: get("embryo_id_detail")||`PS${idx+1}`,
+            result_description: get("result_description")||RESULT_DESC_OPTS[0].text,
+            autosomes: get("autosomes"),
+            sex_chromosomes: get("sex_chromosomes")||"Normal",
+            inconclusive_comment: get("inconclusive_comment"),
+            chromosome_statuses: chrSt,
+            mosaic_percentages: mosPct,
+            cnv_image_filename: embryoCnvFiles[idx]||"",
+        };
+    });
+}
+
+function getSummaryRows() {
+    const tbody = document.getElementById("summaryTableBody");
+    return Array.from(tbody.rows).map((row, i) => ({
+        embryo_id: row.cells[0].querySelector("input")?.value || `PS${i+1}`,
+        result_summary: row.cells[1].querySelector("select")?.value || "",
+        interpretation: row.cells[2].querySelector("select")?.value || "Euploid",
+        mtcopy: row.cells[3].querySelector("input")?.value || "NA",
+    }));
+}
+
+function collectManualData() {
+    const patient_info = {
+        patient_name: v("patient_name"),
+        spouse_name: v("spouse_name"),
+        pin: v("pin"),
+        age: v("age"),
+        sample_number: v("sample_number"),
+        referring_clinician: v("referring_clinician"),
+        biopsy_date: v("biopsy_date"),
+        hospital_clinic: v("hospital_clinic"),
+        sample_collection_date: v("sample_collection_date"),
+        specimen: v("specimen"),
+        sample_receipt_date: v("sample_receipt_date"),
+        biopsy_performed_by: v("biopsy_performed_by"),
+        report_date: v("report_date"),
+        indication: v("indication"),
+        results_summary_comment: v("results_summary_comment"),
+    };
+    const summary = getSummaryRows();
+    const details = collectEmbryoDetails();
+    const embryos = summary.map((s, i) => ({...s, ...(details[i]||{})}));
+    return { patient_info, embryos, logo_option: v("logoOption"), show_grid: v("gridOption")==="with_grid" };
+}
+
+function v(id) { const el=document.getElementById(id); return el?el.value:""; }
+
+/* ============================================================
+   LIVE PREVIEW
+   ============================================================ */
+function schedulePreview() {
+    clearTimeout(previewTimer);
+    document.getElementById("previewStatus").textContent = "Updating...";
+    previewTimer = setTimeout(refreshPreview, 1200);
+}
+
+async function refreshPreview() {
+    document.getElementById("previewStatus").textContent = "Generating...";
     try {
-        const res = await fetch(`${API}/pgta/upload-cnv`, { method: 'POST', body: form })
-        const json = await res.json()
-        if (json.filename) {
-            cnvImagePaths[num] = json.filename
-            const lbl = document.getElementById(`cnv-name-${num}`)
-            const img = document.getElementById(`cnv-preview-${num}`)
-            if (lbl) lbl.textContent = file.name
-            if (img) { img.src = URL.createObjectURL(file); img.style.display = 'block' }
-            showToast('CNV chart uploaded', 'success')
-        } else { showToast(json.error || 'Upload failed', 'error') }
-    } catch (e) { showToast('Upload error: ' + e.message, 'error') }
-}
-
-// ─── Rebuild both summary table + embryo detail forms ────────────────────────
-function rebuildAll(existingData) {
-    const count = parseInt(document.getElementById('embryoCount').value) || 1
-    buildSummaryTable(count, existingData)
-    buildEmbryoForms(existingData)
-}
-
-function buildSummaryTable(count, existingData) {
-    count = count || parseInt(document.getElementById('embryoCount').value) || 1
-    const tbody = document.getElementById('summaryTableBody')
-    tbody.innerHTML = ''
-    for (let i = 0; i < count; i++) {
-        const e = (existingData && existingData[i]) ? existingData[i] : {}
-        const tr = document.createElement('tr')
-        tr.innerHTML = `
-          <td style="width:50px;text-align:center;">${i+1}</td>
-          <td style="width:90px;"><input type="text" id="s${i+1}-id" value="${e.embryo_id||'PS'+(i+1)}"></td>
-          <td><select id="s${i+1}-result-summary" class="color-sel" onchange="applySelColor(this)">${buildColorOpts(RESULT_SUMMARY_OPTIONS, e.result_summary||'')}</select></td>
-          <td style="width:70px;"><input type="text" id="s${i+1}-mtcopy" value="${e.mtcopy||'NA'}"></td>
-          <td><select id="s${i+1}-interpretation" class="color-sel" onchange="applySelColor(this)">${buildColorOpts(INTERPRETATION_OPTIONS, e.interpretation||'')}</select></td>`
-        tbody.appendChild(tr)
+        const res = await fetch(API+"/pgta/preview", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify(collectManualData()),
+        });
+        const result = await res.json();
+        document.getElementById("previewFrame").src = API+result.preview_url+"#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width";
+        document.getElementById("previewStatus").textContent = "Preview ready";
+    } catch(e) {
+        document.getElementById("previewStatus").textContent = "Preview error";
     }
-    document.querySelectorAll('.color-sel').forEach(applySelColor)
 }
 
-function buildEmbryoForms(existingData) {
-    const count = parseInt(document.getElementById('embryoCount').value) || 1
-    const container = document.getElementById('embryoForms')
-    container.innerHTML = ''
-    for (let i = 0; i < count; i++) {
-        const e = (existingData && existingData[i]) ? existingData[i] : {}
-        container.appendChild(createEmbryoBlock(i + 1, e))
-    }
-    document.querySelectorAll('.color-sel').forEach(applySelColor)
-}
-
-function toggleEmbryo(num) {
-    const hdr = document.querySelector(`#ep-${num} .embryo-panel-header`)
-    const body = document.getElementById(`ep-body-${num}`)
-    hdr.classList.toggle('collapsed')
-    body.classList.toggle('hidden')
-}
-
-function createEmbryoBlock(num, data) {
-    data = data || {}
-    const div = document.createElement('div')
-    div.className = 'embryo-panel'
-    div.id = `ep-${num}`
-    div.innerHTML = `
-    <div class="embryo-panel-header${num===1?'':' collapsed'}" onclick="toggleEmbryo(${num})">
-      <i class="fa-solid fa-caret-down toggle-icon"></i>
-      Embryo ${num} &mdash; <span id="ehdr-${num}">PS${num}</span>
-    </div>
-    <div class="embryo-panel-body${num===1?'':' hidden'}" id="ep-body-${num}">
-      <div class="form-row"><label>Embryo ID (Page 4):</label><input type="text" id="e${num}-id-detail" value="${data.embryo_id_detail||'PS'+num}"></div>
-      <div class="form-row"><label>Result Description:</label><select id="e${num}-result-desc">${RESULT_DESC_OPTIONS.map(o=>`<option value="${o}"${(data.result_description||'')===o?' selected':''}>${o}</option>`).join('')}</select></div>
-      <div class="form-row"><label>Autosomes:</label><input type="text" id="e${num}-autosomes" value="${data.autosomes||'Normal'}"></div>
-      <div class="form-row"><label>Sex Chromosomes:</label><select id="e${num}-sex-chr" class="color-sel" onchange="applySelColor(this)">${buildColorOpts(SEX_CHR_OPTIONS,data.sex_chromosomes||'Normal')}</select></div>
-      <div class="form-row"><label>Inconclusive Comment:</label><textarea id="e${num}-inconclusive" rows="2">${data.inconclusive_comment||''}</textarea></div>
-
-      <div style="font-size:11px;font-weight:700;color:#555;margin:8px 0 4px;border-bottom:1px solid #ddd;padding-bottom:3px;">
-        <i class="fa-solid fa-chart-area"></i> CNV Chart Image
-      </div>
-      <div class="cnv-upload-box" onclick="document.getElementById('cnv-file-${num}').click()">
-        <input type="file" id="cnv-file-${num}" accept=".png,.jpg,.jpeg" style="display:none;" onchange="uploadCNV(${num},this)">
-        <i class="fa-solid fa-image" style="color:#aaa;"></i> Select Chart
-        <div class="cnv-filename" id="cnv-name-${num}">${data.cnv_filename||'No image selected'}</div>
-        <img class="cnv-preview-img" id="cnv-preview-${num}" style="display:none;" alt="">
-      </div>
-
-      <div style="font-size:11px;font-weight:700;color:#555;margin:8px 0 4px;border-bottom:1px solid #ddd;padding-bottom:3px;">
-        <i class="fa-solid fa-table-cells"></i> Chromosome Statuses (1-22)
-      </div>
-      <div style="font-size:9px;color:#888;margin-bottom:4px;">
-        N=Normal G=Gain L=Loss SG=Seg.Gain SL=Seg.Loss M=Mosaic MG/ML=Mosaic Gain/Loss SMG/SML=Seg.Mosaic Gain/Loss
-      </div>
-      <div class="chr-grid">${buildChrGrid(num, data.chromosome_statuses||{}, data.mosaic_percentages||{})}</div>
-    </div>`
-    return div
-}
-
-function buildChrGrid(n, statuses, mosaics) {
-    let h = ''
-    for (let c=1;c<=22;c++) {
-        const cs=statuses[String(c)]||'N', mp=mosaics[String(c)]||''
-        h+=`<div class="chr-cell"><span class="chr-label">Chr ${c}</span>
-        <select id="e${n}-chr${c}-status">${CHR_STATUSES.map(s=>`<option value="${s}"${cs===s?' selected':''}>${s}</option>`).join('')}</select>
-        <input type="text" id="e${n}-chr${c}-mosaic" placeholder="%" value="${mp}">
-        <span class="mosaic-label">mosaic%</span></div>`
-    }
-    return h
-}
-
-function updateEmbryoHdr(num) {
-    const id = document.getElementById(`s${num}-id`)?.value||`PS${num}`
-    const rs = document.getElementById(`s${num}-result-summary`)?.value||''
-    const hdr = document.getElementById(`ehdr-${num}`)
-    if (hdr) hdr.textContent = `${id} \u2014 ${rs}`
-}
-
-// ─── Copy Last Embryo ────────────────────────────────────────────────────────
+/* ============================================================
+   COPY LAST EMBRYO
+   ============================================================ */
 function copyLastEmbryo() {
-    const countEl = document.getElementById('embryoCount')
-    const cur = parseInt(countEl.value)||1
-    if (cur<1) { showToast('No embryo to copy','error'); return }
-    if (cur>=20) { showToast('Maximum 20 embryos','error'); return }
-    const all = []
-    for (let i=1;i<=cur;i++) all.push(collectSingleEmbryo(i))
-    const copied = {...all[cur-1]}
-    copied.embryo_id = 'PS'+(cur+1)
-    copied.embryo_id_detail = 'PS'+(cur+1)
-    all.push(copied)
-    countEl.value = cur+1
-    rebuildAll(all)
-    showToast(`Embryo ${cur+1} copied from Embryo ${cur}`, 'success')
+    if (embryoCount >= 20) { showToast("Max 20 embryos","error"); return; }
+    const prevDetails = collectEmbryoDetails();
+    const prevSummary = getSummaryRows();
+    const lastDetail = prevDetails[prevDetails.length-1] || {};
+    const lastSummary = prevSummary[prevSummary.length-1] || {};
+    const newCount = embryoCount + 1;
+
+    document.getElementById("embryoCount").value = newCount;
+    updateSummaryTable(newCount);
+
+    // Copy summary to new row
+    const tbody = document.getElementById("summaryTableBody");
+    const newRow = tbody.rows[newCount-1];
+    if (newRow) {
+        const rs = newRow.cells[1].querySelector("select");
+        if (rs) { rs.value=lastSummary.result_summary||"Normal chromosome complement"; applySelColor(rs,RESULT_SUMMARY_OPTS); }
+        const interp = newRow.cells[2].querySelector("select");
+        if (interp) { interp.value=lastSummary.interpretation||"Euploid"; applySelColor(interp,INTERP_OPTS); }
+        const mt = newRow.cells[3].querySelector("input");
+        if (mt) mt.value = lastSummary.mtcopy||"NA";
+    }
+
+    // Re-render embryo forms with copied last one
+    embryoCount = newCount;
+    const container = document.getElementById("embryoForms");
+    container.innerHTML = "";
+    embryoCnvFiles = {};
+    const allData = [...prevDetails, {...lastDetail, embryo_id_detail:`PS${newCount}`, cnv_image_filename:""}];
+    for (let i=0; i<newCount; i++) container.appendChild(createEmbryoForm(i, allData[i]||{}));
+    schedulePreview();
+    showToast("Embryo data copied to embryo " + newCount);
 }
 
-function collectSingleEmbryo(i) {
-    const cs={}, mp={}
-    for (let c=1;c<=22;c++) { cs[String(c)]=document.getElementById(`e${i}-chr${c}-status`)?.value||'N'; mp[String(c)]=document.getElementById(`e${i}-chr${c}-mosaic`)?.value||'' }
-    return {
-        // From summary table (Page 1)
-        embryo_id: document.getElementById(`s${i}-id`)?.value||`PS${i}`,
-        result_summary: document.getElementById(`s${i}-result-summary`)?.value||'',
-        interpretation: document.getElementById(`s${i}-interpretation`)?.value||'',
-        mtcopy: document.getElementById(`s${i}-mtcopy`)?.value||'NA',
-        // From embryo detail form (Page 4+)
-        embryo_id_detail: document.getElementById(`e${i}-id-detail`)?.value||`PS${i}`,
-        result_description: document.getElementById(`e${i}-result-desc`)?.value||'',
-        autosomes: document.getElementById(`e${i}-autosomes`)?.value||'Normal',
-        sex_chromosomes: document.getElementById(`e${i}-sex-chr`)?.value||'Normal',
-        inconclusive_comment: document.getElementById(`e${i}-inconclusive`)?.value||'',
-        chromosome_statuses: cs, mosaic_percentages: mp,
-        cnv_filename: cnvImagePaths[i]||''
+/* ============================================================
+   GENERATE MANUAL REPORT
+   ============================================================ */
+async function generateManualReport() {
+    document.getElementById("statusBar").textContent = "Generating report...";
+    try {
+        const res = await fetch(API+"/pgta/generate", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify(collectManualData()),
+        });
+        const result = await res.json();
+        if (result.error) { showToast("Error: "+result.error,"error"); document.getElementById("statusBar").textContent="Failed"; return; }
+        const a = document.createElement("a"); a.href=result.file_url; a.download="PGTA_Report.pdf"; a.target="_blank"; a.click();
+        showToast("Report generated!");
+        document.getElementById("statusBar").textContent = "Report generated";
+    } catch(e) {
+        showToast("Error: "+e.message,"error");
+        document.getElementById("statusBar").textContent = "Error";
     }
 }
 
-// ─── Clear Form ──────────────────────────────────────────────────────────────
-function clearForm() {
-    if (!confirm('Clear all form data?')) return
-    ;['patientName','pin','age','sampleNumber','referringClinician','biopsyDate',
-      'hospitalClinic','sampleCollectionDate','sampleReceiptDate','biopsyPerformedBy',
-      'indication','resultsSummaryComment'].forEach(id => document.getElementById(id).value='')
-    document.getElementById('spouseName').value='w/o'
-    document.getElementById('specimen').value='DAY 5 TROPHECTODERM BIOPSY'
-    document.getElementById('embryoCount').value=1
-    const today=new Date()
-    document.getElementById('reportDate').value=`${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`
-    Object.keys(cnvImagePaths).forEach(k=>delete cnvImagePaths[k])
-    rebuildAll()
-    document.getElementById('manualResult').className='result-alert'
-    document.getElementById('genStatus').textContent='No data loaded'
-    showToast('Form cleared','success')
-}
-
-// ─── Collect Form Data ───────────────────────────────────────────────────────
-function getPatientInfo() {
-    return {
-        patient_name: document.getElementById('patientName').value.trim(),
-        spouse_name: document.getElementById('spouseName').value.trim(),
-        pin: document.getElementById('pin').value.trim(),
-        age: document.getElementById('age').value.trim(),
-        sample_number: document.getElementById('sampleNumber').value.trim(),
-        referring_clinician: document.getElementById('referringClinician').value.trim(),
-        biopsy_date: document.getElementById('biopsyDate').value.trim(),
-        hospital_clinic: document.getElementById('hospitalClinic').value.trim(),
-        sample_collection_date: document.getElementById('sampleCollectionDate').value.trim(),
-        specimen: document.getElementById('specimen').value.trim(),
-        sample_receipt_date: document.getElementById('sampleReceiptDate').value.trim(),
-        biopsy_performed_by: document.getElementById('biopsyPerformedBy').value.trim(),
-        report_date: document.getElementById('reportDate').value.trim(),
-        indication: document.getElementById('indication').value.trim(),
-        results_summary_comment: document.getElementById('resultsSummaryComment').value.trim()
-    }
-}
-function getEmbryos() {
-    const count = parseInt(document.getElementById('embryoCount').value)||1
-    const embryos = []
-    for (let i=1;i<=count;i++) { const e=collectSingleEmbryo(i); e.cnv_image_filename=cnvImagePaths[i]||''; embryos.push(e) }
-    return embryos
-}
-
-// ─── Preview ─────────────────────────────────────────────────────────────────
-async function previewReport() {
-    const pi = getPatientInfo()
-    if (!pi.patient_name) { showToast('Enter Patient Name first','error'); return }
-    showToast('Generating preview...')
+/* ============================================================
+   DRAFT SAVE / LOAD
+   ============================================================ */
+async function saveDraft() {
+    const data = collectManualData();
+    const name = v("patient_name") || "unnamed";
+    const key = `pgta_${name}_${Date.now()}`;
+    localStorage.setItem("pgta_latest_draft", JSON.stringify({key, name, data}));
     try {
-        const res = await fetch(`${API}/pgta/preview`, {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ patient_info:pi, embryos:getEmbryos(), logo_option:document.getElementById('logoOption').value, grid_option:document.getElementById('gridOption').value })
-        })
-        const json = await res.json()
-        if (json.preview_url) {
-            document.getElementById('previewFrame').src = API + json.preview_url
-            showToast('Preview ready!','success')
-        } else { showToast(json.error||'Preview failed','error') }
-    } catch(e) { showToast('Server error: '+e.message,'error') }
+        const res = await fetch(API+"/save-draft/"+encodeURIComponent(key), {
+            method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)
+        });
+        const r = await res.json();
+        showToast(r.status==="saved" ? `Draft saved: ${name}` : "Draft saved locally");
+    } catch(e) { showToast("Draft saved locally (offline)"); }
 }
 
-// ─── Generate ────────────────────────────────────────────────────────────────
-async function generateReport() {
-    const pi = getPatientInfo()
-    if (!pi.patient_name) { showToast('Enter Patient Name first','error'); return }
-    const statusEl = document.getElementById('genStatus')
-    const resultEl = document.getElementById('manualResult')
-    statusEl.textContent = 'Generating report...'
-    resultEl.className = 'result-alert'
+async function openDraftModal() {
+    document.getElementById("draftModal").classList.add("open");
+    document.getElementById("draftListItems").innerHTML = "<p style='color:var(--text-muted);text-align:center;font-size:13px;'>Loading...</p>";
+    document.getElementById("draftEmpty").style.display = "none";
     try {
-        const res = await fetch(`${API}/pgta/generate`, {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ patient_info:pi, embryos:getEmbryos(), logo_option:document.getElementById('logoOption').value, grid_option:document.getElementById('gridOption').value })
-        })
-        const json = await res.json()
-        if (json.file_url) {
-            resultEl.className='result-alert success'
-            resultEl.innerHTML=`<i class="fa fa-check-circle"></i> Report generated! <a href="${json.file_url}" target="_blank" style="font-weight:700;">Download PDF</a>`
-            statusEl.textContent = 'Report generated successfully'
-            showToast('Report generated!','success')
+        const res = await fetch(API+"/list-drafts");
+        const r = await res.json();
+        const drafts = (r.drafts||[]).filter(d => d.draft_type?.startsWith("pgta_") && !d.draft_type?.startsWith("pgta_bulk_"));
+        renderDraftList(drafts);
+    } catch(e) {
+        const local = localStorage.getItem("pgta_latest_draft");
+        if (local) {
+            const {key,name} = JSON.parse(local);
+            renderDraftList([{draft_type:key, display:name}]);
         } else {
-            resultEl.className='result-alert error'
-            resultEl.innerHTML=`<i class="fa fa-times-circle"></i> ${json.error||'Generation failed'}`
-            statusEl.textContent = 'Generation failed'
-            showToast(json.error||'Error','error')
+            document.getElementById("draftListItems").innerHTML="";
+            document.getElementById("draftEmpty").style.display="block";
         }
-    } catch(e) { showToast('Server error: '+e.message,'error'); statusEl.textContent='Error' }
+    }
 }
 
-// ─── Draft ───────────────────────────────────────────────────────────────────
-function buildDraftKey() {
-    const n=document.getElementById('patientName').value.trim().replace(/[^a-zA-Z0-9 ]/g,'').replace(/ /g,'_')||'Unknown'
-    const s=document.getElementById('sampleNumber').value.trim().replace(/[^a-zA-Z0-9]/g,'_')||'S0'
-    return `${n}_${s}_PGTA_report_draft`
-}
-function saveDraft() {
-    const draft = { patient_info:getPatientInfo(), embryos:getEmbryos(), embryo_count:parseInt(document.getElementById('embryoCount').value)||1, logo_option:document.getElementById('logoOption').value, grid_option:document.getElementById('gridOption').value }
-    const key = buildDraftKey()
-    localStorage.setItem(key, JSON.stringify(draft))
-    fetch(`${API}/save-draft/${encodeURIComponent(key)}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(draft) }).catch(()=>{})
-    showToast('Draft saved!','success')
-}
-function openDraftPicker() {
-    const keys = Object.keys(localStorage).filter(k=>k.endsWith('_PGTA_report_draft'))
-    const list = document.getElementById('draftList')
-    if (!keys.length) { list.innerHTML='<p style="font-size:12px;color:#888;">No drafts found.</p>' }
-    else { list.innerHTML=keys.map(k=>`<div class="draft-item" onclick="loadDraft('${k}')">${k.replace(/_PGTA_report_draft$/,'').replace(/_/g,' ')}</div>`).join('') }
-    document.getElementById('draftModal').classList.add('show')
-}
-function closeDraftPicker() { document.getElementById('draftModal').classList.remove('show') }
-function loadDraft(key) {
-    const raw=localStorage.getItem(key); if(!raw){showToast('Draft not found','error');return}
-    fillForm(JSON.parse(raw)); closeDraftPicker(); showToast('Draft loaded!','success')
-}
-function fillForm(d) {
-    const pi=d.patient_info||{}
-    document.getElementById('patientName').value=pi.patient_name||''
-    document.getElementById('spouseName').value=pi.spouse_name||'w/o'
-    document.getElementById('pin').value=pi.pin||''
-    document.getElementById('age').value=pi.age||''
-    document.getElementById('sampleNumber').value=pi.sample_number||''
-    document.getElementById('referringClinician').value=pi.referring_clinician||''
-    document.getElementById('biopsyDate').value=pi.biopsy_date||''
-    document.getElementById('hospitalClinic').value=pi.hospital_clinic||''
-    document.getElementById('sampleCollectionDate').value=pi.sample_collection_date||''
-    document.getElementById('specimen').value=pi.specimen||''
-    document.getElementById('sampleReceiptDate').value=pi.sample_receipt_date||''
-    document.getElementById('biopsyPerformedBy').value=pi.biopsy_performed_by||''
-    document.getElementById('reportDate').value=pi.report_date||''
-    document.getElementById('indication').value=pi.indication||''
-    document.getElementById('resultsSummaryComment').value=pi.results_summary_comment||''
-    if(d.logo_option) document.getElementById('logoOption').value=d.logo_option
-    if(d.grid_option) document.getElementById('gridOption').value=d.grid_option
-    if(d.embryo_count) document.getElementById('embryoCount').value=d.embryo_count
-    if(d.embryos) d.embryos.forEach((e,i)=>{if(e.cnv_image_filename) cnvImagePaths[i+1]=e.cnv_image_filename})
-    rebuildAll(d.embryos||[])
+function renderDraftList(drafts) {
+    const c = document.getElementById("draftListItems");
+    c.innerHTML = "";
+    if (!drafts.length) { document.getElementById("draftEmpty").style.display="block"; return; }
+    for (const d of drafts) {
+        const btn = document.createElement("div");
+        btn.style.cssText="padding:9px 13px;border:1px solid var(--input-border);border-radius:8px;cursor:pointer;margin-bottom:6px;font-size:13px;transition:background 0.2s;";
+        const display = (d.display || d.draft_type.replace("pgta_","").replace(/_\d+$/,""));
+        btn.textContent = display;
+        btn.dataset.key = d.draft_type;
+        btn.onmouseover = () => btn.style.background="rgba(59,130,246,0.08)";
+        btn.onmouseout = () => btn.style.background="";
+        btn.onclick = () => loadDraftByKey(d.draft_type);
+        c.appendChild(btn);
+    }
 }
 
-// ─── Bulk Upload ─────────────────────────────────────────────────────────────
-let bulkPatients = []
-async function handleBulkUpload(e) {
-    const file=e.target.files[0]; if(!file) return
-    const form=new FormData(); form.append('file',file)
-    showToast('Parsing Excel...')
+function filterDraftList() {
+    const q = document.getElementById("draftSearchInput").value.toLowerCase();
+    document.querySelectorAll("#draftListItems > div").forEach(b => {
+        b.style.display = b.textContent.toLowerCase().includes(q) ? "" : "none";
+    });
+}
+
+async function loadDraftByKey(key) {
     try {
-        const res=await fetch(`${API}/pgta/upload-excel`,{method:'POST',body:form})
-        const json=await res.json()
-        if(json.patients){bulkPatients=json.patients;renderBulkTable(bulkPatients);document.getElementById('bulkPreview').style.display='block';showToast(`${bulkPatients.length} patient(s) loaded`,'success')}
-        else{showToast(json.error||'Parse error','error')}
-    } catch(e){showToast('Server error: '+e.message,'error')}
+        const res = await fetch(API+"/load-draft/"+encodeURIComponent(key));
+        const r = await res.json();
+        if (r.data) { fillManualForm(r.data); closeDraftModal(); showToast("Draft loaded"); }
+        else throw new Error("No data");
+    } catch(e) {
+        const local = localStorage.getItem("pgta_latest_draft");
+        if (local) { const {data}=JSON.parse(local); fillManualForm(data); closeDraftModal(); showToast("Draft loaded from local"); }
+        else showToast("Failed to load draft","error");
+    }
 }
-function renderBulkTable(pts) {
-    document.getElementById('bulkCount').textContent=pts.length
-    document.getElementById('bulkTableBody').innerHTML=pts.map((p,i)=>{const pi=p.patient_info;return`<tr><td>${i+1}</td><td>${pi.patient_name||'-'}</td><td>${pi.sample_number||'-'}</td><td>${p.embryos.length}</td><td>${pi.report_date||'-'}</td></tr>`}).join('')
-}
-async function generateBulk() {
-    if(!bulkPatients.length){showToast('No patients loaded','error');return}
-    const logo=document.getElementById('bulkLogoOption').value
-    showToast('Generating reports...')
-    try {
-        const payload=bulkPatients.map(p=>({...p,logo_option:logo}))
-        const res=await fetch(`${API}/pgta/generate-bulk`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-        const json=await res.json()
-        const ok=json.generated||[],err=json.errors||[]
-        const r=document.getElementById('bulkResult')
-        r.className=`result-alert ${err.length?'error':'success'}`
-        let h=`${ok.length} report(s) generated`
-        if(ok.length) h+='<br>'+ok.map(r=>`<a href="${r.file_url}" target="_blank">${r.patient}</a>`).join('<br>')
-        if(err.length) h+=`<br>${err.length} failed: `+err.map(r=>`${r.patient}: ${r.error}`).join(', ')
-        r.innerHTML=h
-        showToast(`${ok.length} done, ${err.length} errors`,ok.length?'success':'error')
-    } catch(e){showToast('Server error: '+e.message,'error')}
-}
-function downloadTemplate() { window.open(`${API}/pgta-template`,'_blank') }
 
-// ─── Report Comparison ───────────────────────────────────────────────────────
-function updateCompareLabel(n,e) {
-    const f=e.target.files[0]
-    document.getElementById(`compareLabel${n}`).textContent=f?f.name:'No file selected'
+function closeDraftModal() { document.getElementById("draftModal").classList.remove("open"); }
+
+function fillManualForm(data) {
+    if (!data) return;
+    const p = data.patient_info || data;
+    const set = (id,val) => { const el=document.getElementById(id); if (el) el.value=val||""; };
+    set("patient_name",p.patient_name); set("spouse_name",p.spouse_name||"w/o"); set("pin",p.pin);
+    set("age",p.age); set("sample_number",p.sample_number); set("referring_clinician",p.referring_clinician);
+    set("biopsy_date",p.biopsy_date); set("hospital_clinic",p.hospital_clinic);
+    set("sample_collection_date",p.sample_collection_date); set("specimen",p.specimen||"DAY 5 TROPHECTODERM BIOPSY");
+    set("sample_receipt_date",p.sample_receipt_date); set("biopsy_performed_by",p.biopsy_performed_by);
+    set("report_date",p.report_date); set("indication",p.indication);
+    set("results_summary_comment",p.results_summary_comment||p.patient_info?.results_summary_comment||"");
+
+    const embryos = data.embryos || [];
+    const count = Math.max(1, embryos.length);
+    embryoCount = count;
+    document.getElementById("embryoCount").value = count;
+    updateSummaryTable(count);
+
+    const tbody = document.getElementById("summaryTableBody");
+    embryos.forEach((e,i) => {
+        if (i >= tbody.rows.length) return;
+        const row = tbody.rows[i];
+        const eid = row.cells[0].querySelector("input"); if (eid) eid.value = e.embryo_id||`PS${i+1}`;
+        const rs = row.cells[1].querySelector("select"); if (rs) { rs.value=e.result_summary||"Normal chromosome complement"; applySelColor(rs,RESULT_SUMMARY_OPTS); }
+        const interp = row.cells[2].querySelector("select"); if (interp) { interp.value=e.interpretation||"Euploid"; applySelColor(interp,INTERP_OPTS); }
+        const mt = row.cells[3].querySelector("input"); if (mt) mt.value=e.mtcopy||"NA";
+    });
+
+    const container = document.getElementById("embryoForms");
+    container.innerHTML = ""; embryoCnvFiles = {};
+    for (let i=0; i<count; i++) container.appendChild(createEmbryoForm(i, embryos[i]||{}));
+    schedulePreview();
 }
+
+function saveData() {
+    const data = collectManualData();
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+    const a = document.createElement("a"); a.href=URL.createObjectURL(blob);
+    a.download=`PGTA_${data.patient_info.patient_name||"data"}.json`; a.click();
+    showToast("Data saved as JSON");
+}
+
+function clearForm() {
+    if (!confirm("Clear all form data?")) return;
+    ["patient_name","spouse_name","pin","age","sample_number","referring_clinician","biopsy_date",
+     "hospital_clinic","sample_collection_date","specimen","sample_receipt_date","biopsy_performed_by",
+     "report_date","indication","results_summary_comment"].forEach(id => { const el=document.getElementById(id); if (el) el.value=""; });
+    document.getElementById("specimen").value = "DAY 5 TROPHECTODERM BIOPSY";
+    document.getElementById("report_date").value = todayStr();
+    embryoCount=1; embryoCnvFiles={};
+    document.getElementById("embryoCount").value=1;
+    document.getElementById("summaryTableBody").innerHTML="";
+    updateSummaryTable(1);
+    const c=document.getElementById("embryoForms"); c.innerHTML=""; c.appendChild(createEmbryoForm(0));
+    document.getElementById("previewFrame").src="";
+    document.getElementById("previewStatus").textContent="";
+    document.getElementById("statusBar").textContent="";
+}
+
+/* ============================================================
+   BULK UPLOAD
+   ============================================================ */
+async function uploadBulkExcel(input) {
+    const file = input.files[0]; if (!file) return;
+    document.getElementById("bulkFileName").textContent = "Uploading: "+file.name;
+    const fd = new FormData(); fd.append("file", file);
+    try {
+        const res = await fetch(API+"/pgta/upload-excel", {method:"POST", body:fd});
+        const r = await res.json();
+        if (r.patients && r.patients.length) {
+            bulkPatients = r.patients.map(p => ({...p, checked:true}));
+            renderBulkTable();
+            document.getElementById("bulkFileName").textContent = file.name + ` (${bulkPatients.length} patients)`;
+            showToast(`${bulkPatients.length} patients loaded`);
+        } else showToast("No patients found in file","error");
+    } catch(e) { showToast("Upload error: "+e.message,"error"); }
+}
+
+function renderBulkTable(filter="") {
+    const tbody = document.getElementById("bulkPatBody"); tbody.innerHTML="";
+    bulkPatients.forEach((p,i) => {
+        const name = p.patient_info?.patient_name||"";
+        if (filter && !name.toLowerCase().includes(filter)) return;
+        const tr = document.createElement("tr");
+        if (i===selectedBulkIdx) tr.classList.add("sel");
+        tr.innerHTML = `
+            <td><input type="checkbox" ${p.checked?"checked":""} onchange="bulkPatients[${i}].checked=this.checked" onclick="event.stopPropagation()"></td>
+            <td>${i+1}</td>
+            <td>${name}</td>
+            <td>${(p.embryos||[]).length}</td>`;
+        tr.onclick = () => selectBulkPat(i);
+        tbody.appendChild(tr);
+    });
+}
+
+function filterPats() { renderBulkTable(document.getElementById("patientSearch").value.toLowerCase()); }
+function selectAllPats() { bulkPatients.forEach(p=>p.checked=true); renderBulkTable(); document.getElementById("selectAllChk").checked=true; }
+function deselectAllPats() { bulkPatients.forEach(p=>p.checked=false); renderBulkTable(); document.getElementById("selectAllChk").checked=false; }
+function toggleSelectAll(checked) { bulkPatients.forEach(p=>p.checked=checked); renderBulkTable(); }
+
+function selectBulkPat(idx) {
+    selectedBulkIdx = idx;
+    renderBulkTable(document.getElementById("patientSearch").value.toLowerCase());
+    renderBulkEditor(idx);
+    scheduleBulkPreview();
+}
+
+function renderBulkEditor(idx) {
+    const container = document.getElementById("bulkEditorContent");
+    const p = bulkPatients[idx]; if (!p) return;
+    container.innerHTML = "";
+
+    // Patient info
+    const title = document.createElement("div"); title.className="panel-title"; title.textContent="Patient Information";
+    container.appendChild(title);
+
+    const grid = document.createElement("div"); grid.className="form-grid"; grid.style.marginBottom="14px";
+    const pFields = [
+        ["patient_name","Patient Name"],["spouse_name","Spouse Name"],["pin","PIN"],["age","Age"],
+        ["sample_number","Sample Number"],["referring_clinician","Referring Clinician"],
+        ["biopsy_date","Biopsy Date"],["hospital_clinic","Hospital / Clinic"],
+        ["sample_collection_date","Sample Collection Date"],["specimen","Specimen"],
+        ["sample_receipt_date","Sample Receipt Date"],["biopsy_performed_by","Biopsy Performed By"],
+        ["report_date","Report Date"],
+    ];
+    for (const [key,lbl] of pFields) {
+        const label = document.createElement("label"); label.textContent=lbl+":";
+        const inp = document.createElement("input"); inp.type="text"; inp.value=p.patient_info[key]||"";
+        inp.style.height="30px"; inp.style.fontSize="12px";
+        inp.oninput = () => { p.patient_info[key]=inp.value; scheduleBulkPreview(); };
+        grid.appendChild(label); grid.appendChild(inp);
+    }
+    // Indication textarea
+    const indLbl = document.createElement("label"); indLbl.textContent="Indication:"; indLbl.style.alignSelf="start"; indLbl.style.marginTop="6px";
+    const indTa = document.createElement("textarea"); indTa.rows=2; indTa.value=p.patient_info.indication||""; indTa.style.fontSize="12px";
+    indTa.oninput = () => { p.patient_info.indication=indTa.value; scheduleBulkPreview(); };
+    grid.appendChild(indLbl); grid.appendChild(indTa);
+    container.appendChild(grid);
+
+    // Page 1 Summary table
+    const s1 = document.createElement("div"); s1.className="section-hdr"; s1.textContent="Page 1 — Results Summary"; container.appendChild(s1);
+    const tWrap = document.createElement("div"); tWrap.style.overflowX="auto"; tWrap.style.marginBottom="12px";
+    const tbl = document.createElement("table"); tbl.className="sum-table";
+    const thead = tbl.createTHead(); const thr = thead.insertRow();
+    ["Embryo ID","Result Summary","Interpretation","MTcopy"].forEach(h => {
+        const th=document.createElement("th"); th.textContent=h; thr.appendChild(th);
+    });
+    const tbody = tbl.createTBody();
+    p.embryos.forEach((emb,ei) => {
+        const tr = tbody.insertRow();
+        // ID
+        const c0=tr.insertCell(); const eidI=document.createElement("input"); eidI.type="text"; eidI.value=emb.embryo_id||`PS${ei+1}`;
+        eidI.style.cssText="width:100%;height:28px;font-size:11px;"; eidI.oninput=()=>{ emb.embryo_id=eidI.value; scheduleBulkPreview(); }; c0.appendChild(eidI);
+        // Result Summary
+        const c1=tr.insertCell(); const rs=makeColorSelect(RESULT_SUMMARY_OPTS, emb.result_summary||"Normal chromosome complement", scheduleBulkPreview);
+        rs.style.height="28px"; rs.style.fontSize="11px"; rs.onchange=()=>{ emb.result_summary=rs.value; scheduleBulkPreview(); }; c1.appendChild(rs);
+        // Interpretation
+        const c2=tr.insertCell(); const interp=makeColorSelect(INTERP_OPTS, emb.interpretation||"Euploid", scheduleBulkPreview);
+        interp.style.height="28px"; interp.style.fontSize="11px"; interp.onchange=()=>{ emb.interpretation=interp.value; scheduleBulkPreview(); }; c2.appendChild(interp);
+        // MTcopy
+        const c3=tr.insertCell(); const mt=document.createElement("input"); mt.type="text"; mt.value=emb.mtcopy||"NA";
+        mt.style.cssText="width:100%;height:28px;font-size:11px;"; mt.oninput=()=>{ emb.mtcopy=mt.value; scheduleBulkPreview(); }; c3.appendChild(mt);
+    });
+    tWrap.appendChild(tbl); container.appendChild(tWrap);
+
+    // Page 4+ Embryo Details
+    const s2 = document.createElement("div"); s2.className="section-hdr"; s2.textContent="Page 4+ — Embryo Details"; container.appendChild(s2);
+    p.embryos.forEach((emb,ei) => { container.appendChild(createBulkEmbryoForm(idx, ei, emb)); });
+
+    // Save changes button
+    const btnRow = document.createElement("div"); btnRow.className="editor-btns";
+    const sb = document.createElement("button"); sb.className="btn-primary"; sb.textContent="Save Changes";
+    sb.onclick = () => { showToast("Changes saved"); scheduleBulkPreview(); };
+    btnRow.appendChild(sb); container.appendChild(btnRow);
+}
+
+function createBulkEmbryoForm(patIdx, embIdx, emb) {
+    const wrap = document.createElement("div"); wrap.className="emb-form";
+    const hdr = document.createElement("div"); hdr.className="emb-form-hdr";
+    hdr.innerHTML=`<span>Embryo ${embIdx+1} Details</span><span class="collapse-icon">&#9660;</span>`;
+    hdr.onclick=()=>{ wrap.querySelector(".emb-form-body").classList.toggle("hidden"); wrap.classList.toggle("collapsed"); };
+    const body = document.createElement("div"); body.className="emb-form-body";
+    const grid = document.createElement("div"); grid.className="form-grid"; grid.style.marginBottom="10px";
+
+    // Result Description
+    const rdL=document.createElement("label"); rdL.textContent="Result Description:";
+    const rdS=makeColorSelect(RESULT_DESC_OPTS, emb.result_description||RESULT_DESC_OPTS[0].text, scheduleBulkPreview);
+    rdS.onchange=()=>{ emb.result_description=rdS.value; scheduleBulkPreview(); };
+    grid.appendChild(rdL); grid.appendChild(rdS);
+    // Autosomes
+    const aL=document.createElement("label"); aL.textContent="Autosomes:";
+    const aI=document.createElement("input"); aI.type="text"; aI.value=emb.autosomes||""; aI.style.fontSize="12px";
+    aI.oninput=()=>{ emb.autosomes=aI.value; scheduleBulkPreview(); };
+    grid.appendChild(aL); grid.appendChild(aI);
+    // Sex Chromosomes
+    const sL=document.createElement("label"); sL.textContent="Sex Chromosomes:";
+    const sS=makeColorSelect(SEX_CHR_OPTS, emb.sex_chromosomes||"Normal", scheduleBulkPreview);
+    sS.onchange=()=>{ emb.sex_chromosomes=sS.value; scheduleBulkPreview(); };
+    grid.appendChild(sL); grid.appendChild(sS);
+    // CNV upload
+    const cnvL=document.createElement("label"); cnvL.textContent="CNV Chart:";
+    const cnvRow=document.createElement("div"); cnvRow.className="cnv-row";
+    const cnvB=document.createElement("button"); cnvB.type="button"; cnvB.innerHTML="&#128247; Upload"; cnvB.style.fontSize="11px"; cnvB.style.padding="4px 10px";
+    const cnvFI=document.createElement("input"); cnvFI.type="file"; cnvFI.accept=".png,.jpg,.jpeg"; cnvFI.style.display="none";
+    const cnvN=document.createElement("span"); cnvN.className="cnv-name"; cnvN.textContent=emb.cnv_image_filename?"Uploaded":"No chart";
+    cnvB.onclick=()=>cnvFI.click();
+    cnvFI.onchange=async(e)=>{
+        const file=e.target.files[0]; if(!file) return;
+        const fd=new FormData(); fd.append("file",file);
+        try { const r=await fetch(API+"/pgta/upload-cnv",{method:"POST",body:fd}); const d=await r.json();
+            if(d.filename){emb.cnv_image_filename=d.filename; cnvN.textContent=file.name; showToast("CNV uploaded"); scheduleBulkPreview();}
+        } catch(e){showToast("Upload error","error");}
+    };
+    cnvRow.appendChild(cnvB); cnvRow.appendChild(cnvFI); cnvRow.appendChild(cnvN);
+    grid.appendChild(cnvL); grid.appendChild(cnvRow);
+    // Inconclusive comment
+    const icL=document.createElement("label"); icL.textContent="Inconclusive Comment:"; icL.style.alignSelf="start"; icL.style.marginTop="6px";
+    const icT=document.createElement("textarea"); icT.rows=2; icT.value=emb.inconclusive_comment||""; icT.style.fontSize="12px";
+    icT.oninput=()=>{ emb.inconclusive_comment=icT.value; scheduleBulkPreview(); };
+    grid.appendChild(icL); grid.appendChild(icT);
+
+    body.appendChild(grid);
+    wrap.appendChild(hdr); wrap.appendChild(body);
+    return wrap;
+}
+
+function scheduleBulkPreview() {
+    clearTimeout(bulkPreviewTimer);
+    bulkPreviewTimer = setTimeout(updateBulkPreview, 1200);
+}
+
+async function updateBulkPreview() {
+    if (selectedBulkIdx===null) return;
+    const p = bulkPatients[selectedBulkIdx]; if (!p) return;
+    try {
+        const res = await fetch(API+"/pgta/preview", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({patient_info:p.patient_info, embryos:p.embryos, logo_option:v("bulkLogoOption")}),
+        });
+        const r = await res.json();
+        document.getElementById("bulkPreviewFrame").src = API+r.preview_url+"#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width";
+    } catch(e) {}
+}
+
+async function generateSelectedBulk() {
+    const sel = bulkPatients.filter(p=>p.checked);
+    if (!sel.length) { showToast("No patients selected","error"); return; }
+    await doBulkGenerate(sel);
+}
+async function generateAllBulk() {
+    if (!bulkPatients.length) { showToast("No patients loaded","error"); return; }
+    await doBulkGenerate(bulkPatients);
+}
+
+async function doBulkGenerate(list) {
+    const prog = document.getElementById("bulkProgress");
+    prog.style.display="block"; prog.textContent=`Generating ${list.length} report(s)...`;
+    const logoOpt = v("bulkLogoOption");
+    const payload = list.map(p => ({patient_info:p.patient_info, embryos:p.embryos, logo_option:logoOpt}));
+    try {
+        const res = await fetch(API+"/pgta/generate-bulk", {
+            method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)
+        });
+        const r = await res.json();
+        const links = document.getElementById("bulkDownloadLinks"); links.innerHTML="";
+        (r.generated||[]).forEach(g => {
+            const a=document.createElement("a"); a.href=g.file_url; a.target="_blank"; a.download=g.patient+"_PGTA.pdf";
+            a.style.cssText="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;background:var(--success);color:white;border-radius:6px;font-size:12px;font-weight:500;text-decoration:none;";
+            a.innerHTML="&#11015; "+g.patient; links.appendChild(a);
+        });
+        (r.errors||[]).forEach(e => showToast(`Failed: ${e.patient} — ${e.error}`,"error"));
+        prog.textContent=`Done: ${(r.generated||[]).length} generated, ${(r.errors||[]).length} failed`;
+        showToast(`${(r.generated||[]).length} reports generated`);
+    } catch(e) { showToast("Error: "+e.message,"error"); prog.textContent="Error"; }
+}
+
+async function saveBulkDraft() {
+    const key = `pgta_bulk_${Date.now()}`;
+    try {
+        const res = await fetch(API+"/save-draft/"+encodeURIComponent(key), {
+            method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(bulkPatients)
+        });
+        const r = await res.json();
+        if (r.status==="saved") { localStorage.setItem("pgta_bulk_key",key); showToast("Bulk draft saved"); }
+    } catch(e) { localStorage.setItem("pgta_bulk_draft", JSON.stringify({key, data:bulkPatients})); showToast("Bulk draft saved locally"); }
+}
+
+async function loadBulkDraft() {
+    const key = localStorage.getItem("pgta_bulk_key");
+    if (!key) { showToast("No bulk draft found","error"); return; }
+    try {
+        const res = await fetch(API+"/load-draft/"+encodeURIComponent(key));
+        const r = await res.json();
+        if (r.data && Array.isArray(r.data)) {
+            bulkPatients = r.data.map(p=>({...p, checked:true})); renderBulkTable(); showToast("Bulk draft loaded");
+        }
+    } catch(e) {
+        const local = localStorage.getItem("pgta_bulk_draft");
+        if (local) { const {data}=JSON.parse(local); bulkPatients=data.map(p=>({...p,checked:true})); renderBulkTable(); showToast("Loaded from local"); }
+        else showToast("No draft to load","error");
+    }
+}
+
+/* ============================================================
+   REPORT COMPARISON
+   ============================================================ */
+let cmpPage=1, cmpTotal=1, cmpUrl1=null, cmpUrl2=null;
+
 async function comparePDFs() {
-    const f1=document.getElementById('compareFile1').files[0], f2=document.getElementById('compareFile2').files[0]
-    if(!f1||!f2){showToast('Select both PDF files','error');return}
-    showToast('Comparing...')
+    const f1=document.getElementById("comparePdf1").files[0];
+    const f2=document.getElementById("comparePdf2").files[0];
+    if (!f1||!f2) { showToast("Select both PDFs","error"); return; }
+    const fd=new FormData(); fd.append("pdf1",f1); fd.append("pdf2",f2);
     try {
-        const form=new FormData(); form.append('file1',f1); form.append('file2',f2)
-        const res=await fetch(`${API}/compare-pdf`,{method:'POST',body:form})
-        const json=await res.json()
-        if(json.html){document.getElementById('compareResultFrame').srcdoc=json.html;document.getElementById('compareResultContainer').style.display='block';showToast('Comparison complete!','success')}
-        else{showToast('Comparison failed','error')}
-    } catch(e){showToast('Server error: '+e.message,'error')}
+        const res=await fetch(API+"/compare-pdf",{method:"POST",body:fd});
+        const r=await res.json();
+        if (r.error) { showToast("Error: "+r.error,"error"); return; }
+        cmpTotal=r.total_pages||1; cmpPage=1;
+        cmpUrl1=r.pdf1_url; cmpUrl2=r.pdf2_url;
+        updateCmpView();
+        const diffBox=document.getElementById("diffBox");
+        if (r.diff_summary) diffBox.innerHTML=r.diff_summary.replace(/\n/g,"<br>");
+        else if (r.differences) diffBox.innerHTML=r.differences.map(d=>`<div style="margin-bottom:6px;padding:7px;border-left:3px solid var(--primary);font-size:12px;">${d}</div>`).join("");
+        else diffBox.textContent="No differences found.";
+        showToast("Comparison complete");
+    } catch(e) { showToast("Error: "+e.message,"error"); }
 }
 
-// ─── Toast ───────────────────────────────────────────────────────────────────
-let toastTimer
-function showToast(msg, type) {
-    const el=document.getElementById('toastPopup')
-    el.textContent=msg
-    el.className='toast-popup show '+(type||'info')
-    clearTimeout(toastTimer)
-    toastTimer=setTimeout(()=>{el.classList.remove('show')},3000)
+function updateCmpView() {
+    document.getElementById("pageIndicator").textContent=`Page ${cmpPage} / ${cmpTotal}`;
+    if (cmpUrl1) document.getElementById("leftPDF").src=API+cmpUrl1+`#page=${cmpPage}&toolbar=0&navpanes=0`;
+    if (cmpUrl2) document.getElementById("rightPDF").src=API+cmpUrl2+`#page=${cmpPage}&toolbar=0&navpanes=0`;
 }
 
-// ─── Init ────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    const t=new Date()
-    document.getElementById('reportDate').value=`${String(t.getDate()).padStart(2,'0')}-${String(t.getMonth()+1).padStart(2,'0')}-${t.getFullYear()}`
-    rebuildAll()
-})
+function navigatePage(dir) { cmpPage=Math.max(1,Math.min(cmpTotal,cmpPage+dir)); updateCmpView(); }
+
+function exportDiff() {
+    const html=`<html><head><title>PGT-A Diff</title><style>body{font-family:Inter,sans-serif;padding:20px;}</style></head><body><h1>PGT-A Report Diff</h1>${document.getElementById("diffBox").innerHTML}</body></html>`;
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([html],{type:"text/html"})); a.download="PGTA_Diff.html"; a.click();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("report_date").value = todayStr();
+    updateSummaryTable(1);
+    document.getElementById("embryoForms").appendChild(createEmbryoForm(0));
+});
 </script>
 </body>
 </html>

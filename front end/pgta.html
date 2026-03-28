@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PGTA Report Generator</title>
+<title>PGT-A Report Generator</title>
 
 <!-- Bootstrap 5 -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -13,462 +13,534 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  :root {
-    --brand-blue:   #1F497D;
-    --brand-blue2:  #163a66;
-    --brand-orange: #F58220;
-    --brand-green:  #196F3D;
-  }
+:root {
+  --app-bg: #e8e8e8;
+  --panel-bg: #f5f5f5;
+  --header-bg: #3a3a3a;
+  --tab-bg: #d0d0d0;
+  --tab-active: #4a86c8;
+  --field-bg: #ffffff;
+  --border: #c0c0c0;
+  --text: #222;
+  --label: #333;
+  --brand-blue: #1F497D;
+  --brand-green: #196F3D;
+  --brand-orange: #F58220;
+}
 
-  body { background: var(--brand-orange); font-family: 'Segoe UI', sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0; background: var(--app-bg); font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 13px; color: var(--text); overflow: hidden; height: 100vh; }
 
-  /* Logo bar */
-  .logo-bar {
-    position: fixed; top: 0; left: 0; width: 100%; z-index: 1050;
-    background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  }
-  .logo-bar img {
-    width: 100%; height: auto; max-height: 90px;
-    object-fit: contain; object-position: left center; display: block;
-  }
+/* ── Top header bar ───────────────────────────── */
+.app-header {
+  background: var(--field-bg); display: flex; align-items: center;
+  justify-content: space-between; padding: 8px 20px;
+  border-bottom: 1px solid var(--border); height: 48px; flex-shrink: 0;
+}
+.app-header .app-title { font-size: 20px; font-weight: 700; color: #222; display: flex; align-items: center; gap: 10px; }
+.app-header .app-title a { color: var(--brand-blue); text-decoration: none; font-size: 14px; }
+.app-header .template-sel { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.app-header .template-sel select { padding: 3px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
 
-  /* Page wrapper */
-  .page-wrap { padding: 105px 16px 48px; max-width: 1200px; margin: 0 auto; }
+/* ── Tab bar ──────────────────────────────────── */
+.tab-bar {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; padding: 8px 20px; background: var(--app-bg); flex-shrink: 0;
+}
+.tab-btn {
+  padding: 7px 24px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border: 1px solid #999; background: var(--tab-bg); color: #333;
+  transition: all .15s; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+}
+.tab-btn:first-child { border-radius: 6px 0 0 6px; }
+.tab-btn:last-child { border-radius: 0 6px 6px 0; }
+.tab-btn:not(:first-child) { border-left: none; }
+.tab-btn:hover { background: #bdd4ee; }
+.tab-btn.active { background: var(--tab-active); color: #fff; border-color: #3a70a8; }
 
-  /* Top bar */
-  .top-bar { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
-  .page-title { color: #fff; font-size: 22px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+/* ── Main two-panel layout ────────────────────── */
+.main-container {
+  display: flex; flex: 1; overflow: hidden;
+  height: calc(100vh - 48px - 46px); /* minus header and tabs */
+}
+.left-panel {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  border-right: 1px solid var(--border);
+}
+.right-panel {
+  width: 420px; min-width: 350px; display: flex; flex-direction: column;
+  background: var(--panel-bg);
+}
 
-  /* Main card */
-  .main-card {
-    background: #fff; border-radius: 14px;
-    box-shadow: 0 6px 30px rgba(0,0,0,0.18); padding: 0; overflow: hidden;
-  }
-  .card-body-pad { padding: 24px 28px; }
+/* ── Left panel sections ──────────────────────── */
+.form-scroll { flex: 1; overflow-y: auto; padding: 12px 16px; }
 
-  /* Nav tabs override */
-  .nav-tabs { border-bottom: 2px solid var(--brand-blue); padding: 0 20px; background: #f8f9fb; }
-  .nav-tabs .nav-link {
-    color: #666; font-weight: 600; font-size: 14px; border: none;
-    border-radius: 8px 8px 0 0; padding: 11px 22px; margin-right: 4px; margin-bottom: -2px;
-  }
-  .nav-tabs .nav-link:hover { background: #e8f0fb; color: var(--brand-blue); }
-  .nav-tabs .nav-link.active { background: var(--brand-blue); color: #fff; }
+.section-header {
+  font-size: 12px; font-weight: 700; color: #444; background: #ddd;
+  padding: 5px 12px; border: 1px solid var(--border); border-radius: 4px 4px 0 0;
+  margin-top: 10px; margin-bottom: 0; text-transform: capitalize;
+}
+.section-body {
+  border: 1px solid var(--border); border-top: none; background: var(--field-bg);
+  padding: 10px 14px; border-radius: 0 0 4px 4px; margin-bottom: 8px;
+}
 
-  /* Section title */
-  .section-title {
-    font-size: 13px; font-weight: 700; color: var(--brand-blue);
-    border-left: 4px solid var(--brand-orange); padding-left: 10px;
-    margin: 22px 0 12px; text-transform: uppercase; letter-spacing: .5px;
-  }
+/* ── Form rows (label left, input right) ──────── */
+.form-row {
+  display: flex; align-items: center; margin-bottom: 6px; gap: 8px;
+}
+.form-row label {
+  width: 170px; min-width: 170px; text-align: right; font-size: 12px;
+  font-weight: 600; color: var(--label); padding-right: 4px; white-space: nowrap;
+}
+.form-row input, .form-row select, .form-row textarea {
+  flex: 1; padding: 4px 8px; border: 1px solid var(--border); border-radius: 3px;
+  font-size: 12px; font-family: inherit; background: var(--field-bg);
+}
+.form-row textarea { resize: vertical; min-height: 36px; }
+.form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+  outline: none; border-color: var(--tab-active); box-shadow: 0 0 0 2px rgba(74,134,200,0.2);
+}
 
-  /* Options bar */
-  .options-bar {
-    background: #f0f4ff; border-radius: 8px; padding: 12px 16px;
-    display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px;
-  }
-  .options-bar label { font-weight: 600; color: var(--brand-blue); font-size: 13px; margin: 0; }
+/* ── Embryo section ───────────────────────────── */
+.embryo-header-bar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.embryo-header-bar label { font-weight: 700; font-size: 12px; color: #c0392b; }
+.embryo-header-bar input { width: 60px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 3px; text-align: center; font-size: 12px; }
+.embryo-header-bar button { font-size: 11px; }
 
-  /* Embryo count bar */
-  .embryo-count-bar {
-    background: #fff8f0; border: 1px solid var(--brand-orange); border-radius: 8px;
-    padding: 12px 16px; display: flex; align-items: center; gap: 12px;
-    flex-wrap: wrap; margin-bottom: 14px;
-  }
-  .embryo-count-bar label { font-weight: 700; color: #c0392b; font-size: 13px; margin: 0; }
+.embryo-panel {
+  border: 1px solid #bbb; border-radius: 4px; margin-bottom: 8px; background: var(--field-bg);
+}
+.embryo-panel-header {
+  padding: 6px 12px; background: #5a5a5a; color: #fff; font-size: 12px;
+  font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  border-radius: 4px 4px 0 0; user-select: none;
+}
+.embryo-panel-header .toggle-icon { transition: transform .2s; }
+.embryo-panel-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+.embryo-panel-body { padding: 10px 14px; display: block; }
+.embryo-panel-body.hidden { display: none; }
 
-  /* Embryo accordion override */
-  .embryo-accordion .accordion-button {
-    background: var(--brand-blue); color: #fff; font-size: 13px; font-weight: 700;
-    padding: 10px 16px;
-  }
-  .embryo-accordion .accordion-button:not(.collapsed) {
-    background: var(--brand-blue); color: #fff; box-shadow: none;
-  }
-  .embryo-accordion .accordion-button::after { filter: brightness(0) invert(1); }
-  .embryo-accordion .accordion-button:focus { box-shadow: none; }
-  .embryo-accordion .accordion-item {
-    border: 1.5px solid #dde3ee; border-radius: 8px !important; margin-bottom: 10px; overflow: hidden;
-  }
-  .embryo-accordion .accordion-body { padding: 16px; }
+/* Chromosome grid */
+.chr-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-top: 4px; }
+.chr-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: #f0f0f0; border: 1px solid #ddd; border-radius: 4px; padding: 4px 3px;
+}
+.chr-cell .chr-label { font-size: 9px; font-weight: 700; color: #555; }
+.chr-cell select, .chr-cell input {
+  width: 100%; padding: 1px 2px; font-size: 9px; border: 1px solid #ccc;
+  border-radius: 2px; text-align: center;
+}
+.chr-cell .mosaic-label { font-size: 8px; color: #999; }
 
-  /* Chromosome grid */
-  .chr-grid {
-    display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; margin-top: 6px;
-  }
-  .chr-cell {
-    display: flex; flex-direction: column; gap: 3px; align-items: center;
-    background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 7px; padding: 7px 5px;
-  }
-  .chr-cell .chr-label { font-size: 10px; font-weight: 700; color: var(--brand-blue); }
-  .chr-cell select, .chr-cell input {
-    width: 100%; padding: 2px 3px; font-size: 10px; border-radius: 4px;
-    border: 1px solid #ccc; text-align: center;
-  }
-  .chr-cell .mosaic-label { font-size: 9px; color: #888; }
+/* ── Results Summary Table (Page 1) ───────────── */
+.summary-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.summary-table th {
+  background: #5a5a5a; color: #fff; padding: 6px 8px; font-size: 11px;
+  font-weight: 600; text-align: left; border: 1px solid #444;
+}
+.summary-table td { padding: 4px 6px; border: 1px solid #ccc; }
+.summary-table td input, .summary-table td select {
+  width: 100%; padding: 3px 5px; border: 1px solid #ccc; border-radius: 2px;
+  font-size: 11px; font-family: inherit;
+}
 
-  /* Upload drop area */
-  .upload-area {
-    border: 2px dashed var(--brand-blue); border-radius: 10px; padding: 36px;
-    text-align: center; cursor: pointer; transition: background .2s;
-  }
-  .upload-area:hover { background: #e8f0fb; }
+/* CNV upload */
+.cnv-upload-box {
+  border: 1px dashed #aaa; border-radius: 4px; padding: 8px; text-align: center;
+  cursor: pointer; background: #fafafa; margin-top: 4px; font-size: 11px;
+}
+.cnv-upload-box:hover { border-color: var(--tab-active); background: #eef4fb; }
+.cnv-upload-box .cnv-filename { font-size: 10px; color: var(--brand-green); font-weight: 600; margin-top: 3px; }
+.cnv-upload-box .cnv-preview-img { max-width: 100%; max-height: 80px; margin-top: 4px; border-radius: 3px; }
 
-  /* Bulk table */
-  .bulk-table thead { background: var(--brand-blue); color: #fff; }
-  .bulk-table thead th { font-size: 12px; font-weight: 600; padding: 9px 12px; }
-  .bulk-table tbody td { font-size: 12px; padding: 7px 12px; }
+/* ── Bottom action bar ────────────────────────── */
+.bottom-bar {
+  border-top: 1px solid var(--border); background: var(--panel-bg);
+  padding: 8px 16px; flex-shrink: 0;
+}
+.action-btns { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.action-btns button {
+  padding: 5px 14px; font-size: 12px; font-weight: 600; border: 1px solid #999;
+  border-radius: 4px; cursor: pointer; background: #e8e8e8; color: #333;
+  display: flex; align-items: center; gap: 5px;
+}
+.action-btns button:hover { background: #d0d0d0; }
+.action-btns .btn-generate {
+  background: #4a86c8; color: #fff; border-color: #3a70a8; font-size: 13px; padding: 6px 20px;
+}
+.action-btns .btn-generate:hover { background: #3a70a8; }
 
-  /* Draft list item */
-  .draft-item {
-    padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px;
-    margin-bottom: 7px; cursor: pointer; font-size: 13px; transition: all .15s;
-  }
-  .draft-item:hover { background: #e8f0fb; border-color: var(--brand-blue); }
+.gen-section-title { font-weight: 700; font-size: 12px; color: #444; margin-bottom: 6px; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+.gen-options { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12px; }
+.gen-options label { font-weight: 600; color: #555; }
+.gen-options select { padding: 3px 6px; border: 1px solid var(--border); border-radius: 3px; font-size: 12px; }
+.gen-status { font-size: 11px; color: #888; margin-top: 4px; }
 
-  /* Preview iframe */
-  #previewFrame { width: 100%; height: 620px; border: none; }
+/* ── Right panel (Preview) ────────────────────── */
+.preview-header {
+  padding: 8px 14px; background: #ddd; border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 700; color: #333; flex-shrink: 0;
+}
+.preview-subheader {
+  padding: 6px 14px; background: #eee; border-bottom: 1px solid var(--border);
+  font-size: 12px; font-weight: 700; color: #444; flex-shrink: 0;
+}
+.preview-body { flex: 1; overflow: hidden; padding: 6px; background: #ccc; }
+.preview-body iframe { width: 100%; height: 100%; border: none; background: #fff; }
+.preview-footer {
+  padding: 6px 14px; border-top: 1px solid var(--border); background: #ddd;
+  text-align: center; flex-shrink: 0;
+}
+.preview-footer button {
+  padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid #999;
+  border-radius: 4px; cursor: pointer; background: #e0e0e0; display: inline-flex;
+  align-items: center; gap: 5px;
+}
+.preview-footer button:hover { background: #ccc; }
 
-  /* Brand button colours */
-  .btn-brand { background: var(--brand-blue); border-color: var(--brand-blue); color: #fff; font-weight: 600; }
-  .btn-brand:hover { background: var(--brand-blue2); border-color: var(--brand-blue2); color: #fff; }
-  .btn-orange { background: var(--brand-orange); border-color: var(--brand-orange); color: #fff; font-weight: 600; }
-  .btn-orange:hover { background: #d46f18; border-color: #d46f18; color: #fff; }
-  .btn-green { background: var(--brand-green); border-color: var(--brand-green); color: #fff; font-weight: 600; }
-  .btn-green:hover { background: #145a32; border-color: #145a32; color: #fff; }
+/* ── Alert inline ─────────────────────────────── */
+.result-alert {
+  padding: 8px 12px; border-radius: 4px; font-size: 12px; margin-top: 6px; display: none;
+}
+.result-alert.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; display: block; }
+.result-alert.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; display: block; }
 
-  /* form-label override */
-  .form-label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; }
+/* ── Color coded selects ──────────────────────── */
+.color-black { color: #000 !important; }
+.color-red   { color: #ff0000 !important; }
+.color-blue  { color: #0000ff !important; }
 
-  /* Toast override */
-  #liveToast { min-width: 260px; }
+/* ── Bulk upload ──────────────────────────────── */
+.upload-area {
+  border: 2px dashed #999; border-radius: 8px; padding: 28px; text-align: center;
+  cursor: pointer; background: #fafafa; transition: all .2s;
+}
+.upload-area:hover { border-color: var(--tab-active); background: #eef4fb; }
+.bulk-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+.bulk-table th { background: #5a5a5a; color: #fff; padding: 6px 10px; text-align: left; font-size: 11px; }
+.bulk-table td { padding: 5px 10px; border-bottom: 1px solid #ddd; }
 
-  /* ── Color-coded selects ─────────────────────────────────── */
-  .color-black { color: #000 !important; }
-  .color-red   { color: #ff0000 !important; }
-  .color-blue  { color: #0000ff !important; }
+/* ── Compare tab ──────────────────────────────── */
+.compare-box {
+  border: 2px dashed #aaa; border-radius: 8px; padding: 20px; text-align: center;
+  cursor: pointer; background: #fafafa; flex: 1; min-height: 80px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.compare-box:hover { border-color: var(--tab-active); background: #eef4fb; }
+#compareResultFrame { width: 100%; min-height: 400px; border: 1px solid #ccc; border-radius: 4px; }
 
-  /* ── CNV upload area ─────────────────────────────────────── */
-  .cnv-upload-box {
-    border: 2px dashed #ccc; border-radius: 8px; padding: 12px; text-align: center;
-    cursor: pointer; transition: all .2s; background: #fafafa; margin-top: 8px;
-  }
-  .cnv-upload-box:hover { border-color: var(--brand-blue); background: #e8f0fb; }
-  .cnv-upload-box .cnv-filename { font-size: 11px; color: var(--brand-green); font-weight: 600; margin-top: 4px; }
-  .cnv-upload-box .cnv-preview-img { max-width: 100%; max-height: 120px; margin-top: 8px; border-radius: 4px; }
+/* ── Draft modal ──────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4); z-index: 2000; align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 8px; width: 420px; max-height: 70vh;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3); overflow: hidden;
+}
+.modal-box-header {
+  padding: 10px 16px; background: #5a5a5a; color: #fff; font-weight: 700;
+  font-size: 14px; display: flex; justify-content: space-between; align-items: center;
+}
+.modal-box-header .close-btn { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; }
+.modal-box-body { padding: 12px 16px; overflow-y: auto; max-height: 50vh; }
+.draft-item {
+  padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 5px;
+  cursor: pointer; font-size: 12px;
+}
+.draft-item:hover { background: #eef4fb; border-color: var(--tab-active); }
 
-  /* ── Compare tab ─────────────────────────────────────────── */
-  .compare-upload-box {
-    border: 2px dashed #aab; border-radius: 10px; padding: 24px; text-align: center;
-    transition: all .2s; background: #f9f9ff; min-height: 100px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-  }
-  .compare-upload-box:hover { border-color: var(--brand-blue); background: #e8f0fb; }
-  .compare-upload-box .file-label { font-size: 13px; font-weight: 600; color: var(--brand-blue); }
-  .compare-upload-box .file-name { font-size: 11px; color: var(--brand-green); margin-top: 4px; }
-  #compareResultFrame { width: 100%; min-height: 500px; border: 1px solid #ddd; border-radius: 8px; }
+/* ── Toast ────────────────────────────────────── */
+.toast-popup {
+  position: fixed; bottom: 16px; right: 16px; padding: 10px 18px;
+  border-radius: 6px; font-size: 13px; font-weight: 600; color: #fff;
+  z-index: 3000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.toast-popup.show { display: block; animation: fadeInUp .3s; }
+.toast-popup.success { background: #28a745; }
+.toast-popup.error { background: #dc3545; }
+.toast-popup.info { background: #4a86c8; }
 
-  @media (max-width: 767px) {
-    .chr-grid { grid-template-columns: repeat(4, 1fr); }
-    .card-body-pad { padding: 16px; }
-  }
-  @media (max-width: 480px) {
-    .chr-grid { grid-template-columns: repeat(3, 1fr); }
-  }
+@keyframes fadeInUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+@media (max-width: 900px) {
+  .main-container { flex-direction: column; }
+  .right-panel { width: 100%; min-width: 0; height: 350px; }
+  .chr-grid { grid-template-columns: repeat(4, 1fr); }
+  .form-row label { width: 130px; min-width: 130px; }
+}
 </style>
 </head>
 <body>
 
-<!-- Logo bar -->
-<div class="logo-bar">
-  <img src="/static/backend/logo.png" alt="Anderson Diagnostics" onerror="this.style.display='none'">
+<!-- ── Header ──────────────────────────────────────── -->
+<div class="app-header">
+  <div class="app-title">
+    <a href="/home"><i class="fa fa-arrow-left"></i></a>
+    PGT-A Report Generator
+  </div>
+  <div class="template-sel">
+    <label>Select Template:</label>
+    <select id="templateSel"><option>PGT-A</option></select>
+  </div>
 </div>
 
-<!-- Page wrap -->
-<div class="page-wrap">
-
-  <!-- Top bar -->
-  <div class="top-bar">
-    <a href="/home" class="btn btn-brand btn-sm">
-      <i class="fa fa-arrow-left me-1"></i>Home
-    </a>
-    <div class="page-title"><i class="fa-solid fa-dna me-2"></i>PGTA Report Generator</div>
+<!-- ── Tab bar ─────────────────────────────────────── -->
+<div class="tab-bar">
+  <div class="tab-btn active" onclick="switchTab('manual', this)">
+    <i class="fa-solid fa-pen-to-square"></i> Manual Entry
   </div>
+  <div class="tab-btn" onclick="switchTab('bulk', this)">
+    <i class="fa-solid fa-table-cells"></i> Bulk Upload
+  </div>
+  <div class="tab-btn" onclick="switchTab('compare', this)">
+    <i class="fa-solid fa-code-compare"></i> Report Comparison
+  </div>
+  <div class="tab-btn" onclick="switchTab('guide', this)">
+    <i class="fa-solid fa-circle-info"></i> User Guide
+  </div>
+</div>
 
-  <!-- Main card -->
-  <div class="main-card">
+<!-- ── Main container ──────────────────────────────── -->
+<div class="main-container">
 
-    <!-- Tabs nav -->
-    <ul class="nav nav-tabs" id="mainTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="manual-tab" data-bs-toggle="tab" data-bs-target="#tab-manual"
-          type="button" role="tab">
-          <i class="fa-solid fa-pen-to-square me-1"></i>Manual Entry
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="bulk-tab" data-bs-toggle="tab" data-bs-target="#tab-bulk"
-          type="button" role="tab">
-          <i class="fa-solid fa-file-excel me-1"></i>Bulk Upload
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="compare-tab" data-bs-toggle="tab" data-bs-target="#tab-compare"
-          type="button" role="tab">
-          <i class="fa-solid fa-code-compare me-1"></i>Report Comparison
-        </button>
-      </li>
-    </ul>
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
 
-    <!-- Tab content -->
-    <div class="tab-content card-body-pad">
-
-      <!-- ══════════ MANUAL ENTRY TAB ══════════ -->
-      <div class="tab-pane fade show active" id="tab-manual" role="tabpanel">
-
-        <!-- Options -->
-        <div class="options-bar">
-          <label><i class="fa fa-image me-1"></i>Logo Option:</label>
-          <select id="logoOption" class="form-select form-select-sm" style="width:auto;">
-            <option value="with_logo">With Logo</option>
-            <option value="without_logo">Without Logo</option>
-          </select>
-          <label class="ms-3"><i class="fa fa-table-cells me-1"></i>Grid Lines:</label>
-          <select id="gridOption" class="form-select form-select-sm" style="width:auto;">
-            <option value="no_grid">No Grid</option>
-            <option value="with_grid">With Grid Lines</option>
-          </select>
-        </div>
+    <!-- ============ MANUAL ENTRY TAB ============ -->
+    <div class="tab-content" id="tab-manual">
+      <div class="form-scroll" id="manualScroll">
 
         <!-- Patient Information -->
-        <div class="section-title"><i class="fa-solid fa-user me-1"></i>Patient Information</div>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Patient Name *</label>
-            <input type="text" id="patientName" class="form-control form-control-sm" placeholder="Mrs. Example (PNM00001)">
+        <div class="section-header">Patient Information</div>
+        <div class="section-body">
+          <div class="form-row"><label>Patient Name:</label><input type="text" id="patientName" placeholder=""></div>
+          <div class="form-row"><label>Spouse Name:</label><input type="text" id="spouseName" value="w/o"></div>
+          <div class="form-row"><label>PIN:</label><input type="text" id="pin"></div>
+          <div class="form-row"><label>Age:</label><input type="text" id="age"></div>
+          <div class="form-row"><label>Sample Number:</label><input type="text" id="sampleNumber"></div>
+          <div class="form-row"><label>Referring Clinician:</label><input type="text" id="referringClinician"></div>
+          <div class="form-row"><label>Biopsy Date:</label><input type="text" id="biopsyDate" placeholder="DD-MM-YYYY"></div>
+          <div class="form-row"><label>Hospital/Clinic:</label><input type="text" id="hospitalClinic"></div>
+          <div class="form-row"><label>Sample Collection Date:</label><input type="text" id="sampleCollectionDate" placeholder="DD-MM-YYYY"></div>
+          <div class="form-row"><label>Specimen:</label><input type="text" id="specimen" value="DAY 5 TROPHECTODERM BIOPSY"></div>
+          <div class="form-row"><label>Sample Receipt Date:</label><input type="text" id="sampleReceiptDate" placeholder="DD-MM-YYYY"></div>
+          <div class="form-row"><label>Biopsy Performed By:</label><input type="text" id="biopsyPerformedBy"></div>
+          <div class="form-row"><label>Report Date:</label><input type="text" id="reportDate" placeholder="DD-MM-YYYY"></div>
+          <div class="form-row"><label>Indication:</label><textarea id="indication" rows="2"></textarea></div>
+        </div>
+
+        <!-- Page 1: Results Summary Table -->
+        <div class="section-header">Page 1 : Results Summary</div>
+        <div class="section-body">
+          <div class="embryo-header-bar">
+            <label>Number of Embryos:</label>
+            <input type="number" id="embryoCount" min="1" max="20" value="1">
+            <button onclick="rebuildAll()"><i class="fa-solid fa-rotate"></i> Update</button>
+            <button onclick="copyLastEmbryo()"><i class="fa-solid fa-copy"></i> Copy Last Embryo</button>
           </div>
-          <div class="col-md-6">
-            <label class="form-label">Spouse Name</label>
-            <input type="text" id="spouseName" class="form-control form-control-sm" placeholder="Mr. Example" value="w/o">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">PIN</label>
-            <input type="text" id="pin" class="form-control form-control-sm" placeholder="PIN12345">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Age</label>
-            <input type="text" id="age" class="form-control form-control-sm" placeholder="30 Years">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Sample Number *</label>
-            <input type="text" id="sampleNumber" class="form-control form-control-sm" placeholder="123456">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Referring Clinician</label>
-            <input type="text" id="referringClinician" class="form-control form-control-sm" placeholder="Dr. Example">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Biopsy Date <small class="text-muted">(DD-MM-YYYY)</small></label>
-            <input type="text" id="biopsyDate" class="form-control form-control-sm" placeholder="01-01-2026">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Hospital / Clinic</label>
-            <input type="text" id="hospitalClinic" class="form-control form-control-sm" placeholder="Example Hospital">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Sample Collection Date <small class="text-muted">(DD-MM-YYYY)</small></label>
-            <input type="text" id="sampleCollectionDate" class="form-control form-control-sm" placeholder="01-01-2026">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Specimen</label>
-            <input type="text" id="specimen" class="form-control form-control-sm" placeholder="Day 5 Trophectoderm Biopsy">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Sample Receipt Date <small class="text-muted">(DD-MM-YYYY)</small></label>
-            <input type="text" id="sampleReceiptDate" class="form-control form-control-sm" placeholder="01-01-2026">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Biopsy Performed By</label>
-            <input type="text" id="biopsyPerformedBy" class="form-control form-control-sm" placeholder="Dr. Example">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Report Date <small class="text-muted">(DD-MM-YYYY)</small></label>
-            <input type="text" id="reportDate" class="form-control form-control-sm" placeholder="01-01-2026">
-          </div>
-          <div class="col-12">
-            <label class="form-label">Indication</label>
-            <textarea id="indication" class="form-control form-control-sm" rows="2" placeholder="Enter clinical indication..."></textarea>
-          </div>
-          <div class="col-12">
-            <label class="form-label">Results Summary Comment <small class="text-muted">(optional)</small></label>
-            <textarea id="resultsSummaryComment" class="form-control form-control-sm" rows="2" placeholder="Optional comment below results table..."></textarea>
+          <table class="summary-table">
+            <thead>
+              <tr><th>S. No.</th><th>Embryo ID</th><th>Result (Summary)</th><th>MTcopy</th><th>Interpretation</th></tr>
+            </thead>
+            <tbody id="summaryTableBody"></tbody>
+          </table>
+          <div class="form-row" style="margin-top:8px;">
+            <label>Comment:</label>
+            <textarea id="resultsSummaryComment" rows="2" placeholder="Optional comment below results table on page 1"></textarea>
           </div>
         </div>
 
-        <!-- Embryo Results -->
-        <div class="section-title mt-4"><i class="fa-solid fa-egg me-1"></i>Embryo Results</div>
-        <div class="embryo-count-bar">
-          <label><i class="fa-solid fa-list-ol me-1"></i>Number of Embryos:</label>
-          <input type="number" id="embryoCount" class="form-control form-control-sm"
-            min="1" max="20" value="1" style="width:72px;">
-          <button class="btn btn-orange btn-sm" onclick="buildEmbryoForms()">
-            <i class="fa-solid fa-rotate me-1"></i>Update Forms
-          </button>
-          <button class="btn btn-brand btn-sm" onclick="copyLastEmbryo()" title="Copy data from the last embryo into a new one">
-            <i class="fa-solid fa-copy me-1"></i>Copy Last Embryo
-          </button>
+        <!-- Page 4+: Embryo Details -->
+        <div class="section-header">Page 4+ : Embryo Details</div>
+        <div class="section-body">
+          <div id="embryoForms"></div>
         </div>
 
-        <!-- Embryo accordion container -->
-        <div class="accordion embryo-accordion" id="embryoForms"></div>
+      </div><!-- /form-scroll -->
 
-        <!-- Action buttons -->
-        <div class="d-flex flex-wrap gap-2 mt-4">
-          <button class="btn btn-brand btn-sm" onclick="previewReport()">
-            <i class="fa-regular fa-eye me-1"></i>Preview
-          </button>
-          <button class="btn btn-green btn-sm" onclick="generateReport()">
-            <i class="fa-solid fa-file-pdf me-1"></i>Generate Report
-          </button>
-          <button class="btn btn-orange btn-sm" onclick="saveDraft()">
-            <i class="fa-solid fa-floppy-disk me-1"></i>Save Draft
-          </button>
-          <button class="btn btn-secondary btn-sm" onclick="openDraftPicker()">
-            <i class="fa-solid fa-folder-open me-1"></i>Load Draft
-          </button>
-          <button class="btn btn-outline-danger btn-sm" onclick="clearForm()">
-            <i class="fa-solid fa-eraser me-1"></i>Clear Form
-          </button>
+      <!-- Bottom action bar -->
+      <div class="bottom-bar">
+        <div class="action-btns">
+          <button onclick="saveDraft()"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+          <button onclick="openDraftPicker()"><i class="fa-solid fa-folder-open"></i> Load Draft</button>
+          <button onclick="saveDraft()"><i class="fa-solid fa-database"></i> Save Data</button>
+          <button onclick="clearForm()"><i class="fa-solid fa-eraser"></i> Clear Form</button>
         </div>
-
-        <!-- Preview iframe -->
-        <div id="previewContainer" class="mt-3 border rounded" style="display:none;overflow:hidden;">
-          <iframe id="previewFrame"></iframe>
-        </div>
-
-        <!-- Result alert -->
-        <div id="manualResult" class="alert mt-3" style="display:none;"></div>
-
-      </div><!-- /tab-manual -->
-
-      <!-- ══════════ BULK UPLOAD TAB ══════════ -->
-      <div class="tab-pane fade" id="tab-bulk" role="tabpanel">
-
-        <div class="options-bar">
-          <label><i class="fa fa-image me-1"></i>Logo Option:</label>
-          <select id="bulkLogoOption" class="form-select form-select-sm" style="width:auto;">
+        <div class="gen-section-title">Fast Report Generation</div>
+        <div class="gen-options">
+          <label>Branding:</label>
+          <select id="logoOption">
             <option value="with_logo">With Logo</option>
             <option value="without_logo">Without Logo</option>
           </select>
-          <button class="btn btn-secondary btn-sm" onclick="downloadTemplate()">
-            <i class="fa-solid fa-download me-1"></i>Download Template
+          <label>Grid lines:</label>
+          <select id="gridOption">
+            <option value="no_grid">No Grid</option>
+            <option value="with_grid">With Grid</option>
+          </select>
+          <button class="btn-generate" onclick="generateReport()">
+            <i class="fa-solid fa-play"></i> Generate Report(s)
           </button>
         </div>
+        <div id="manualResult" class="result-alert"></div>
+        <div class="gen-status" id="genStatus">No data loaded</div>
+      </div>
+    </div><!-- /tab-manual -->
 
-        <label class="upload-area d-block" onclick="document.getElementById('bulkFile').click()">
-          <input type="file" id="bulkFile" accept=".xlsx,.xls" style="display:none;" onchange="handleBulkUpload(event)">
-          <i class="fa-solid fa-file-excel fa-3x text-success mb-2 d-block"></i>
-          <div class="fw-bold" style="color:var(--brand-blue);">Click to upload Excel file</div>
-          <div class="text-muted" style="font-size:12px;margin-top:4px;">Supported: .xlsx, .xls</div>
-        </label>
-
-        <div id="bulkPreview" style="display:none;">
-          <div class="section-title mt-3">
-            <i class="fa-solid fa-users me-1"></i>Patients Found
-            (<span id="bulkCount" class="badge" style="background:var(--brand-blue);">0</span>)
-          </div>
-          <div class="table-responsive">
-            <table class="table table-sm table-hover bulk-table">
-              <thead>
-                <tr>
-                  <th>#</th><th>Patient Name</th><th>Sample No</th><th>Embryos</th><th>Report Date</th>
-                </tr>
-              </thead>
-              <tbody id="bulkTableBody"></tbody>
-            </table>
-          </div>
-          <div class="d-flex gap-2 mt-2">
-            <button class="btn btn-green btn-sm" onclick="generateBulk()">
-              <i class="fa-solid fa-file-pdf me-1"></i>Generate All Reports
+    <!-- ============ BULK UPLOAD TAB ============ -->
+    <div class="tab-content" id="tab-bulk" style="display:none;">
+      <div class="form-scroll">
+        <div class="section-header">Bulk Upload</div>
+        <div class="section-body">
+          <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;">
+            <label style="font-weight:600;">Logo:</label>
+            <select id="bulkLogoOption" style="padding:3px 6px;border:1px solid var(--border);border-radius:3px;font-size:12px;">
+              <option value="with_logo">With Logo</option>
+              <option value="without_logo">Without Logo</option>
+            </select>
+            <button onclick="downloadTemplate()" style="padding:4px 12px;font-size:11px;border:1px solid #999;border-radius:4px;cursor:pointer;background:#e8e8e8;">
+              <i class="fa-solid fa-download"></i> Download Template
             </button>
           </div>
-          <div id="bulkResult" class="alert mt-3" style="display:none;"></div>
-        </div>
 
-      </div><!-- /tab-bulk -->
+          <label class="upload-area d-block" onclick="document.getElementById('bulkFile').click()">
+            <input type="file" id="bulkFile" accept=".xlsx,.xls" style="display:none;" onchange="handleBulkUpload(event)">
+            <i class="fa-solid fa-file-excel fa-2x" style="color:#28a745;margin-bottom:6px;display:block;"></i>
+            <div style="font-weight:600;color:#555;">Click to upload Excel file</div>
+            <div style="font-size:11px;color:#999;margin-top:4px;">Supported: .xlsx, .xls</div>
+          </label>
 
-      <!-- ══════════ REPORT COMPARISON TAB ══════════ -->
-      <div class="tab-pane fade" id="tab-compare" role="tabpanel">
-
-        <div class="section-title"><i class="fa-solid fa-code-compare me-1"></i>Compare Two PDF Reports</div>
-        <p class="text-muted" style="font-size:13px;">
-          Upload two PGTA PDF reports to compare them side-by-side. The tool will detect differences in patient info, embryo data, and report content.
-        </p>
-
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <div class="compare-upload-box" onclick="document.getElementById('compareFile1').click()">
-              <input type="file" id="compareFile1" accept=".pdf" style="display:none;" onchange="updateCompareLabel(1, event)">
-              <i class="fa-solid fa-file-pdf fa-2x mb-2" style="color:var(--brand-blue);"></i>
-              <div class="file-label">Left PDF (Manual / Reference)</div>
-              <div class="file-name" id="compareLabel1">No file selected</div>
+          <div id="bulkPreview" style="display:none;">
+            <div style="font-weight:700;font-size:12px;margin-top:12px;color:#444;">
+              Patients Found: <span id="bulkCount" style="background:#5a5a5a;color:#fff;padding:1px 8px;border-radius:10px;font-size:11px;">0</span>
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="compare-upload-box" onclick="document.getElementById('compareFile2').click()">
-              <input type="file" id="compareFile2" accept=".pdf" style="display:none;" onchange="updateCompareLabel(2, event)">
-              <i class="fa-solid fa-file-pdf fa-2x mb-2" style="color:var(--brand-orange);"></i>
-              <div class="file-label">Right PDF (Automated / New)</div>
-              <div class="file-name" id="compareLabel2">No file selected</div>
+            <table class="bulk-table">
+              <thead><tr><th>#</th><th>Patient Name</th><th>Sample No</th><th>Embryos</th><th>Report Date</th></tr></thead>
+              <tbody id="bulkTableBody"></tbody>
+            </table>
+            <div style="margin-top:8px;">
+              <button class="btn-generate" onclick="generateBulk()" style="padding:5px 16px;font-size:12px;border:1px solid #3a70a8;border-radius:4px;cursor:pointer;background:#4a86c8;color:#fff;font-weight:600;">
+                <i class="fa-solid fa-play"></i> Generate All Reports
+              </button>
             </div>
+            <div id="bulkResult" class="result-alert"></div>
           </div>
         </div>
+      </div>
+    </div><!-- /tab-bulk -->
 
-        <div class="d-flex gap-2 mb-3">
-          <button class="btn btn-brand btn-sm" onclick="comparePDFs()">
-            <i class="fa-solid fa-magnifying-glass-chart me-1"></i>Run Comparison
+    <!-- ============ COMPARE TAB ============ -->
+    <div class="tab-content" id="tab-compare" style="display:none;">
+      <div class="form-scroll">
+        <div class="section-header">Report Comparison</div>
+        <div class="section-body">
+          <p style="font-size:12px;color:#666;margin-bottom:12px;">
+            Upload two PGTA PDF reports to compare them. Differences in patient info, embryo data, and report content will be highlighted.
+          </p>
+          <div style="display:flex;gap:12px;margin-bottom:12px;">
+            <div class="compare-box" onclick="document.getElementById('compareFile1').click()">
+              <input type="file" id="compareFile1" accept=".pdf" style="display:none;" onchange="updateCompareLabel(1,event)">
+              <i class="fa-solid fa-file-pdf" style="font-size:24px;color:#5a5a5a;margin-bottom:4px;"></i>
+              <div style="font-weight:600;font-size:12px;color:#555;">Left PDF (Manual)</div>
+              <div id="compareLabel1" style="font-size:10px;color:var(--brand-green);margin-top:3px;">No file selected</div>
+            </div>
+            <div class="compare-box" onclick="document.getElementById('compareFile2').click()">
+              <input type="file" id="compareFile2" accept=".pdf" style="display:none;" onchange="updateCompareLabel(2,event)">
+              <i class="fa-solid fa-file-pdf" style="font-size:24px;color:var(--brand-orange);margin-bottom:4px;"></i>
+              <div style="font-weight:600;font-size:12px;color:#555;">Right PDF (Automated)</div>
+              <div id="compareLabel2" style="font-size:10px;color:var(--brand-green);margin-top:3px;">No file selected</div>
+            </div>
+          </div>
+          <button onclick="comparePDFs()" style="padding:5px 16px;font-size:12px;border:1px solid #3a70a8;border-radius:4px;cursor:pointer;background:#4a86c8;color:#fff;font-weight:600;">
+            <i class="fa-solid fa-magnifying-glass-chart"></i> Run Comparison
           </button>
+          <div id="compareResultContainer" style="display:none;margin-top:12px;">
+            <iframe id="compareResultFrame"></iframe>
+          </div>
         </div>
+      </div>
+    </div><!-- /tab-compare -->
 
-        <div id="compareResultContainer" style="display:none;">
-          <div class="section-title"><i class="fa-solid fa-chart-bar me-1"></i>Comparison Results</div>
-          <iframe id="compareResultFrame"></iframe>
+    <!-- ============ USER GUIDE TAB ============ -->
+    <div class="tab-content" id="tab-guide" style="display:none;">
+      <div class="form-scroll">
+        <div class="section-header">User Guide</div>
+        <div class="section-body" style="font-size:12px;line-height:1.7;color:#444;">
+          <h4 style="font-size:14px;color:#333;">Overview</h4>
+          <p>The PGT-A Report Generator creates professional Preimplantation Genetic Testing for Aneuploidies (PGT-A) reports in PDF format.</p>
+
+          <h4 style="font-size:14px;color:#333;margin-top:14px;">Manual Entry</h4>
+          <ol>
+            <li>Fill in <b>Patient Information</b> (Patient Name and Sample Number are required).</li>
+            <li>Set the <b>Number of Embryos</b> and click <b>Update</b>.</li>
+            <li>For each embryo, fill in the Summary, Interpretation, and Chromosome Statuses (1-22).</li>
+            <li>Optionally upload a <b>CNV Chart Image</b> (PNG/JPG) for each embryo.</li>
+            <li>Use <b>Copy Last Embryo</b> to duplicate the previous embryo's data.</li>
+            <li>Click <b>Preview</b> to see the report, or <b>Generate Report(s)</b> to produce the final PDF.</li>
+          </ol>
+
+          <h4 style="font-size:14px;color:#333;margin-top:14px;">Bulk Upload</h4>
+          <ol>
+            <li>Download the <b>Excel Template</b>.</li>
+            <li>Fill in one row per embryo. Patients are grouped by <b>Sample_Number</b>.</li>
+            <li>Upload the completed file and click <b>Generate All Reports</b>.</li>
+          </ol>
+
+          <h4 style="font-size:14px;color:#333;margin-top:14px;">Report Comparison</h4>
+          <p>Upload two PDF reports (manual and automated) to compare them. Differences in text, patient data, and embryo results are highlighted.</p>
+
+          <h4 style="font-size:14px;color:#333;margin-top:14px;">Chromosome Status Codes</h4>
+          <table style="border-collapse:collapse;font-size:11px;margin-top:4px;">
+            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">N</td><td style="padding:2px 10px;border:1px solid #ddd;">Normal</td></tr>
+            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">G / L</td><td style="padding:2px 10px;border:1px solid #ddd;">Gain / Loss</td></tr>
+            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">SG / SL</td><td style="padding:2px 10px;border:1px solid #ddd;">Segmental Gain / Loss</td></tr>
+            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">M</td><td style="padding:2px 10px;border:1px solid #ddd;">Mosaic</td></tr>
+            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">MG / ML</td><td style="padding:2px 10px;border:1px solid #ddd;">Mosaic Gain / Loss</td></tr>
+            <tr><td style="padding:2px 10px;border:1px solid #ddd;font-weight:700;">SMG / SML</td><td style="padding:2px 10px;border:1px solid #ddd;">Segmental Mosaic Gain / Loss</td></tr>
+          </table>
+
+          <h4 style="font-size:14px;color:#333;margin-top:14px;">Drafts</h4>
+          <p>Use <b>Save Draft</b> to save your work locally. Use <b>Load Draft</b> to restore a previous session.</p>
         </div>
-
-      </div><!-- /tab-compare -->
-
-    </div><!-- /tab-content -->
-  </div><!-- /main-card -->
-</div><!-- /page-wrap -->
-
-<!-- Draft Picker Modal -->
-<div class="modal fade" id="draftModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header" style="background:var(--brand-blue);color:#fff;">
-        <h5 class="modal-title"><i class="fa-solid fa-folder-open me-2"></i>Load Draft</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" id="draftList"></div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-      </div>
+    </div><!-- /tab-guide -->
+
+  </div><!-- /left-panel -->
+
+  <!-- RIGHT PANEL: Preview -->
+  <div class="right-panel">
+    <div class="preview-header">Report Preview</div>
+    <div class="preview-subheader">Report Preview (PDF)</div>
+    <div class="preview-body">
+      <iframe id="previewFrame" src="about:blank"></iframe>
     </div>
+    <div class="preview-footer">
+      <button onclick="previewReport()"><i class="fa-solid fa-rotate"></i> Refresh Preview</button>
+    </div>
+  </div>
+
+</div><!-- /main-container -->
+
+<!-- ── Draft Modal ───────────────────────────────── -->
+<div class="modal-overlay" id="draftModal">
+  <div class="modal-box">
+    <div class="modal-box-header">
+      <span><i class="fa-solid fa-folder-open"></i> Load Draft</span>
+      <button class="close-btn" onclick="closeDraftPicker()">&times;</button>
+    </div>
+    <div class="modal-box-body" id="draftList"></div>
   </div>
 </div>
 
-<!-- Bootstrap Toast -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
-  <div id="liveToast" class="toast align-items-center text-white border-0" role="alert">
-    <div class="d-flex">
-      <div class="toast-body fw-semibold" id="toastMsg"></div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-    </div>
-  </div>
-</div>
-
-<!-- Bootstrap 5 JS bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- ── Toast ─────────────────────────────────────── -->
+<div class="toast-popup" id="toastPopup"></div>
 
 <script>
 // ─── API URL ─────────────────────────────────────────────────────────────────
@@ -476,7 +548,7 @@ const API = (window.location.hostname === "127.0.0.1" || window.location.hostnam
     ? "http://127.0.0.1:8000"
     : "https://tera-report-automation.onrender.com";
 
-// ─── Supabase Auth Check ──────────────────────────────────────────────────────
+// ─── Supabase Auth Check ─────────────────────────────────────────────────────
 const SUPABASE_URL  = "https://wriaonorqjhmofwrhqlp.supabase.co"
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc"
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
@@ -484,27 +556,34 @@ sb.auth.getSession().then(({ data }) => {
     if (!data.session) window.location.href = "/"
 })
 
-// ─── Chromosome / Result options with color coding ───────────────────────────
+// ─── Tab switching ───────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none')
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+    document.getElementById('tab-' + name).style.display = 'flex'
+    btn.classList.add('active')
+}
+
+// ─── Dropdown options with color coding ──────────────────────────────────────
 const CHR_STATUSES = ["N","G","L","SG","SL","M","MG","ML","SMG","SML","SL/SG","SG/SL","SML/SMG","SMG/SML"]
 
-// {value, label, color} — color: 'black'|'red'|'blue'
 const RESULT_SUMMARY_OPTIONS = [
-    { v: "Normal chromosome complement",            c: "black" },
-    { v: "Multiple chromosomal abnormalities",       c: "red"   },
-    { v: "Mosaic chromosome complement",             c: "blue"  },
-    { v: "Inconclusive",                             c: "black" },
-    { v: "Low DNA concentration",                    c: "black" }
+    { v: "Normal chromosome complement",       c: "black" },
+    { v: "Multiple chromosomal abnormalities",  c: "red"   },
+    { v: "Mosaic chromosome complement",        c: "blue"  },
+    { v: "Inconclusive",                        c: "black" },
+    { v: "Low DNA concentration",               c: "black" }
 ]
 const INTERPRETATION_OPTIONS = [
-    { v: "NA",                   c: "black" },
-    { v: "Euploid",              c: "black" },
-    { v: "Aneuploid",            c: "red"   },
-    { v: "Chaotic embryo",       c: "red"   },
-    { v: "Low level mosaic",     c: "blue"  },
-    { v: "High level mosaic",    c: "blue"  },
-    { v: "Complex mosaic",       c: "blue"  },
-    { v: "Inconclusive",         c: "black" },
-    { v: "Low DNA concentration",c: "black" }
+    { v: "NA",                    c: "black" },
+    { v: "Euploid",               c: "black" },
+    { v: "Aneuploid",             c: "red"   },
+    { v: "Chaotic embryo",        c: "red"   },
+    { v: "Low level mosaic",      c: "blue"  },
+    { v: "High level mosaic",     c: "blue"  },
+    { v: "Complex mosaic",        c: "blue"  },
+    { v: "Inconclusive",          c: "black" },
+    { v: "Low DNA concentration", c: "black" }
 ]
 const RESULT_DESC_OPTIONS = [
     "The embryo contains normal chromosome complement",
@@ -519,196 +598,130 @@ const SEX_CHR_OPTIONS = [
     { v: "Mosaic",   c: "blue"  }
 ]
 
-// ─── Helpers for color-coded selects ─────────────────────────────────────────
-function buildColorOptions(opts, selected) {
-    return opts.map(o => {
-        const sel = (selected === o.v) ? ' selected' : ''
-        return `<option value="${o.v}" class="color-${o.c}"${sel}>${o.v}</option>`
-    }).join('')
+function buildColorOpts(opts, sel) {
+    return opts.map(o => `<option value="${o.v}" class="color-${o.c}"${sel===o.v?' selected':''}>${o.v}</option>`).join('')
+}
+function applySelColor(el) {
+    const opt = el.options[el.selectedIndex]
+    el.className = el.className.replace(/color-\w+/g, '')
+    if (opt) { const c = Array.from(opt.classList).find(x=>x.startsWith('color-')); if(c) el.classList.add(c) }
 }
 
-function applySelectColor(sel) {
-    const opt = sel.options[sel.selectedIndex]
-    sel.className = sel.className.replace(/color-\w+/g, '')
-    if (opt) {
-        const cls = Array.from(opt.classList).find(c => c.startsWith('color-'))
-        if (cls) sel.classList.add(cls)
-    }
-}
-
-// ─── CNV Image Upload per Embryo ─────────────────────────────────────────────
-const cnvImagePaths = {} // embryoNum -> server temp filename
-
+// ─── CNV Image Upload ────────────────────────────────────────────────────────
+const cnvImagePaths = {}
 async function uploadCNV(num, input) {
-    const file = input.files[0]
-    if (!file) return
-    const form = new FormData()
-    form.append('file', file)
+    const file = input.files[0]; if (!file) return
+    const form = new FormData(); form.append('file', file)
     try {
         const res = await fetch(`${API}/pgta/upload-cnv`, { method: 'POST', body: form })
         const json = await res.json()
         if (json.filename) {
             cnvImagePaths[num] = json.filename
-            const label = document.getElementById(`cnv-name-${num}`)
-            const preview = document.getElementById(`cnv-preview-${num}`)
-            if (label) label.textContent = file.name
-            if (preview) {
-                preview.src = URL.createObjectURL(file)
-                preview.style.display = 'block'
-            }
+            const lbl = document.getElementById(`cnv-name-${num}`)
+            const img = document.getElementById(`cnv-preview-${num}`)
+            if (lbl) lbl.textContent = file.name
+            if (img) { img.src = URL.createObjectURL(file); img.style.display = 'block' }
             showToast('CNV chart uploaded', 'success')
-        } else {
-            showToast(json.error || 'Upload failed', 'error')
-        }
+        } else { showToast(json.error || 'Upload failed', 'error') }
     } catch (e) { showToast('Upload error: ' + e.message, 'error') }
 }
 
-// ─── Build Embryo Forms ──────────────────────────────────────────────────────
+// ─── Rebuild both summary table + embryo detail forms ────────────────────────
+function rebuildAll(existingData) {
+    const count = parseInt(document.getElementById('embryoCount').value) || 1
+    buildSummaryTable(count, existingData)
+    buildEmbryoForms(existingData)
+}
+
+function buildSummaryTable(count, existingData) {
+    count = count || parseInt(document.getElementById('embryoCount').value) || 1
+    const tbody = document.getElementById('summaryTableBody')
+    tbody.innerHTML = ''
+    for (let i = 0; i < count; i++) {
+        const e = (existingData && existingData[i]) ? existingData[i] : {}
+        const tr = document.createElement('tr')
+        tr.innerHTML = `
+          <td style="width:50px;text-align:center;">${i+1}</td>
+          <td style="width:90px;"><input type="text" id="s${i+1}-id" value="${e.embryo_id||'PS'+(i+1)}"></td>
+          <td><select id="s${i+1}-result-summary" class="color-sel" onchange="applySelColor(this)">${buildColorOpts(RESULT_SUMMARY_OPTIONS, e.result_summary||'')}</select></td>
+          <td style="width:70px;"><input type="text" id="s${i+1}-mtcopy" value="${e.mtcopy||'NA'}"></td>
+          <td><select id="s${i+1}-interpretation" class="color-sel" onchange="applySelColor(this)">${buildColorOpts(INTERPRETATION_OPTIONS, e.interpretation||'')}</select></td>`
+        tbody.appendChild(tr)
+    }
+    document.querySelectorAll('.color-sel').forEach(applySelColor)
+}
+
 function buildEmbryoForms(existingData) {
-    const count     = parseInt(document.getElementById('embryoCount').value) || 1
+    const count = parseInt(document.getElementById('embryoCount').value) || 1
     const container = document.getElementById('embryoForms')
     container.innerHTML = ''
     for (let i = 0; i < count; i++) {
         const e = (existingData && existingData[i]) ? existingData[i] : {}
         container.appendChild(createEmbryoBlock(i + 1, e))
     }
-    // Apply colors on initial render
-    document.querySelectorAll('.color-select').forEach(applySelectColor)
+    document.querySelectorAll('.color-sel').forEach(applySelColor)
+}
+
+function toggleEmbryo(num) {
+    const hdr = document.querySelector(`#ep-${num} .embryo-panel-header`)
+    const body = document.getElementById(`ep-body-${num}`)
+    hdr.classList.toggle('collapsed')
+    body.classList.toggle('hidden')
 }
 
 function createEmbryoBlock(num, data) {
     data = data || {}
-    const rs  = data.result_summary || ''
-    const int = data.interpretation || ''
+    const div = document.createElement('div')
+    div.className = 'embryo-panel'
+    div.id = `ep-${num}`
+    div.innerHTML = `
+    <div class="embryo-panel-header${num===1?'':' collapsed'}" onclick="toggleEmbryo(${num})">
+      <i class="fa-solid fa-caret-down toggle-icon"></i>
+      Embryo ${num} &mdash; <span id="ehdr-${num}">PS${num}</span>
+    </div>
+    <div class="embryo-panel-body${num===1?'':' hidden'}" id="ep-body-${num}">
+      <div class="form-row"><label>Embryo ID (Page 4):</label><input type="text" id="e${num}-id-detail" value="${data.embryo_id_detail||'PS'+num}"></div>
+      <div class="form-row"><label>Result Description:</label><select id="e${num}-result-desc">${RESULT_DESC_OPTIONS.map(o=>`<option value="${o}"${(data.result_description||'')===o?' selected':''}>${o}</option>`).join('')}</select></div>
+      <div class="form-row"><label>Autosomes:</label><input type="text" id="e${num}-autosomes" value="${data.autosomes||'Normal'}"></div>
+      <div class="form-row"><label>Sex Chromosomes:</label><select id="e${num}-sex-chr" class="color-sel" onchange="applySelColor(this)">${buildColorOpts(SEX_CHR_OPTIONS,data.sex_chromosomes||'Normal')}</select></div>
+      <div class="form-row"><label>Inconclusive Comment:</label><textarea id="e${num}-inconclusive" rows="2">${data.inconclusive_comment||''}</textarea></div>
 
-    const block = document.createElement('div')
-    block.className = 'accordion-item'
-    block.id = `embryo-block-${num}`
-
-    block.innerHTML = `
-    <h2 class="accordion-header">
-      <button class="accordion-button${num === 1 ? '' : ' collapsed'}"
-        type="button" data-bs-toggle="collapse" data-bs-target="#embryo-body-${num}">
-        <i class="fa-solid fa-circle-dot me-2 opacity-75"></i>
-        Embryo ${num} &nbsp;&mdash;&nbsp; <span id="ehdr-${num}" class="ms-1">${rs || 'PS' + num}</span>
-      </button>
-    </h2>
-    <div id="embryo-body-${num}" class="accordion-collapse collapse${num === 1 ? ' show' : ''}"
-      data-bs-parent="">
-      <div class="accordion-body">
-
-        <div class="row g-2 mb-2">
-          <div class="col-md-4">
-            <label class="form-label">Embryo ID (Summary)</label>
-            <input type="text" id="e${num}-id" class="form-control form-control-sm"
-              value="${data.embryo_id || 'PS' + num}" oninput="updateEmbryoHeader(${num})">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Embryo ID (Detail Page)</label>
-            <input type="text" id="e${num}-id-detail" class="form-control form-control-sm"
-              value="${data.embryo_id_detail || 'PS' + num}">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">MT Copy</label>
-            <input type="text" id="e${num}-mtcopy" class="form-control form-control-sm"
-              value="${data.mtcopy || 'NA'}">
-          </div>
-        </div>
-
-        <div class="row g-2 mb-2">
-          <div class="col-md-4">
-            <label class="form-label">Result Summary</label>
-            <select id="e${num}-result-summary" class="form-select form-select-sm color-select"
-              onchange="updateEmbryoHeader(${num}); applySelectColor(this)">
-              ${buildColorOptions(RESULT_SUMMARY_OPTIONS, rs)}
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Interpretation</label>
-            <select id="e${num}-interpretation" class="form-select form-select-sm color-select"
-              onchange="applySelectColor(this)">
-              ${buildColorOptions(INTERPRETATION_OPTIONS, int)}
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Autosomes</label>
-            <input type="text" id="e${num}-autosomes" class="form-control form-control-sm"
-              value="${data.autosomes || 'Normal'}">
-          </div>
-        </div>
-
-        <div class="row g-2 mb-2">
-          <div class="col-md-6">
-            <label class="form-label">Result Description</label>
-            <select id="e${num}-result-desc" class="form-select form-select-sm">
-              ${RESULT_DESC_OPTIONS.map(o => `<option value="${o}"${(data.result_description || '') === o ? ' selected' : ''}>${o}</option>`).join('')}
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Sex Chromosomes</label>
-            <select id="e${num}-sex-chr" class="form-select form-select-sm color-select"
-              onchange="applySelectColor(this)">
-              ${buildColorOptions(SEX_CHR_OPTIONS, data.sex_chromosomes || 'Normal')}
-            </select>
-          </div>
-        </div>
-
-        <div class="mb-2">
-          <label class="form-label">Inconclusive Comment <small class="text-muted">(if applicable)</small></label>
-          <textarea id="e${num}-inconclusive" class="form-control form-control-sm" rows="2">${data.inconclusive_comment || ''}</textarea>
-        </div>
-
-        <!-- CNV Chart Upload -->
-        <div class="section-title mt-3" style="font-size:11px;">
-          <i class="fa-solid fa-chart-area me-1"></i>CNV Chart Image
-        </div>
-        <div class="cnv-upload-box" onclick="document.getElementById('cnv-file-${num}').click()">
-          <input type="file" id="cnv-file-${num}" accept=".png,.jpg,.jpeg"
-            style="display:none;" onchange="uploadCNV(${num}, this)">
-          <i class="fa-solid fa-image fa-2x mb-1" style="color:#aaa;"></i>
-          <div style="font-size:12px;color:var(--brand-blue);font-weight:600;">Click to select CNV chart image</div>
-          <div class="cnv-filename" id="cnv-name-${num}">${data.cnv_filename || 'No image selected'}</div>
-          <img class="cnv-preview-img" id="cnv-preview-${num}" style="display:none;" alt="CNV preview">
-        </div>
-
-        <!-- Chromosome grid -->
-        <div class="section-title mt-3" style="font-size:11px;">
-          <i class="fa-solid fa-table-cells me-1"></i>Chromosome Statuses (1-22)
-        </div>
-        <div class="text-muted mb-2" style="font-size:10px;">
-          N=Normal &nbsp;G=Gain &nbsp;L=Loss &nbsp;SG=Segmental Gain &nbsp;SL=Segmental Loss &nbsp;
-          M=Mosaic &nbsp;MG=Mosaic Gain &nbsp;ML=Mosaic Loss &nbsp;SMG=Segmental Mosaic Gain &nbsp;SML=Segmental Mosaic Loss
-          &nbsp;| &nbsp;Mosaic%: enter if mosaic
-        </div>
-        <div class="chr-grid" id="chr-grid-${num}">
-          ${buildChrGrid(num, data.chromosome_statuses || {}, data.mosaic_percentages || {})}
-        </div>
-
+      <div style="font-size:11px;font-weight:700;color:#555;margin:8px 0 4px;border-bottom:1px solid #ddd;padding-bottom:3px;">
+        <i class="fa-solid fa-chart-area"></i> CNV Chart Image
       </div>
+      <div class="cnv-upload-box" onclick="document.getElementById('cnv-file-${num}').click()">
+        <input type="file" id="cnv-file-${num}" accept=".png,.jpg,.jpeg" style="display:none;" onchange="uploadCNV(${num},this)">
+        <i class="fa-solid fa-image" style="color:#aaa;"></i> Select Chart
+        <div class="cnv-filename" id="cnv-name-${num}">${data.cnv_filename||'No image selected'}</div>
+        <img class="cnv-preview-img" id="cnv-preview-${num}" style="display:none;" alt="">
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:#555;margin:8px 0 4px;border-bottom:1px solid #ddd;padding-bottom:3px;">
+        <i class="fa-solid fa-table-cells"></i> Chromosome Statuses (1-22)
+      </div>
+      <div style="font-size:9px;color:#888;margin-bottom:4px;">
+        N=Normal G=Gain L=Loss SG=Seg.Gain SL=Seg.Loss M=Mosaic MG/ML=Mosaic Gain/Loss SMG/SML=Seg.Mosaic Gain/Loss
+      </div>
+      <div class="chr-grid">${buildChrGrid(num, data.chromosome_statuses||{}, data.mosaic_percentages||{})}</div>
     </div>`
-    return block
+    return div
 }
 
-function buildChrGrid(embryoNum, statuses, mosaics) {
-    let html = ''
-    for (let c = 1; c <= 22; c++) {
-        const cs = statuses[String(c)] || 'N'
-        const mp = mosaics[String(c)] || ''
-        html += `<div class="chr-cell">
-            <span class="chr-label">Chr ${c}</span>
-            <select id="e${embryoNum}-chr${c}-status">
-                ${CHR_STATUSES.map(s => `<option value="${s}"${cs === s ? ' selected' : ''}>${s}</option>`).join('')}
-            </select>
-            <input type="text" id="e${embryoNum}-chr${c}-mosaic" placeholder="Mosaic%" value="${mp}">
-            <span class="mosaic-label">mosaic%</span>
-        </div>`
+function buildChrGrid(n, statuses, mosaics) {
+    let h = ''
+    for (let c=1;c<=22;c++) {
+        const cs=statuses[String(c)]||'N', mp=mosaics[String(c)]||''
+        h+=`<div class="chr-cell"><span class="chr-label">Chr ${c}</span>
+        <select id="e${n}-chr${c}-status">${CHR_STATUSES.map(s=>`<option value="${s}"${cs===s?' selected':''}>${s}</option>`).join('')}</select>
+        <input type="text" id="e${n}-chr${c}-mosaic" placeholder="%" value="${mp}">
+        <span class="mosaic-label">mosaic%</span></div>`
     }
-    return html
+    return h
 }
 
-function updateEmbryoHeader(num) {
-    const id  = document.getElementById(`e${num}-id`)?.value || `PS${num}`
-    const rs  = document.getElementById(`e${num}-result-summary`)?.value || ''
+function updateEmbryoHdr(num) {
+    const id = document.getElementById(`s${num}-id`)?.value||`PS${num}`
+    const rs = document.getElementById(`s${num}-result-summary`)?.value||''
     const hdr = document.getElementById(`ehdr-${num}`)
     if (hdr) hdr.textContent = `${id} \u2014 ${rs}`
 }
@@ -716,384 +729,250 @@ function updateEmbryoHeader(num) {
 // ─── Copy Last Embryo ────────────────────────────────────────────────────────
 function copyLastEmbryo() {
     const countEl = document.getElementById('embryoCount')
-    const currentCount = parseInt(countEl.value) || 1
-    if (currentCount < 1) { showToast('No embryo to copy', 'error'); return }
-
-    // Collect the current last embryo's data
-    const lastNum = currentCount
-    const lastData = collectSingleEmbryo(lastNum)
-
-    // Increment count
-    const newCount = currentCount + 1
-    if (newCount > 20) { showToast('Maximum 20 embryos', 'error'); return }
-    countEl.value = newCount
-
-    // Collect all existing embryo data
-    const allEmbryos = []
-    for (let i = 1; i <= currentCount; i++) {
-        allEmbryos.push(collectSingleEmbryo(i))
-    }
-    // Add copy of last embryo with new ID
-    const copied = { ...lastData }
-    copied.embryo_id = 'PS' + newCount
-    copied.embryo_id_detail = 'PS' + newCount
-    allEmbryos.push(copied)
-
-    buildEmbryoForms(allEmbryos)
-    showToast(`Embryo ${newCount} copied from Embryo ${lastNum}`, 'success')
+    const cur = parseInt(countEl.value)||1
+    if (cur<1) { showToast('No embryo to copy','error'); return }
+    if (cur>=20) { showToast('Maximum 20 embryos','error'); return }
+    const all = []
+    for (let i=1;i<=cur;i++) all.push(collectSingleEmbryo(i))
+    const copied = {...all[cur-1]}
+    copied.embryo_id = 'PS'+(cur+1)
+    copied.embryo_id_detail = 'PS'+(cur+1)
+    all.push(copied)
+    countEl.value = cur+1
+    rebuildAll(all)
+    showToast(`Embryo ${cur+1} copied from Embryo ${cur}`, 'success')
 }
 
 function collectSingleEmbryo(i) {
-    const chrStatuses = {}, mosaicPct = {}
-    for (let c = 1; c <= 22; c++) {
-        chrStatuses[String(c)] = document.getElementById(`e${i}-chr${c}-status`)?.value || 'N'
-        mosaicPct[String(c)]   = document.getElementById(`e${i}-chr${c}-mosaic`)?.value || ''
-    }
+    const cs={}, mp={}
+    for (let c=1;c<=22;c++) { cs[String(c)]=document.getElementById(`e${i}-chr${c}-status`)?.value||'N'; mp[String(c)]=document.getElementById(`e${i}-chr${c}-mosaic`)?.value||'' }
     return {
-        embryo_id:            document.getElementById(`e${i}-id`)?.value || `PS${i}`,
-        embryo_id_detail:     document.getElementById(`e${i}-id-detail`)?.value || `PS${i}`,
-        result_summary:       document.getElementById(`e${i}-result-summary`)?.value || '',
-        interpretation:       document.getElementById(`e${i}-interpretation`)?.value || '',
-        result_description:   document.getElementById(`e${i}-result-desc`)?.value || '',
-        autosomes:            document.getElementById(`e${i}-autosomes`)?.value || 'Normal',
-        sex_chromosomes:      document.getElementById(`e${i}-sex-chr`)?.value || 'Normal',
-        mtcopy:               document.getElementById(`e${i}-mtcopy`)?.value || 'NA',
-        inconclusive_comment: document.getElementById(`e${i}-inconclusive`)?.value || '',
-        chromosome_statuses:  chrStatuses,
-        mosaic_percentages:   mosaicPct,
-        cnv_filename:         cnvImagePaths[i] || ''
+        // From summary table (Page 1)
+        embryo_id: document.getElementById(`s${i}-id`)?.value||`PS${i}`,
+        result_summary: document.getElementById(`s${i}-result-summary`)?.value||'',
+        interpretation: document.getElementById(`s${i}-interpretation`)?.value||'',
+        mtcopy: document.getElementById(`s${i}-mtcopy`)?.value||'NA',
+        // From embryo detail form (Page 4+)
+        embryo_id_detail: document.getElementById(`e${i}-id-detail`)?.value||`PS${i}`,
+        result_description: document.getElementById(`e${i}-result-desc`)?.value||'',
+        autosomes: document.getElementById(`e${i}-autosomes`)?.value||'Normal',
+        sex_chromosomes: document.getElementById(`e${i}-sex-chr`)?.value||'Normal',
+        inconclusive_comment: document.getElementById(`e${i}-inconclusive`)?.value||'',
+        chromosome_statuses: cs, mosaic_percentages: mp,
+        cnv_filename: cnvImagePaths[i]||''
     }
 }
 
 // ─── Clear Form ──────────────────────────────────────────────────────────────
 function clearForm() {
-    if (!confirm('Clear all form data? This cannot be undone.')) return
-    document.getElementById('patientName').value = ''
-    document.getElementById('spouseName').value = 'w/o'
-    document.getElementById('pin').value = ''
-    document.getElementById('age').value = ''
-    document.getElementById('sampleNumber').value = ''
-    document.getElementById('referringClinician').value = ''
-    document.getElementById('biopsyDate').value = ''
-    document.getElementById('hospitalClinic').value = ''
-    document.getElementById('sampleCollectionDate').value = ''
-    document.getElementById('specimen').value = ''
-    document.getElementById('sampleReceiptDate').value = ''
-    document.getElementById('biopsyPerformedBy').value = ''
-    document.getElementById('indication').value = ''
-    document.getElementById('resultsSummaryComment').value = ''
-    document.getElementById('embryoCount').value = 1
-    // Reset report date to today
-    const today = new Date()
-    document.getElementById('reportDate').value =
-        `${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`
-    // Clear CNV paths
-    Object.keys(cnvImagePaths).forEach(k => delete cnvImagePaths[k])
-    buildEmbryoForms()
-    document.getElementById('previewContainer').style.display = 'none'
-    document.getElementById('manualResult').style.display = 'none'
-    showToast('Form cleared', 'success')
+    if (!confirm('Clear all form data?')) return
+    ;['patientName','pin','age','sampleNumber','referringClinician','biopsyDate',
+      'hospitalClinic','sampleCollectionDate','sampleReceiptDate','biopsyPerformedBy',
+      'indication','resultsSummaryComment'].forEach(id => document.getElementById(id).value='')
+    document.getElementById('spouseName').value='w/o'
+    document.getElementById('specimen').value='DAY 5 TROPHECTODERM BIOPSY'
+    document.getElementById('embryoCount').value=1
+    const today=new Date()
+    document.getElementById('reportDate').value=`${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`
+    Object.keys(cnvImagePaths).forEach(k=>delete cnvImagePaths[k])
+    rebuildAll()
+    document.getElementById('manualResult').className='result-alert'
+    document.getElementById('genStatus').textContent='No data loaded'
+    showToast('Form cleared','success')
 }
 
 // ─── Collect Form Data ───────────────────────────────────────────────────────
 function getPatientInfo() {
     return {
-        patient_name:             document.getElementById('patientName').value.trim(),
-        spouse_name:              document.getElementById('spouseName').value.trim(),
-        pin:                      document.getElementById('pin').value.trim(),
-        age:                      document.getElementById('age').value.trim(),
-        sample_number:            document.getElementById('sampleNumber').value.trim(),
-        referring_clinician:      document.getElementById('referringClinician').value.trim(),
-        biopsy_date:              document.getElementById('biopsyDate').value.trim(),
-        hospital_clinic:          document.getElementById('hospitalClinic').value.trim(),
-        sample_collection_date:   document.getElementById('sampleCollectionDate').value.trim(),
-        specimen:                 document.getElementById('specimen').value.trim(),
-        sample_receipt_date:      document.getElementById('sampleReceiptDate').value.trim(),
-        biopsy_performed_by:      document.getElementById('biopsyPerformedBy').value.trim(),
-        report_date:              document.getElementById('reportDate').value.trim(),
-        indication:               document.getElementById('indication').value.trim(),
-        results_summary_comment:  document.getElementById('resultsSummaryComment').value.trim()
+        patient_name: document.getElementById('patientName').value.trim(),
+        spouse_name: document.getElementById('spouseName').value.trim(),
+        pin: document.getElementById('pin').value.trim(),
+        age: document.getElementById('age').value.trim(),
+        sample_number: document.getElementById('sampleNumber').value.trim(),
+        referring_clinician: document.getElementById('referringClinician').value.trim(),
+        biopsy_date: document.getElementById('biopsyDate').value.trim(),
+        hospital_clinic: document.getElementById('hospitalClinic').value.trim(),
+        sample_collection_date: document.getElementById('sampleCollectionDate').value.trim(),
+        specimen: document.getElementById('specimen').value.trim(),
+        sample_receipt_date: document.getElementById('sampleReceiptDate').value.trim(),
+        biopsy_performed_by: document.getElementById('biopsyPerformedBy').value.trim(),
+        report_date: document.getElementById('reportDate').value.trim(),
+        indication: document.getElementById('indication').value.trim(),
+        results_summary_comment: document.getElementById('resultsSummaryComment').value.trim()
     }
 }
-
 function getEmbryos() {
-    const count   = parseInt(document.getElementById('embryoCount').value) || 1
+    const count = parseInt(document.getElementById('embryoCount').value)||1
     const embryos = []
-    for (let i = 1; i <= count; i++) {
-        const e = collectSingleEmbryo(i)
-        // Add CNV image path from upload
-        e.cnv_image_filename = cnvImagePaths[i] || ''
-        embryos.push(e)
-    }
+    for (let i=1;i<=count;i++) { const e=collectSingleEmbryo(i); e.cnv_image_filename=cnvImagePaths[i]||''; embryos.push(e) }
     return embryos
 }
 
 // ─── Preview ─────────────────────────────────────────────────────────────────
 async function previewReport() {
     const pi = getPatientInfo()
-    if (!pi.patient_name) { showToast('Enter Patient Name first', 'error'); return }
+    if (!pi.patient_name) { showToast('Enter Patient Name first','error'); return }
     showToast('Generating preview...')
     try {
         const res = await fetch(`${API}/pgta/preview`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                patient_info: pi,
-                embryos: getEmbryos(),
-                logo_option: document.getElementById('logoOption').value,
-                grid_option: document.getElementById('gridOption').value
-            })
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ patient_info:pi, embryos:getEmbryos(), logo_option:document.getElementById('logoOption').value, grid_option:document.getElementById('gridOption').value })
         })
         const json = await res.json()
         if (json.preview_url) {
             document.getElementById('previewFrame').src = API + json.preview_url
-            document.getElementById('previewContainer').style.display = 'block'
-            showToast('Preview ready!', 'success')
-        } else {
-            showToast(json.error || 'Preview failed', 'error')
-        }
-    } catch (e) { showToast('Server error: ' + e.message, 'error') }
+            showToast('Preview ready!','success')
+        } else { showToast(json.error||'Preview failed','error') }
+    } catch(e) { showToast('Server error: '+e.message,'error') }
 }
 
 // ─── Generate ────────────────────────────────────────────────────────────────
 async function generateReport() {
-    const pi  = getPatientInfo()
-    if (!pi.patient_name) { showToast('Enter Patient Name first', 'error'); return }
-    const btn = event.target
-    btn.disabled = true
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating...'
-    const result = document.getElementById('manualResult')
-    result.style.display = 'none'
+    const pi = getPatientInfo()
+    if (!pi.patient_name) { showToast('Enter Patient Name first','error'); return }
+    const statusEl = document.getElementById('genStatus')
+    const resultEl = document.getElementById('manualResult')
+    statusEl.textContent = 'Generating report...'
+    resultEl.className = 'result-alert'
     try {
         const res = await fetch(`${API}/pgta/generate`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                patient_info: pi,
-                embryos: getEmbryos(),
-                logo_option: document.getElementById('logoOption').value,
-                grid_option: document.getElementById('gridOption').value
-            })
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ patient_info:pi, embryos:getEmbryos(), logo_option:document.getElementById('logoOption').value, grid_option:document.getElementById('gridOption').value })
         })
         const json = await res.json()
         if (json.file_url) {
-            result.className = 'alert alert-success'
-            result.innerHTML = `<i class="fa fa-check-circle me-1"></i>Report generated!
-                <a href="${json.file_url}" target="_blank" class="alert-link fw-bold">Download PDF</a>`
-            result.style.display = 'block'
-            showToast('Report generated!', 'success')
+            resultEl.className='result-alert success'
+            resultEl.innerHTML=`<i class="fa fa-check-circle"></i> Report generated! <a href="${json.file_url}" target="_blank" style="font-weight:700;">Download PDF</a>`
+            statusEl.textContent = 'Report generated successfully'
+            showToast('Report generated!','success')
         } else {
-            result.className = 'alert alert-danger'
-            result.innerHTML = `<i class="fa fa-times-circle me-1"></i>${json.error || 'Generation failed'}`
-            result.style.display = 'block'
-            showToast(json.error || 'Error', 'error')
+            resultEl.className='result-alert error'
+            resultEl.innerHTML=`<i class="fa fa-times-circle"></i> ${json.error||'Generation failed'}`
+            statusEl.textContent = 'Generation failed'
+            showToast(json.error||'Error','error')
         }
-    } catch (e) {
-        showToast('Server error: ' + e.message, 'error')
-    } finally {
-        btn.disabled = false
-        btn.innerHTML = '<i class="fa-solid fa-file-pdf me-1"></i>Generate Report'
-    }
+    } catch(e) { showToast('Server error: '+e.message,'error'); statusEl.textContent='Error' }
 }
 
 // ─── Draft ───────────────────────────────────────────────────────────────────
 function buildDraftKey() {
-    const name = document.getElementById('patientName').value.trim()
-        .replace(/[^a-zA-Z0-9 ]/g, '').replace(/ /g, '_') || 'Unknown'
-    const sn = document.getElementById('sampleNumber').value.trim()
-        .replace(/[^a-zA-Z0-9]/g, '_') || 'S0'
-    return `${name}_${sn}_PGTA_report_draft`
+    const n=document.getElementById('patientName').value.trim().replace(/[^a-zA-Z0-9 ]/g,'').replace(/ /g,'_')||'Unknown'
+    const s=document.getElementById('sampleNumber').value.trim().replace(/[^a-zA-Z0-9]/g,'_')||'S0'
+    return `${n}_${s}_PGTA_report_draft`
 }
-
 function saveDraft() {
-    const draft = {
-        patient_info:  getPatientInfo(),
-        embryos:       getEmbryos(),
-        embryo_count:  parseInt(document.getElementById('embryoCount').value) || 1,
-        logo_option:   document.getElementById('logoOption').value,
-        grid_option:   document.getElementById('gridOption').value
-    }
+    const draft = { patient_info:getPatientInfo(), embryos:getEmbryos(), embryo_count:parseInt(document.getElementById('embryoCount').value)||1, logo_option:document.getElementById('logoOption').value, grid_option:document.getElementById('gridOption').value }
     const key = buildDraftKey()
     localStorage.setItem(key, JSON.stringify(draft))
-    fetch(`${API}/save-draft/${encodeURIComponent(key)}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(draft)
-    }).catch(() => {})
-    showToast('Draft saved!', 'success')
+    fetch(`${API}/save-draft/${encodeURIComponent(key)}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(draft) }).catch(()=>{})
+    showToast('Draft saved!','success')
 }
-
 function openDraftPicker() {
-    const keys = Object.keys(localStorage).filter(k => k.endsWith('_PGTA_report_draft'))
-    const list  = document.getElementById('draftList')
-    if (keys.length === 0) {
-        list.innerHTML = '<p class="text-muted" style="font-size:13px;">No drafts found.</p>'
-    } else {
-        list.innerHTML = keys.map(k =>
-            `<div class="draft-item" onclick="loadDraft('${k}')">
-               <i class="fa-solid fa-file-lines me-2 text-primary"></i>
-               ${k.replace(/_PGTA_report_draft$/, '').replace(/_/g, ' ')}
-             </div>`
-        ).join('')
-    }
-    new bootstrap.Modal(document.getElementById('draftModal')).show()
+    const keys = Object.keys(localStorage).filter(k=>k.endsWith('_PGTA_report_draft'))
+    const list = document.getElementById('draftList')
+    if (!keys.length) { list.innerHTML='<p style="font-size:12px;color:#888;">No drafts found.</p>' }
+    else { list.innerHTML=keys.map(k=>`<div class="draft-item" onclick="loadDraft('${k}')">${k.replace(/_PGTA_report_draft$/,'').replace(/_/g,' ')}</div>`).join('') }
+    document.getElementById('draftModal').classList.add('show')
 }
-
+function closeDraftPicker() { document.getElementById('draftModal').classList.remove('show') }
 function loadDraft(key) {
-    const raw = localStorage.getItem(key)
-    if (!raw) { showToast('Draft not found.', 'error'); return }
-    fillForm(JSON.parse(raw))
-    bootstrap.Modal.getInstance(document.getElementById('draftModal'))?.hide()
-    showToast('Draft loaded!', 'success')
+    const raw=localStorage.getItem(key); if(!raw){showToast('Draft not found','error');return}
+    fillForm(JSON.parse(raw)); closeDraftPicker(); showToast('Draft loaded!','success')
 }
-
 function fillForm(d) {
-    const pi = d.patient_info || {}
-    document.getElementById('patientName').value          = pi.patient_name || ''
-    document.getElementById('spouseName').value           = pi.spouse_name || 'w/o'
-    document.getElementById('pin').value                  = pi.pin || ''
-    document.getElementById('age').value                  = pi.age || ''
-    document.getElementById('sampleNumber').value         = pi.sample_number || ''
-    document.getElementById('referringClinician').value   = pi.referring_clinician || ''
-    document.getElementById('biopsyDate').value           = pi.biopsy_date || ''
-    document.getElementById('hospitalClinic').value       = pi.hospital_clinic || ''
-    document.getElementById('sampleCollectionDate').value = pi.sample_collection_date || ''
-    document.getElementById('specimen').value             = pi.specimen || ''
-    document.getElementById('sampleReceiptDate').value    = pi.sample_receipt_date || ''
-    document.getElementById('biopsyPerformedBy').value    = pi.biopsy_performed_by || ''
-    document.getElementById('reportDate').value           = pi.report_date || ''
-    document.getElementById('indication').value           = pi.indication || ''
-    document.getElementById('resultsSummaryComment').value = pi.results_summary_comment || ''
-    if (d.logo_option)  document.getElementById('logoOption').value  = d.logo_option
-    if (d.grid_option)  document.getElementById('gridOption').value  = d.grid_option
-    if (d.embryo_count) document.getElementById('embryoCount').value = d.embryo_count
-    // Restore CNV paths from draft
-    if (d.embryos) {
-        d.embryos.forEach((e, i) => {
-            if (e.cnv_image_filename) cnvImagePaths[i + 1] = e.cnv_image_filename
-        })
-    }
-    buildEmbryoForms(d.embryos || [])
+    const pi=d.patient_info||{}
+    document.getElementById('patientName').value=pi.patient_name||''
+    document.getElementById('spouseName').value=pi.spouse_name||'w/o'
+    document.getElementById('pin').value=pi.pin||''
+    document.getElementById('age').value=pi.age||''
+    document.getElementById('sampleNumber').value=pi.sample_number||''
+    document.getElementById('referringClinician').value=pi.referring_clinician||''
+    document.getElementById('biopsyDate').value=pi.biopsy_date||''
+    document.getElementById('hospitalClinic').value=pi.hospital_clinic||''
+    document.getElementById('sampleCollectionDate').value=pi.sample_collection_date||''
+    document.getElementById('specimen').value=pi.specimen||''
+    document.getElementById('sampleReceiptDate').value=pi.sample_receipt_date||''
+    document.getElementById('biopsyPerformedBy').value=pi.biopsy_performed_by||''
+    document.getElementById('reportDate').value=pi.report_date||''
+    document.getElementById('indication').value=pi.indication||''
+    document.getElementById('resultsSummaryComment').value=pi.results_summary_comment||''
+    if(d.logo_option) document.getElementById('logoOption').value=d.logo_option
+    if(d.grid_option) document.getElementById('gridOption').value=d.grid_option
+    if(d.embryo_count) document.getElementById('embryoCount').value=d.embryo_count
+    if(d.embryos) d.embryos.forEach((e,i)=>{if(e.cnv_image_filename) cnvImagePaths[i+1]=e.cnv_image_filename})
+    rebuildAll(d.embryos||[])
 }
 
 // ─── Bulk Upload ─────────────────────────────────────────────────────────────
 let bulkPatients = []
-
 async function handleBulkUpload(e) {
-    const file = e.target.files[0]
-    if (!file) return
-    const form = new FormData()
-    form.append('file', file)
+    const file=e.target.files[0]; if(!file) return
+    const form=new FormData(); form.append('file',file)
     showToast('Parsing Excel...')
     try {
-        const res  = await fetch(`${API}/pgta/upload-excel`, { method: 'POST', body: form })
-        const json = await res.json()
-        if (json.patients) {
-            bulkPatients = json.patients
-            renderBulkTable(bulkPatients)
-            document.getElementById('bulkPreview').style.display = 'block'
-            showToast(`${bulkPatients.length} patient(s) loaded`, 'success')
-        } else {
-            showToast(json.error || 'Parse error', 'error')
-        }
-    } catch (e) { showToast('Server error: ' + e.message, 'error') }
+        const res=await fetch(`${API}/pgta/upload-excel`,{method:'POST',body:form})
+        const json=await res.json()
+        if(json.patients){bulkPatients=json.patients;renderBulkTable(bulkPatients);document.getElementById('bulkPreview').style.display='block';showToast(`${bulkPatients.length} patient(s) loaded`,'success')}
+        else{showToast(json.error||'Parse error','error')}
+    } catch(e){showToast('Server error: '+e.message,'error')}
 }
-
-function renderBulkTable(patients) {
-    document.getElementById('bulkCount').textContent = patients.length
-    document.getElementById('bulkTableBody').innerHTML = patients.map((p, i) => {
-        const pi = p.patient_info
-        return `<tr>
-            <td>${i + 1}</td>
-            <td>${pi.patient_name || '-'}</td>
-            <td>${pi.sample_number || '-'}</td>
-            <td><span class="badge bg-secondary">${p.embryos.length}</span></td>
-            <td>${pi.report_date || '-'}</td>
-        </tr>`
-    }).join('')
+function renderBulkTable(pts) {
+    document.getElementById('bulkCount').textContent=pts.length
+    document.getElementById('bulkTableBody').innerHTML=pts.map((p,i)=>{const pi=p.patient_info;return`<tr><td>${i+1}</td><td>${pi.patient_name||'-'}</td><td>${pi.sample_number||'-'}</td><td>${p.embryos.length}</td><td>${pi.report_date||'-'}</td></tr>`}).join('')
 }
-
 async function generateBulk() {
-    if (!bulkPatients.length) { showToast('No patients loaded', 'error'); return }
-    const logo = document.getElementById('bulkLogoOption').value
-    const btn  = event.target
-    btn.disabled = true
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating...'
-    const result = document.getElementById('bulkResult')
-    result.style.display = 'none'
+    if(!bulkPatients.length){showToast('No patients loaded','error');return}
+    const logo=document.getElementById('bulkLogoOption').value
+    showToast('Generating reports...')
     try {
-        const payload = bulkPatients.map(p => ({ ...p, logo_option: logo }))
-        const res  = await fetch(`${API}/pgta/generate-bulk`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        const json = await res.json()
-        const ok  = json.generated || []
-        const err = json.errors   || []
-        result.className = `alert ${err.length ? 'alert-danger' : 'alert-success'}`
-        let html = `<i class="fa fa-check-circle me-1"></i>${ok.length} report(s) generated`
-        if (ok.length)  html += '<br>' + ok.map(r => `<a href="${r.file_url}" target="_blank" class="d-block mt-1">${r.patient}</a>`).join('')
-        if (err.length) html += `<br><i class="fa fa-times-circle me-1"></i>${err.length} failed: ` + err.map(r => `${r.patient}: ${r.error}`).join(', ')
-        result.innerHTML    = html
-        result.style.display = 'block'
-        showToast(`${ok.length} done, ${err.length} errors`, ok.length ? 'success' : 'error')
-    } catch (e) { showToast('Server error: ' + e.message, 'error') }
-    finally {
-        btn.disabled = false
-        btn.innerHTML = '<i class="fa-solid fa-file-pdf me-1"></i>Generate All Reports'
-    }
+        const payload=bulkPatients.map(p=>({...p,logo_option:logo}))
+        const res=await fetch(`${API}/pgta/generate-bulk`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+        const json=await res.json()
+        const ok=json.generated||[],err=json.errors||[]
+        const r=document.getElementById('bulkResult')
+        r.className=`result-alert ${err.length?'error':'success'}`
+        let h=`${ok.length} report(s) generated`
+        if(ok.length) h+='<br>'+ok.map(r=>`<a href="${r.file_url}" target="_blank">${r.patient}</a>`).join('<br>')
+        if(err.length) h+=`<br>${err.length} failed: `+err.map(r=>`${r.patient}: ${r.error}`).join(', ')
+        r.innerHTML=h
+        showToast(`${ok.length} done, ${err.length} errors`,ok.length?'success':'error')
+    } catch(e){showToast('Server error: '+e.message,'error')}
 }
-
-function downloadTemplate() {
-    window.open(`${API}/pgta-template`, '_blank')
-}
+function downloadTemplate() { window.open(`${API}/pgta-template`,'_blank') }
 
 // ─── Report Comparison ───────────────────────────────────────────────────────
-function updateCompareLabel(n, e) {
-    const file = e.target.files[0]
-    const label = document.getElementById(`compareLabel${n}`)
-    label.textContent = file ? file.name : 'No file selected'
+function updateCompareLabel(n,e) {
+    const f=e.target.files[0]
+    document.getElementById(`compareLabel${n}`).textContent=f?f.name:'No file selected'
 }
-
 async function comparePDFs() {
-    const f1 = document.getElementById('compareFile1').files[0]
-    const f2 = document.getElementById('compareFile2').files[0]
-    if (!f1 || !f2) { showToast('Select both PDF files to compare', 'error'); return }
-    showToast('Comparing PDFs...')
+    const f1=document.getElementById('compareFile1').files[0], f2=document.getElementById('compareFile2').files[0]
+    if(!f1||!f2){showToast('Select both PDF files','error');return}
+    showToast('Comparing...')
     try {
-        const form = new FormData()
-        form.append('file1', f1)
-        form.append('file2', f2)
-        const res = await fetch(`${API}/compare-pdf`, { method: 'POST', body: form })
-        const json = await res.json()
-        if (json.html) {
-            const frame = document.getElementById('compareResultFrame')
-            frame.srcdoc = json.html
-            document.getElementById('compareResultContainer').style.display = 'block'
-            showToast('Comparison complete!', 'success')
-        } else {
-            showToast('Comparison failed', 'error')
-        }
-    } catch (e) { showToast('Server error: ' + e.message, 'error') }
+        const form=new FormData(); form.append('file1',f1); form.append('file2',f2)
+        const res=await fetch(`${API}/compare-pdf`,{method:'POST',body:form})
+        const json=await res.json()
+        if(json.html){document.getElementById('compareResultFrame').srcdoc=json.html;document.getElementById('compareResultContainer').style.display='block';showToast('Comparison complete!','success')}
+        else{showToast('Comparison failed','error')}
+    } catch(e){showToast('Server error: '+e.message,'error')}
 }
 
-// ─── Toast (Bootstrap) ───────────────────────────────────────────────────────
+// ─── Toast ───────────────────────────────────────────────────────────────────
+let toastTimer
 function showToast(msg, type) {
-    const el = document.getElementById('liveToast')
-    document.getElementById('toastMsg').textContent = msg
-    el.className = 'toast align-items-center text-white border-0'
-    if (type === 'success')  el.classList.add('bg-success')
-    else if (type === 'error') el.classList.add('bg-danger')
-    else                       el.classList.add('bg-primary')
-    const t = bootstrap.Toast.getOrCreateInstance(el, { delay: 3000 })
-    t.show()
+    const el=document.getElementById('toastPopup')
+    el.textContent=msg
+    el.className='toast-popup show '+(type||'info')
+    clearTimeout(toastTimer)
+    toastTimer=setTimeout(()=>{el.classList.remove('show')},3000)
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    const today = new Date()
-    const dd    = String(today.getDate()).padStart(2, '0')
-    const mm    = String(today.getMonth() + 1).padStart(2, '0')
-    const yyyy  = today.getFullYear()
-    document.getElementById('reportDate').value = `${dd}-${mm}-${yyyy}`
-    buildEmbryoForms()
+    const t=new Date()
+    document.getElementById('reportDate').value=`${String(t.getDate()).padStart(2,'0')}-${String(t.getMonth()+1).padStart(2,'0')}-${t.getFullYear()}`
+    rebuildAll()
 })
 </script>
 </body>

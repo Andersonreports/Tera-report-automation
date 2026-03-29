@@ -368,17 +368,18 @@ input[type="radio"]{width:15px;height:15px;accent-color:var(--primary);}
     <!-- Step 1 -->
     <div class="bulk-blk glass-panel">
       <h3>1. Load Excel File</h3>
+      <input type="file" id="bulkExcelFile" accept=".xlsx,.xls" style="display:none;" onchange="uploadBulkExcel(this)">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <label class="dropzone" style="flex:1;min-width:240px;cursor:pointer;" onclick="document.getElementById('bulkExcelFile').click()">
+        <div class="dropzone" style="flex:1;min-width:240px;cursor:pointer;" onclick="document.getElementById('bulkExcelFile').click()">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
           <span id="bulkFileName">Click to browse or drag Excel file (.xlsx)</span>
-          <input type="file" id="bulkExcelFile" accept=".xlsx,.xls" style="display:none;" onchange="uploadBulkExcel(this)" onclick="event.stopPropagation()">
-        </label>
+        </div>
         <a href="/pgta-template" download style="text-decoration:none;">
           <button type="button">&#11015; Download Template</button>
         </a>
       </div>
     </div>
+
 
     <!-- Step 2: Review header -->
     <div class="bulk-blk glass-panel">
@@ -474,22 +475,22 @@ input[type="radio"]{width:15px;height:15px;accent-color:var(--primary);}
     <div class="cmp-info glass-panel">
       Compare two PGT-A PDFs — auto-generated vs reference. Upload both PDFs and click <b>Compare PDFs</b> for a side-by-side view and automated text diff.
     </div>
+    <input type="file" id="comparePdf1" accept=".pdf" style="display:none;" onchange="document.getElementById('pdf1Name').textContent=this.files[0]?.name||'Click to select auto-generated PDF'">
+    <input type="file" id="comparePdf2" accept=".pdf" style="display:none;" onchange="document.getElementById('pdf2Name').textContent=this.files[0]?.name||'Click to select reference PDF'">
     <div class="cmp-sel glass-panel">
       <div class="pdf-box">
         <label style="font-size:12px;font-weight:500;color:var(--text-muted);">Auto-Generated PDF (Left)</label>
-        <label class="dropzone" style="cursor:pointer;" onclick="document.getElementById('comparePdf1').click()">
+        <div class="dropzone" style="cursor:pointer;" onclick="document.getElementById('comparePdf1').click()">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5z"/></svg>
           <span id="pdf1Name">Click to select auto-generated PDF</span>
-          <input type="file" id="comparePdf1" accept=".pdf" style="display:none;" onclick="event.stopPropagation()" onchange="document.getElementById('pdf1Name').textContent=this.files[0]?.name||'Click to select auto-generated PDF'">
-        </label>
+        </div>
       </div>
       <div class="pdf-box">
         <label style="font-size:12px;font-weight:500;color:var(--text-muted);">Reference PDF (Right)</label>
-        <label class="dropzone" style="cursor:pointer;" onclick="document.getElementById('comparePdf2').click()">
+        <div class="dropzone" style="cursor:pointer;" onclick="document.getElementById('comparePdf2').click()">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5z"/></svg>
           <span id="pdf2Name">Click to select reference PDF</span>
-          <input type="file" id="comparePdf2" accept=".pdf" style="display:none;" onclick="event.stopPropagation()" onchange="document.getElementById('pdf2Name').textContent=this.files[0]?.name||'Click to select reference PDF'">
-        </label>
+        </div>
       </div>
       <div style="display:flex;align-items:flex-end;">
         <button class="btn-primary" onclick="comparePDFs()" style="width:100%;justify-content:center;">&#128269; Compare PDFs</button>

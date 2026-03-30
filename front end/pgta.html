@@ -31,7 +31,7 @@
   --topbar-h: 60px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Inter',sans-serif;font-size:13px;background:var(--bg);color:var(--text);min-height:100vh;opacity:0;transition:opacity 0.4s;}
+body{font-family:'Inter',sans-serif;font-size:13px;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;opacity:0;transition:opacity 0.4s;}
 body.loaded{opacity:1;}
 
 /* ── Top Header Bar ── */
@@ -86,7 +86,7 @@ body.loaded{opacity:1;}
 .user-dropdown .role-tag:hover{background:transparent;}
 
 /* ── Main Content ── */
-.main{padding:calc(var(--topbar-h) + 20px) 24px 30px;}
+.main{height:calc(100vh - var(--topbar-h));padding:20px 24px;display:flex;flex-direction:column;overflow:hidden;}
 
 /* ── Page Header ── */
 .page-hdr{
@@ -121,7 +121,7 @@ body.loaded{opacity:1;}
 .tab:hover{color:var(--text);}
 .tab.active{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:600;}
 .tab-content{display:none;}
-.tab-content.active{display:block;}
+.tab-content.active{display:flex;flex-direction:column;flex:1;min-height:0;}
 
 /* ── Form Panel ── */
 .form-panel{display:flex;flex-direction:column;gap:16px;}
@@ -386,12 +386,18 @@ body.loaded{opacity:1;}
 .btn-generate-all:disabled{border-color:#94a3b8;color:#94a3b8;cursor:not-allowed;}
 
 /* ── Bulk 3-Column Layout ── */
-.bulk-3col{display:flex;gap:12px;align-items:stretch;min-height:calc(100vh - var(--topbar-h) - 160px);}
-.bulk-col-left{width:280px;flex-shrink:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
-.bulk-col-center{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
-.bulk-col-right{width:380px;flex-shrink:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.bulk-3col{display:flex;gap:0;flex:1;min-height:0;margin-top:4px;}
+.bulk-col-left,.bulk-col-center,.bulk-col-right{
+  flex:1;display:flex;flex-direction:column;
+  background:var(--panel);border:1px solid var(--panel-border);
+  box-shadow:var(--shadow);overflow:hidden;
+  min-width:0;
+}
+.bulk-col-left{border-radius:var(--radius) 0 0 var(--radius);border-right:none;}
+.bulk-col-center{border-radius:0;border-right:1px solid var(--panel-border);}
+.bulk-col-right{border-radius:0 var(--radius) var(--radius) 0;border-left:none;}
 .bulk-col-header{padding:10px 14px;font-size:12px;font-weight:700;color:var(--primary);border-bottom:2px solid var(--accent);display:flex;align-items:center;gap:6px;flex-shrink:0;}
-.bulk-search{margin:8px;padding:7px 10px 7px 28px;border:1px solid var(--input-border);border-radius:6px;font-size:11px;width:calc(100% - 16px);background:var(--input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 8px center no-repeat;}
+.bulk-search{margin:8px;padding:7px 10px 7px 28px;border:1px solid var(--input-border);border-radius:6px;font-size:11px;width:calc(100% - 16px);background:var(--input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 8px center no-repeat;flex-shrink:0;}
 .bulk-col-left .bulk-patient-list{flex:1;overflow-y:auto;padding:0;border:none;max-height:none;}
 .bulk-col-left .bulk-patient-item{padding:8px 12px;border-bottom:1px solid #eee;cursor:pointer;display:flex;align-items:center;gap:8px;transition:0.15s;}
 .bulk-col-left .bulk-patient-item:hover{background:#f0f4f8;}
@@ -403,21 +409,21 @@ body.loaded{opacity:1;}
 .bulk-options-compact .opt-field{flex:1;}
 .bulk-options-compact .opt-field label{font-size:10px;font-weight:600;color:var(--text-muted);}
 .bulk-options-compact .opt-field select{width:100%;padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--input-border);}
-.bulk-preview-wrap{flex:1;overflow-y:auto;background:#e8e8e8;display:flex;flex-direction:column;align-items:center;padding:8px;gap:4px;min-height:300px;}
+.bulk-editor-scroll{flex:1;overflow-y:auto;padding:0;}
+.bulk-preview-wrap{flex:1;overflow-y:auto;background:#e8e8e8;display:flex;flex-direction:column;align-items:center;padding:8px;gap:4px;}
 .bulk-preview-wrap .preview-page-canvas{display:block;box-shadow:0 2px 8px rgba(0,0,0,0.2);margin-bottom:6px;width:100%;}
 /* Editor inside bulk center */
-.bulk-editor-embryo{padding:10px 14px;border-bottom:1px solid #eee;}
-.bulk-editor-embryo h4{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.bulk-editor-section{padding:10px 14px;border-bottom:1px solid #eee;}
+.bulk-editor-section h4{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:0.4px;}
 .bulk-editor-field{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;}
-.bulk-editor-field label{width:120px;font-weight:600;color:var(--text-muted);text-align:right;flex-shrink:0;}
+.bulk-editor-field label{width:130px;font-weight:600;color:var(--text-muted);text-align:right;flex-shrink:0;}
 .bulk-editor-field input,.bulk-editor-field select,.bulk-editor-field textarea{flex:1;padding:5px 8px;border:1px solid var(--input-border);border-radius:4px;font-size:11px;font-family:'Inter',sans-serif;}
 .bulk-chr-grid{display:grid;grid-template-columns:auto 1fr auto auto 1fr auto;gap:2px 6px;align-items:center;font-size:10px;padding:6px;}
 .bulk-chr-grid .chr-label{font-weight:600;color:var(--text-muted);text-align:center;width:24px;}
 .bulk-chr-grid select{padding:2px 4px;font-size:10px;border:1px solid var(--input-border);border-radius:3px;}
 .bulk-chr-grid input{width:40px;padding:2px 4px;font-size:10px;border:1px solid var(--input-border);border-radius:3px;text-align:center;}
 
-@media(max-width:1200px){.bulk-col-right{width:300px;}.bulk-col-left{width:240px;}}
-@media(max-width:900px){.bulk-3col{flex-direction:column;}.bulk-col-left,.bulk-col-center,.bulk-col-right{width:100%;}}
+@media(max-width:900px){.bulk-3col{flex-direction:column;height:auto;}.bulk-col-left,.bulk-col-center,.bulk-col-right{border-radius:var(--radius)!important;border:1px solid var(--panel-border)!important;max-height:400px;}}
 
 /* ── Toast ── */
 .toast{
@@ -440,17 +446,16 @@ body.loaded{opacity:1;}
 .info-text{font-size:11px;color:var(--text-muted);font-style:italic;}
 
 /* ── Two-panel workspace ── */
-.workspace{display:flex;gap:20px;align-items:flex-start;}
-.content-area{flex:1;min-width:0;}
+.workspace{display:flex;gap:20px;align-items:flex-start;flex:1;min-height:0;overflow:hidden;}
+.content-area{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;overflow:hidden;}
 
 /* ── Preview Sidebar ── */
 .preview-sidebar{
   width:380px;flex-shrink:0;
-  position:sticky;top:calc(var(--topbar-h) + 16px);
+  height:100%;
   background:var(--panel);border:1px solid var(--panel-border);
   border-radius:var(--radius);box-shadow:var(--shadow);
   display:flex;flex-direction:column;overflow:hidden;
-  max-height:calc(100vh - var(--topbar-h) - 40px);
 }
 .preview-sidebar-header{
   background:var(--primary);color:#fff;padding:10px 14px;
@@ -671,7 +676,7 @@ body.loaded{opacity:1;}
     </div>
 
     <!-- Step 2+3: Three-column editor (hidden until file loaded) -->
-    <div class="hidden" id="bulkPatientSection">
+    <div class="hidden" id="bulkPatientSection" style="flex:1;display:flex;flex-direction:column;min-height:0;">
 
       <!-- 3-column bulk layout -->
       <div class="bulk-3col">
@@ -705,7 +710,7 @@ body.loaded{opacity:1;}
         <!-- CENTER: Patient Editor -->
         <div class="bulk-col-center">
           <div class="bulk-col-header"><i class="fas fa-edit"></i> Patient Editor</div>
-          <div id="bulkEditorContent">
+          <div class="bulk-editor-scroll" id="bulkEditorContent">
             <p class="info-text" style="padding:30px;text-align:center;">Select a patient from the list to edit their embryo data.</p>
           </div>
         </div>
@@ -1501,6 +1506,7 @@ function selectBulkPatient(i) {
     item.classList.toggle("active",j===i);
   });
   renderBulkEditor(i);
+  previewBulkPatient(i);
 }
 
 function renderBulkEditor(i) {
@@ -1508,30 +1514,53 @@ function renderBulkEditor(i) {
   if(!p) return;
   const el=document.getElementById("bulkEditorContent");
   const embryos=p.embryos||[];
-  let html=`<div style="padding:10px 14px;border-bottom:1px solid #eee;">
-    <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:6px;">${esc(p.patient_name||"Unknown")}</div>
-    <div style="font-size:10px;color:var(--text-muted);">Sample: ${esc(p.sample_number||"")} | PIN: ${esc(p.pin||"")}</div>
+
+  // Patient Info section
+  let html=`<div class="bulk-editor-section">
+    <h4><i class="fas fa-user"></i> Patient Information</h4>
+    <div class="bulk-editor-field"><label>Patient Name:</label><textarea rows="2" oninput="state.bulkPatients[${i}].patient_name=this.value;scheduleBulkPreview()">${esc(p.patient_name||"")}</textarea></div>
+    <div class="bulk-editor-field"><label>Spouse Name:</label><textarea rows="2" oninput="state.bulkPatients[${i}].spouse_name=this.value;scheduleBulkPreview()">${esc(p.spouse_name||"w/o")}</textarea></div>
+    <div class="bulk-editor-field"><label>PIN:</label><input value="${esc(p.pin||"")}" oninput="state.bulkPatients[${i}].pin=this.value;scheduleBulkPreview()"></div>
+    <div class="bulk-editor-field"><label>Age:</label><input value="${esc(p.age||"")}" oninput="state.bulkPatients[${i}].age=this.value;scheduleBulkPreview()"></div>
+    <div class="bulk-editor-field"><label>Sample Number:</label><input value="${esc(p.sample_number||"")}" oninput="state.bulkPatients[${i}].sample_number=this.value;scheduleBulkPreview()"></div>
+    <div class="bulk-editor-field"><label>Referring Clinician:</label><input value="${esc(p.referring_clinician||"")}" oninput="state.bulkPatients[${i}].referring_clinician=this.value;scheduleBulkPreview()"></div>
+    <div class="bulk-editor-field"><label>Biopsy Date:</label><input value="${esc(p.biopsy_date||"")}" oninput="state.bulkPatients[${i}].biopsy_date=this.value;scheduleBulkPreview()"></div>
+    <div class="bulk-editor-field"><label>Hospital/Clinic:</label><textarea rows="2" oninput="state.bulkPatients[${i}].hospital_clinic=this.value;scheduleBulkPreview()">${esc(p.hospital_clinic||"")}</textarea></div>
+    <div class="bulk-editor-field"><label>Sample Collection Date:</label><input value="${esc(p.sample_collection_date||"")}" oninput="state.bulkPatients[${i}].sample_collection_date=this.value;scheduleBulkPreview()"></div>
+    <div class="bulk-editor-field"><label>Specimen:</label><textarea rows="2" oninput="state.bulkPatients[${i}].specimen=this.value;scheduleBulkPreview()">${esc(p.specimen||"DAY 5 TROPHECTODERM BIOPSY")}</textarea></div>
+    <div class="bulk-editor-field"><label>Sample Receipt Date:</label><input value="${esc(p.sample_receipt_date||"")}" oninput="state.bulkPatients[${i}].sample_receipt_date=this.value;scheduleBulkPreview()"></div>
+    <div class="bulk-editor-field"><label>Biopsy Performed By:</label><input value="${esc(p.biopsy_performed_by||"")}" oninput="state.bulkPatients[${i}].biopsy_performed_by=this.value;scheduleBulkPreview()"></div>
+    <div class="bulk-editor-field"><label>Report Date:</label><input value="${esc(p.report_date||todayStr())}" oninput="state.bulkPatients[${i}].report_date=this.value;scheduleBulkPreview()"></div>
+    <div class="bulk-editor-field"><label>Indication:</label><textarea rows="3" oninput="state.bulkPatients[${i}].indication=this.value;scheduleBulkPreview()">${esc(p.indication||"")}</textarea></div>
   </div>`;
 
+  // Embryo sections
   if(embryos.length===0){
     html+=`<p class="info-text" style="padding:20px;text-align:center;">No embryo data for this patient.</p>`;
   }
   embryos.forEach((emb,ei)=>{
-    html+=`<div class="bulk-editor-embryo">
+    html+=`<div class="bulk-editor-section">
       <h4><i class="fas fa-microscope"></i> Embryo: ${esc(emb.embryo_id||("Embryo "+(ei+1)))}</h4>
-      <div class="bulk-editor-field"><label>Result:</label><input value="${esc(emb.result_summary||"")}" onchange="state.bulkPatients[${i}].embryos[${ei}].result_summary=this.value"></div>
-      <div class="bulk-editor-field"><label>Autosomes:</label><input value="${esc(emb.autosomes||"Normal")}" onchange="state.bulkPatients[${i}].embryos[${ei}].autosomes=this.value"></div>
+      <div class="bulk-editor-field"><label>Embryo ID:</label><input value="${esc(emb.embryo_id||"")}" oninput="state.bulkPatients[${i}].embryos[${ei}].embryo_id=this.value;scheduleBulkPreview()"></div>
+      <div class="bulk-editor-field"><label>Result Summary:</label>
+        <select onchange="state.bulkPatients[${i}].embryos[${ei}].result_summary=this.value;scheduleBulkPreview()">
+          ${RESULT_OPTIONS.map(v=>`<option${(emb.result_summary||"")===v?" selected":""}>${esc(v)}</option>`).join("")}
+        </select>
+      </div>
+      <div class="bulk-editor-field"><label>Result Description:</label><input value="${esc(emb.result_description||emb.result_summary||"")}" oninput="state.bulkPatients[${i}].embryos[${ei}].result_description=this.value;scheduleBulkPreview()"></div>
+      <div class="bulk-editor-field"><label>Autosomes:</label><input value="${esc(emb.autosomes||"Normal")}" oninput="state.bulkPatients[${i}].embryos[${ei}].autosomes=this.value;scheduleBulkPreview()"></div>
       <div class="bulk-editor-field"><label>Sex Chromosomes:</label>
-        <select onchange="state.bulkPatients[${i}].embryos[${ei}].sex_chromosomes=this.value">
-          ${["Normal","Abnormal","Mosaic"].map(v=>`<option ${(emb.sex_chromosomes||"Normal")===v?"selected":""}>${v}</option>`).join("")}
+        <select onchange="state.bulkPatients[${i}].embryos[${ei}].sex_chromosomes=this.value;scheduleBulkPreview()">
+          ${["Normal","Abnormal","Mosaic"].map(v=>`<option${(emb.sex_chromosomes||"Normal")===v?" selected":""}>${v}</option>`).join("")}
         </select>
       </div>
       <div class="bulk-editor-field"><label>Interpretation:</label>
-        <select onchange="state.bulkPatients[${i}].embryos[${ei}].interpretation=this.value">
-          ${INTERP_OPTIONS.map(v=>`<option ${(emb.interpretation||"Euploid")===v?"selected":""}>${v}</option>`).join("")}
+        <select onchange="state.bulkPatients[${i}].embryos[${ei}].interpretation=this.value;scheduleBulkPreview()">
+          ${INTERP_OPTIONS.map(v=>`<option${(emb.interpretation||"Euploid")===v?" selected":""}>${v}</option>`).join("")}
         </select>
       </div>
-      <div class="bulk-editor-field"><label>MTcopy:</label><input value="${esc(emb.mtcopy||"")}" onchange="state.bulkPatients[${i}].embryos[${ei}].mtcopy=this.value" style="width:80px;"></div>
+      <div class="bulk-editor-field"><label>MTcopy:</label><input value="${esc(emb.mtcopy||"")}" oninput="state.bulkPatients[${i}].embryos[${ei}].mtcopy=this.value;scheduleBulkPreview()" style="width:80px;"></div>
+      <div class="bulk-editor-field"><label>Inconclusive Comment:</label><input value="${esc(emb.inconclusive_comment||"")}" oninput="state.bulkPatients[${i}].embryos[${ei}].inconclusive_comment=this.value;scheduleBulkPreview()" placeholder="If inconclusive..."></div>
       <div style="margin-top:6px;padding:6px 8px;background:var(--grey-box);border-radius:6px;">
         <div style="font-size:10px;font-weight:700;color:var(--primary);margin-bottom:4px;"><i class="fas fa-dna"></i> Chromosome Details (1–22)</div>
         <div class="bulk-chr-grid">${renderBulkChrGrid(i,ei,emb)}</div>
@@ -1539,6 +1568,7 @@ function renderBulkEditor(i) {
     </div>`;
   });
   el.innerHTML=html;
+  el.scrollTop=0;
 }
 
 function renderBulkChrGrid(pi,ei,emb) {
@@ -1564,6 +1594,15 @@ function onBulkChrChange(pi,ei,chr,type,value) {
   if(!emb.mosaic_percentages) emb.mosaic_percentages={};
   if(type==="status") emb.chromosome_statuses[k]=value;
   else emb.mosaic_percentages[k]=value;
+  scheduleBulkPreview();
+}
+
+let bulkPreviewTimer=null;
+function scheduleBulkPreview() {
+  if(bulkPreviewTimer) clearTimeout(bulkPreviewTimer);
+  bulkPreviewTimer=setTimeout(()=>{
+    if(bulkSelectedIndex>=0) previewBulkPatient(bulkSelectedIndex);
+  }, 1000);
 }
 
 function previewSelectedBulkPatient() {

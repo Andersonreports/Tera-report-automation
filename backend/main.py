@@ -13,10 +13,12 @@ import uuid
 import math
 import re
 import difflib
+from datetime import datetime
 
 import pdfplumber
 
 from tera_template import TERAReportGenerator
+from pgta_template import PGTAReportTemplate
 from fastapi.staticfiles import StaticFiles
 from supabase_client import supabase
 from supabase_client import upload_pdf, save_report
@@ -43,6 +45,9 @@ REPORT_DIR = os.path.join(BASE_DIR, "reports")
 
 os.makedirs(TEMP_DIR, exist_ok=True)
 os.makedirs(REPORT_DIR, exist_ok=True)
+
+PGTA_CNV_DIR = os.path.join(BASE_DIR, "uploads", "pgta_cnv")
+os.makedirs(PGTA_CNV_DIR, exist_ok=True)
 
 app.mount("/reports", StaticFiles(directory=REPORT_DIR), name="reports")
 
@@ -359,4 +364,193 @@ def load_draft(draft_type: str):
     except Exception as e:
         return {"data": None, "error": str(e)}
 
+
+# ================================================================
+# PGT-A REPORT ENDPOINTS
+# ================================================================
+
+@app.get("/pgta")
+def pgta_page():
+    p = os.path.join(FRONTEND_DIR, "pgta.html")
+    if os.path.exists(p):
+        return FileResponse(p, media_type="text/html")
+    return {"error": "pgta.html not found"}
+
+
+@app.post("/pgta/upload-cnv")
+async def pgta_upload_cnv(file: UploadFile = File(...)):
+    """Upload a CNV chart image for an embryo. Returns server-side path."""
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ['.png', '.jpg', '.jpeg']:
+        return {"error": "Only PNG/JPG images allowed"}
+    unique_name = str(uuid.uuid4()) + ext
+    save_path = os.path.join(PGTA_CNV_DIR, unique_name)
+    with open(save_path, "wb") as f:
+        f.write(await file.read())
+    return {"path": save_path, "name": unique_name, "url": f"/pgta/cnv-image/{unique_name}"}
+
+
+@app.get("/pgta/cnv-image/{filename}")
+def pgta_get_cnv_image(filename: str):
+    path = os.path.join(PGTA_CNV_DIR, filename)
+    if os.path.exists(path):
+        return FileResponse(path)
+    return {"error": "Image not found"}
+
+
+@app.post("/pgta/preview")
+async def pgta_preview_report(request: Request):
+    """Generate a preview PDF and return its URL."""
+    try:
+        data = await request.json()
+        file_id = str(uuid.uuid4()) + ".pdf"
+        filepath = os.path.join(TEMP_DIR, file_id)
+
+        tmpl = PGTAReportTemplate()
+        tmpl.generate_pdf(
+            filepath,
+            data.get("patient_data", {}),
+            data.get("embryos_data", []),
+            show_logo=data.get("show_logo", True),
+            show_grid=data.get("show_grid", False)
+        )
+        return {"preview_url": f"/pgta/preview-file/{file_id}"}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+
+@app.get("/pgta/preview-file/{filename}")
+def pgta_preview_file(filename: str):
+    path = os.path.join(TEMP_DIR, filename)
+    return FileResponse(path, media_type="application/pdf")
+
+
+@app.post("/pgta/generate")
+async def pgta_generate_report(request: Request):
+    """Generate final PGT-A PDF report and return download URL."""
+    try:
+        data = await request.json()
+        patient_data = data.get("patient_data", {})
+
+        sample_num = re.sub(r'[^a-zA-Z0-9]', '', str(patient_data.get("sample_number", "report")))
+        patient_name = re.sub(r'[^a-zA-Z0-9 ]', '', str(patient_data.get("patient_name", "Unknown"))).replace(" ", "_")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = f"PGTA_{sample_num}_{patient_name}_{timestamp}.pdf"
+        filepath = os.path.join(REPORT_DIR, file_name)
+
+        tmpl = PGTAReportTemplate()
+        tmpl.generate_pdf(
+            filepath,
+            patient_data,
+            data.get("embryos_data", []),
+            show_logo=data.get("show_logo", True),
+            show_grid=data.get("show_grid", False)
+        )
+        return {"status": "success", "file": file_name, "url": f"/reports/{file_name}"}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+
+@app.post("/pgta/parse-excel")
+async def pgta_parse_excel(file: UploadFile = File(...)):
+    """Parse a PGT-A Excel file (Details + summary sheets) and return structured patient/embryo data."""
+    try:
+        contents = await file.read()
+        xl = pd.ExcelFile(io.BytesIO(contents))
+        sheets = xl.sheet_names
+
+        def clean_val(v):
+            if v is None:
+                return ""
+            if isinstance(v, float) and math.isnan(v):
+                return ""
+            return str(v).strip()
+
+        details_df = None
+        summary_df = None
+
+        for sheet in sheets:
+            sname = sheet.lower().strip()
+            if 'detail' in sname:
+                details_df = xl.parse(sheet)
+            elif 'summary' in sname:
+                summary_df = xl.parse(sheet)
+
+        # Fallback: use first two sheets
+        if details_df is None and summary_df is None and len(sheets) >= 2:
+            details_df = xl.parse(sheets[0])
+            summary_df = xl.parse(sheets[1])
+        elif details_df is None and len(sheets) == 1:
+            summary_df = xl.parse(sheets[0])
+
+        patient_map = {}
+        patients = []
+
+        if details_df is not None:
+            details_df.columns = [str(c).strip() for c in details_df.columns]
+            for _, row in details_df.iterrows():
+                row = {k: clean_val(v) for k, v in row.items()}
+                pid = row.get('Sample ID', '') or row.get('Patient ID', '') or row.get('sample_id', '')
+                pname = row.get('Patient Name', '') or row.get('patient_name', '')
+                if not pname and not pid:
+                    continue
+                patient = {
+                    "patient_name": pname,
+                    "sample_number": pid,
+                    "hospital_clinic": row.get('Center name', '') or row.get('Center Name', '') or row.get('center_name', ''),
+                    "biopsy_date": row.get('Date of Biopsy', '') or row.get('Biopsy Date', ''),
+                    "sample_receipt_date": row.get('Date Sample Received', '') or row.get('Date of Sample Received', ''),
+                    "biopsy_performed_by": row.get('EMBRYOLOGIST NAME', '') or row.get('Embryologist Name', '') or row.get('embryologist_name', ''),
+                    "spouse_name": row.get('Spouse Name', '') or row.get('spouse_name', 'w/o'),
+                    "pin": row.get('PIN', '') or row.get('pin', ''),
+                    "age": row.get('Age', '') or row.get('age', ''),
+                    "referring_clinician": row.get('Referring Clinician', '') or row.get('referring_clinician', ''),
+                    "sample_collection_date": row.get('Sample Collection Date', '') or row.get('Date Collected', ''),
+                    "specimen": row.get('Specimen', '') or row.get('specimen', 'DAY 5 TROPHECTODERM BIOPSY'),
+                    "report_date": row.get('Report Date', '') or datetime.now().strftime('%d-%m-%Y'),
+                    "indication": row.get('Indication', '') or row.get('indication', ''),
+                    "embryos": []
+                }
+                patient_map[pid] = patient
+                patients.append(patient)
+
+        if summary_df is not None:
+            summary_df.columns = [str(c).strip() for c in summary_df.columns]
+            for _, row in summary_df.iterrows():
+                row = {k: clean_val(v) for k, v in row.items()}
+                sample_name = row.get('Sample name', '') or row.get('Sample Name', '') or row.get('sample_name', '')
+                if not sample_name:
+                    continue
+                embryo = {
+                    "embryo_id": sample_name,
+                    "embryo_id_detail": sample_name,
+                    "result_summary": row.get('Result', '') or row.get('result', ''),
+                    "interpretation": row.get('Conclusion', '') or row.get('Interpretation', '') or row.get('interpretation', ''),
+                    "mtcopy": row.get('MTcopy', '') or row.get('MT Copy', '') or row.get('mtcopy', ''),
+                    "autosomes": row.get('AUTOSOMES', '') or row.get('Autosomes', '') or row.get('autosomes', ''),
+                    "sex_chromosomes": row.get('SEX', '') or row.get('Sex Chromosomes', '') or row.get('sex_chromosomes', 'Normal'),
+                    "result_description": row.get('Result', '') or row.get('result_description', ''),
+                    "chromosome_statuses": {},
+                    "mosaic_percentages": {},
+                    "inconclusive_comment": ""
+                }
+                # Match to patient by sample_name prefix
+                matched = False
+                for pid, patient in patient_map.items():
+                    if pid and sample_name.startswith(pid):
+                        patient["embryos"].append(embryo)
+                        matched = True
+                        break
+                if not matched and patients:
+                    patients[-1]["embryos"].append(embryo)
+
+        return {"patients": patients, "sheet_names": sheets}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
 

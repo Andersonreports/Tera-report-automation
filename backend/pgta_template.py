@@ -189,16 +189,16 @@ class PGTAReportTemplate:
     def _create_custom_styles(self):
         """Create custom paragraph styles"""
 
-        # Title style
+        # Title style — use Calibri-Bold (reliable on all platforms)
         self.styles.add(ParagraphStyle(
             name='PGTAReportTitle',
             parent=self.styles['Heading1'],
-            fontSize=16, # Adjusted to match source and ensure single line
+            fontSize=16,
             leading=18,
             textColor=colors.HexColor(self.COLORS['blue_title']),
             alignment=TA_CENTER,
             spaceAfter=12,
-            fontName=self._get_font('GillSansMT-Bold', 'Helvetica-Bold')
+            fontName=self._get_font('Calibri-Bold', 'Helvetica-Bold')
         ))
         
         # Section header
@@ -798,7 +798,7 @@ class PGTAReportTemplate:
             parent=self.styles['Normal'],
             fontSize=12,
             leading=14,
-            fontName=self._get_font('GillSansMT-Bold', 'Helvetica-Bold'),
+            fontName=self._get_font('Calibri-Bold', 'Helvetica-Bold'),
             textColor=colors.HexColor(self.COLORS['blue_title'])
         )
         elements.append(Paragraph(f"<b>EMBRYO: {detail_embryo_id}</b>", embryo_id_style))

@@ -40,16 +40,19 @@ BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(os.path.dirname(BASE_DIR), "front end")
 ROOT_DIR     = os.path.dirname(BASE_DIR)
 
-TEMP_DIR   = os.path.join(BASE_DIR, "temp")
-REPORT_DIR = os.path.join(BASE_DIR, "reports")
+TEMP_DIR        = os.path.join(BASE_DIR, "temp")
+REPORT_DIR      = os.path.join(BASE_DIR, "reports")
+PGTA_REPORT_DIR = os.path.join(BASE_DIR, "reports-pgta")
 
 os.makedirs(TEMP_DIR, exist_ok=True)
 os.makedirs(REPORT_DIR, exist_ok=True)
+os.makedirs(PGTA_REPORT_DIR, exist_ok=True)
 
 PGTA_CNV_DIR = os.path.join(BASE_DIR, "uploads", "pgta_cnv")
 os.makedirs(PGTA_CNV_DIR, exist_ok=True)
 
 app.mount("/reports", StaticFiles(directory=REPORT_DIR), name="reports")
+app.mount("/reports-pgta", StaticFiles(directory=PGTA_REPORT_DIR), name="reports-pgta")
 
 # Serve root-level static assets (logo, icons, images)
 if os.path.exists(ROOT_DIR):
@@ -438,7 +441,7 @@ async def pgta_generate_report(request: Request):
         patient_name = re.sub(r'[^a-zA-Z0-9 ]', '', str(patient_data.get("patient_name", "Unknown"))).replace(" ", "_")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_name = f"PGTA_{sample_num}_{patient_name}_{timestamp}.pdf"
-        filepath = os.path.join(REPORT_DIR, file_name)
+        filepath = os.path.join(PGTA_REPORT_DIR, file_name)
 
         tmpl = PGTAReportTemplate()
         tmpl.generate_pdf(
@@ -448,7 +451,23 @@ async def pgta_generate_report(request: Request):
             show_logo=data.get("show_logo", True),
             show_grid=data.get("show_grid", False)
         )
-        return {"status": "success", "file": file_name, "url": f"/reports/{file_name}"}
+
+        # Upload to Supabase storage: reports bucket → PGT-A/ folder
+        supabase_url = None
+        try:
+            from supabase_client import _get_client
+            client = _get_client()
+            storage_path = f"PGT-A/{file_name}"
+            with open(filepath, "rb") as f:
+                client.storage.from_("reports").upload(
+                    storage_path, f,
+                    {"upsert": "true", "content-type": "application/pdf"}
+                )
+            supabase_url = client.storage.from_("reports").get_public_url(storage_path)
+        except Exception as sup_err:
+            print(f"Supabase upload warning: {sup_err}")
+
+        return {"status": "success", "file": file_name, "url": f"/reports-pgta/{file_name}", "supabase_url": supabase_url}
     except Exception as e:
         import traceback
         traceback.print_exc()

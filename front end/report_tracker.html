@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anderson Lab — Report Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- SheetJS served through authenticated backend endpoint — not publicly accessible -->
+  <script src="/tracker/xlsx.min.js"></script>
+
+  <style>
+    /* ── TOKENS ── */
+    :root {
+      --bg:       linear-gradient(135deg,#eef2ff 0%,#f5f0ff 100%);
+      --panel:    rgba(255,255,255,0.72);
+      --pb:       rgba(255,255,255,0.55);
+      --text:     #1e293b;
+      --muted:    #64748b;
+      --pri:      #4f46e5;
+      --pri-h:    #4338ca;
+      --yet:      #6366f1;
+      --ong:      #f59e0b;
+      --cmp:      #10b981;
+      --rel:      #8b5cf6;
+      --danger:   #ef4444;
+      --ib:       rgba(255,255,255,0.9);
+      --bdr:      #d1d5db;
+      --sh:       0 4px 24px rgba(79,70,229,.07),0 1px 4px rgba(0,0,0,.04);
+      --sh-lg:    0 10px 40px rgba(79,70,229,.14);
+      --r:        14px;
+      --rs:       8px;
+      --tr:       all .22s cubic-bezier(.4,0,.2,1);
+    }
+    @media(prefers-color-scheme:dark){
+      :root{
+        --bg:linear-gradient(135deg,#0d1117 0%,#161b27 100%);
+        --panel:rgba(22,30,46,.75);--pb:rgba(255,255,255,.08);
+        --text:#e2e8f0;--muted:#8899a6;
+        --ib:rgba(13,17,23,.7);--bdr:#2d3748;
+        --sh:0 4px 24px rgba(0,0,0,.4);--sh-lg:0 10px 40px rgba(0,0,0,.5);
+      }
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;font-size:14px;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    /* inline SVGs inherit color & scale with font-size */
+    svg.ic,.s-icon svg,.tc-icon svg,.ei svg,.w-logo svg{display:inline-block;vertical-align:middle}
+    .s-icon svg{width:26px;height:26px}
+    .tc-icon svg{width:22px;height:22px}
+    .ei svg{width:44px;height:44px}
+    .w-logo svg{width:50px;height:50px;stroke:var(--pri)}
+    .glass{background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--pb);box-shadow:var(--sh);border-radius:var(--r)}
+
+    /* ── HEADER ── */
+    .hdr{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 28px;position:sticky;top:0;z-index:200;
+      background:rgba(255,255,255,.87);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+      border-bottom:1px solid var(--pb);box-shadow:0 2px 12px rgba(0,0,0,.06);
+    }
+    @media(prefers-color-scheme:dark){.hdr{background:rgba(13,17,23,.87)}}
+    .hdr-title{
+      font-size:20px;font-weight:800;letter-spacing:-.4px;
+      background:linear-gradient(135deg,#4f46e5,#8b5cf6);
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .hdr-actions{display:flex;gap:10px;align-items:center}
+
+    /* ── LIVE INDICATOR ── */
+    .live-pill{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;
+      background:rgba(16,185,129,.12);color:#047857;border:1px solid rgba(16,185,129,.3);
+    }
+    @media(prefers-color-scheme:dark){.live-pill{color:#34d399}}
+    .live-dot{
+      width:8px;height:8px;border-radius:50%;background:#10b981;
+      animation:pulse 2s infinite;
+    }
+    .live-pill.watching .live-dot{background:#10b981}
+    .live-pill:not(.watching){background:rgba(99,102,241,.1);color:#4338ca;border-color:rgba(99,102,241,.25)}
+    .live-pill:not(.watching) .live-dot{background:#6366f1;animation:none}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+
+    /* ── BUTTONS ── */
+    .btn{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:8px 16px;border-radius:var(--rs);font-family:inherit;
+      font-size:13px;font-weight:600;cursor:pointer;
+      border:1.5px solid transparent;transition:var(--tr);white-space:nowrap;
+    }
+    .btn-pri{background:var(--pri);color:#fff;border-color:var(--pri)}
+    .btn-pri:hover{background:var(--pri-h);transform:translateY(-1px);box-shadow:0 4px 16px rgba(79,70,229,.35)}
+    .btn-out{background:var(--ib);color:var(--text);border-color:var(--bdr)}
+    .btn-out:hover{border-color:var(--pri);color:var(--pri);background:rgba(79,70,229,.06)}
+    .btn-sm{padding:5px 11px;font-size:12px}
+
+    /* ── TABS ── */
+    .tabs{display:flex;gap:6px;padding:18px 28px 0}
+    .tab{
+      display:flex;align-items:center;gap:7px;
+      padding:10px 18px;border-radius:10px 10px 0 0;
+      border:1px solid transparent;border-bottom:none;
+      font-size:13px;font-weight:600;cursor:pointer;
+      background:transparent;color:var(--muted);
+      transition:var(--tr);position:relative;bottom:-1px;
+    }
+    .tab:hover{color:var(--text);background:var(--panel)}
+    .tab.active{background:var(--panel);color:var(--pri);border-color:var(--pb);border-bottom-color:var(--panel)}
+    .tbadge{
+      display:inline-flex;align-items:center;justify-content:center;
+      min-width:20px;height:20px;padding:0 6px;
+      border-radius:10px;font-size:11px;font-weight:700;
+      background:rgba(79,70,229,.12);color:var(--pri);
+    }
+    .tab.active .tbadge{background:var(--pri);color:#fff}
+
+    /* ── MAIN ── */
+    .main{padding:0 28px 32px}
+    .page{display:none;animation:fadeUp .3s ease-out}
+    .page.active{display:block}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ── STAT CARDS ── */
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding-top:20px;margin-bottom:22px}
+    .scard{
+      padding:20px 22px;border-radius:var(--r);transition:var(--tr);cursor:default;
+      border-left:4px solid transparent;
+    }
+    .scard:hover{transform:translateY(-3px);box-shadow:var(--sh-lg)}
+    .scard .s-icon{font-size:26px;margin-bottom:8px;display:block}
+    .scard .s-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:3px}
+    .scard .s-val{font-size:32px;font-weight:800;line-height:1}
+    .scard .s-sub{font-size:11px;color:var(--muted);margin-top:3px}
+    .sc-all{border-left-color:var(--pri)} .sc-all .s-val{color:var(--pri)}
+    .sc-yet{border-left-color:var(--yet)} .sc-yet .s-val{color:var(--yet)}
+    .sc-ong{border-left-color:var(--ong)} .sc-ong .s-val{color:var(--ong)}
+    .sc-cmp{border-left-color:var(--cmp)} .sc-cmp .s-val{color:var(--cmp)}
+    .sc-rel{border-left-color:var(--rel)} .sc-rel .s-val{color:var(--rel)}
+
+    /* ── PROGRESS ── */
+    .prog-wrap{height:6px;background:var(--bdr);border-radius:3px;overflow:hidden;margin-top:7px}
+    .prog-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--pri),#8b5cf6);transition:width .6s ease}
+
+    /* ── TOOLBAR ── */
+    .toolbar{display:flex;align-items:center;gap:10px;padding-top:20px;margin-bottom:14px;flex-wrap:wrap}
+    .search{
+      display:flex;align-items:center;gap:8px;flex:1;min-width:220px;
+      padding:0 14px;height:38px;
+      border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--ib);transition:var(--tr);
+    }
+    .search:focus-within{border-color:var(--pri);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+    .search input{border:none;background:transparent;outline:none;font-family:inherit;font-size:13px;color:var(--text);width:100%}
+    .search svg{color:var(--muted);flex-shrink:0}
+    .sel{
+      height:38px;padding:0 12px;border:1.5px solid var(--bdr);border-radius:var(--rs);
+      background:var(--ib);color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;transition:var(--tr);
+    }
+    .sel:focus{outline:none;border-color:var(--pri)}
+
+    /* ── TABLE ── */
+    .tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--pb)}
+    table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
+    thead th{
+      padding:11px 16px;text-align:left;font-size:10px;font-weight:700;
+      text-transform:uppercase;letter-spacing:.7px;color:var(--muted);
+      background:rgba(79,70,229,.04);border-bottom:1.5px solid var(--bdr);
+      position:sticky;top:0;z-index:10;white-space:nowrap;
+    }
+    thead th:first-child{width:44px;text-align:center}
+    @media(prefers-color-scheme:dark){thead th{background:rgba(79,70,229,.08)}}
+    tbody tr{transition:var(--tr);border-bottom:1px solid var(--bdr)}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:nth-child(even){background:rgba(0,0,0,.012)}
+    @media(prefers-color-scheme:dark){tbody tr:nth-child(even){background:rgba(255,255,255,.02)}}
+    tbody tr:hover{background:rgba(79,70,229,.06)!important}
+    td{padding:10px 16px;vertical-align:middle;color:var(--text)}
+    td:first-child{text-align:center;color:var(--muted);font-size:11px;font-weight:600;width:44px}
+    td.fw{font-weight:700}
+    .muted-val{font-size:11px;color:var(--muted)}
+    .long-cell{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    /* column type styles */
+    .col-mono{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:11.5px;letter-spacing:.3px;color:var(--pri)}
+    .col-date{color:var(--muted);font-size:12px;white-space:nowrap}
+    .col-name{font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    /* analyst pill in tables */
+    .analyst-pill{
+      display:inline-flex;align-items:center;gap:5px;
+      padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;
+      background:rgba(245,158,11,.1);color:#92400e;border:1px solid rgba(245,158,11,.22);
+      white-space:nowrap;
+    }
+    @media(prefers-color-scheme:dark){.analyst-pill{color:#fbbf24;background:rgba(245,158,11,.15)}}
+
+    /* ── STATUS BADGES ── */
+    .badge{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.2px;
+    }
+    .b-yet{background:rgba(99,102,241,.12);color:#4338ca;border:1px solid rgba(99,102,241,.25)}
+    .b-ong{background:rgba(245,158,11,.12);color:#b45309;border:1px solid rgba(245,158,11,.28)}
+    .b-cmp{background:rgba(16,185,129,.12);color:#047857;border:1px solid rgba(16,185,129,.25)}
+    .b-rel{background:rgba(139,92,246,.12);color:#6d28d9;border:1px solid rgba(139,92,246,.25)}
+    @media(prefers-color-scheme:dark){
+      .b-yet{color:#818cf8}.b-ong{color:#fbbf24}.b-cmp{color:#34d399}.b-rel{color:#c4b5fd}
+    }
+
+    /* ── QUICK CARDS ── */
+    .qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:13px}
+    .qcard{
+      padding:15px 17px;border-radius:var(--rs);border-left:3px solid transparent;
+      cursor:pointer;transition:var(--tr);
+    }
+    .qcard:hover{transform:translateY(-2px);box-shadow:var(--sh-lg)}
+    .qcard[data-s="Yet to Start"]{border-left-color:var(--yet);background:rgba(99,102,241,.06)}
+    .qcard[data-s="Ongoing"]{border-left-color:var(--ong);background:rgba(245,158,11,.07)}
+    .qcard[data-s="Released"]{border-left-color:var(--rel);background:rgba(139,92,246,.07)}
+    .qcard .qc-name{font-weight:700;font-size:13px;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .qcard .qc-sub{font-size:11px;color:var(--muted);margin-bottom:7px}
+    .qcard .qc-footer{display:flex;align-items:center;justify-content:space-between}
+
+    /* ── TAT ALERT BLOCKS ── */
+    .tat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}
+    .tat-card{padding:20px 22px;border-radius:var(--r);border-left:4px solid transparent;transition:var(--tr)}
+    .tat-card:hover{transform:translateY(-2px);box-shadow:var(--sh-lg)}
+    .tat-soon{border-left-color:#f59e0b;background:rgba(245,158,11,.07)}
+    .tat-over{border-left-color:#ef4444;background:rgba(239,68,68,.07)}
+    .tat-card .tc-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .tat-card .tc-icon{font-size:22px}
+    .tat-card .tc-title{font-size:13px;font-weight:700;color:var(--text)}
+    .tat-card .tc-count{
+      margin-left:auto;min-width:28px;height:28px;padding:0 8px;border-radius:14px;
+      display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;
+    }
+    .tat-soon .tc-count{background:rgba(245,158,11,.18);color:#b45309}
+    .tat-over .tc-count{background:rgba(239,68,68,.18);color:#dc2626}
+    .tat-list{display:flex;flex-direction:column;gap:7px;max-height:320px;overflow-y:auto}
+    .tat-item{
+      display:flex;align-items:center;gap:10px;
+      padding:7px 10px;border-radius:var(--rs);background:var(--pb);font-size:12px;
+    }
+    .tat-item .ti-name{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .tat-item .ti-date{width:90px;text-align:right;flex-shrink:0;font-size:11px;font-weight:600;white-space:nowrap}
+    .tat-soon .ti-date{color:#b45309}
+    .tat-over .ti-date{color:#dc2626}
+    .tat-item .ti-days{
+      width:80px;text-align:center;flex-shrink:0;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;
+    }
+    .tat-soon .ti-days{background:rgba(245,158,11,.15);color:#92400e}
+    .tat-over .ti-days{background:rgba(239,68,68,.15);color:#b91c1c}
+    .tat-item{cursor:pointer;transition:var(--tr)}
+    .tat-item:hover{background:rgba(0,0,0,.06)}
+    .tat-detail{
+      display:none;padding:12px 14px;margin:-3px 0 6px;border-radius:var(--rs);
+      background:var(--ib);border:1px solid var(--bdr);font-size:12px;
+      animation:fadeUp .2s ease-out;
+    }
+    .tat-detail.open{display:flex;flex-wrap:wrap;gap:8px 12px}
+    .tat-chip{
+      display:inline-flex;align-items:center;gap:5px;
+      padding:5px 10px;border-radius:20px;font-size:11.5px;
+      background:var(--pb);border:1px solid var(--bdr);
+    }
+    .tat-chip .tc-label{font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+    .tat-chip .tc-val{color:var(--text);font-weight:500}
+
+    /* ── TEAM WORKLOAD CARDS ── */
+    .emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:13px}
+    .emp-card{
+      padding:18px 20px;border-radius:var(--r);border-top:3px solid var(--ong);
+      display:flex;flex-direction:column;gap:8px;transition:var(--tr);
+    }
+    .emp-card:hover{transform:translateY(-2px);box-shadow:var(--sh-lg)}
+    .emp-avatar{
+      width:42px;height:42px;border-radius:50%;
+      background:linear-gradient(135deg,#f59e0b,#d97706);
+      color:#fff;font-size:18px;font-weight:800;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .emp-name{font-size:14px;font-weight:700;color:var(--text)}
+    .emp-count{font-size:12px;font-weight:600;color:var(--ong)}
+    .emp-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+    .emp-pill{
+      font-size:10.5px;padding:2px 8px;border-radius:10px;
+      background:rgba(245,158,11,.12);color:#92400e;border:1px solid rgba(245,158,11,.25);
+      white-space:nowrap;overflow:hidden;max-width:130px;text-overflow:ellipsis;
+    }
+    @media(prefers-color-scheme:dark){.emp-pill{color:#fbbf24}}
+
+    /* ── QUICK MODAL ── */
+    #qmodal-backdrop{
+      display:none;position:fixed;inset:0;z-index:900;
+      background:rgba(0,0,0,.45);backdrop-filter:blur(3px);
+    }
+    #qmodal-backdrop.open{display:flex;align-items:center;justify-content:center}
+    #qmodal{
+      background:#fff;border:1px solid var(--pb);
+      border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.25);
+      width:100%;max-width:1100px;max-height:80vh;display:flex;flex-direction:column;
+      animation:fadeIn .2s ease-out;margin:20px;
+    }
+    @media(prefers-color-scheme:dark){
+      #qmodal{background:#1e1e2e}
+      #qmodal-body th{background:#1e1e2e}
+    }
+    @keyframes fadeIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+    #qmodal-hdr{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 22px 14px;border-bottom:1px solid var(--pb);flex-shrink:0;
+    }
+    #qmodal-title{font-size:15px;font-weight:700;color:var(--text)}
+    #qmodal-count{font-size:12px;color:var(--muted);margin-left:8px}
+    #qmodal-close{
+      background:none;border:none;cursor:pointer;font-size:20px;
+      color:var(--muted);padding:4px 8px;border-radius:8px;line-height:1;
+    }
+    #qmodal-close:hover{background:var(--pb);color:var(--text)}
+    #qmodal-body{overflow-y:auto;flex:1;padding:0 0 16px}
+    #qmodal-body table{width:100%;border-collapse:collapse;font-size:13px}
+    #qmodal-body th{
+      position:sticky;top:0;background:var(--panel);
+      padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:.06em;
+      text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--pb);text-align:left;
+    }
+    #qmodal-body td{padding:10px 14px;border-bottom:1px solid var(--pb);vertical-align:middle}
+    #qmodal-body tr:last-child td{border-bottom:none}
+    #qmodal-body tr:hover td{background:rgba(99,102,241,.04)}
+    .emp-card{cursor:pointer}
+    .scard.clickable{cursor:pointer}
+    .scard.clickable:hover{transform:translateY(-2px);box-shadow:var(--sh-lg)}
+
+    /* ── EMPTY ── */
+    .empty{text-align:center;padding:55px 20px;color:var(--muted)}
+    .empty .ei{font-size:44px;margin-bottom:10px}
+    .empty p{font-size:15px;font-weight:500;color:var(--text);margin-bottom:5px}
+
+    /* ── WELCOME SCREEN ── */
+    #welcome{
+      display:none;position:fixed;inset:0;z-index:999;
+      background:var(--bg);align-items:center;justify-content:center;
+      animation:fadeUp .4s ease-out;
+    }
+    #welcome.show{display:flex}
+    .wcard{
+      background:var(--panel);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+      border:1px solid var(--pb);box-shadow:var(--sh-lg);
+      border-radius:20px;padding:46px 50px;max-width:560px;width:90%;text-align:center;
+    }
+    .w-logo{font-size:50px;margin-bottom:14px;display:block}
+    .w-title{
+      font-size:24px;font-weight:800;
+      background:linear-gradient(135deg,#4f46e5,#8b5cf6);
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+      margin-bottom:6px;
+    }
+    .w-sub{font-size:13px;color:var(--muted);margin-bottom:30px;line-height:1.65}
+    .drop-zone{
+      border:2.5px dashed var(--pri);border-radius:14px;
+      padding:34px 22px;cursor:pointer;transition:var(--tr);
+      background:rgba(79,70,229,.04);margin-bottom:14px;position:relative;
+    }
+    .drop-zone:hover,.drop-zone.drag-over{background:rgba(79,70,229,.1);border-color:var(--pri-h);transform:scale(1.01)}
+    .drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .drop-icon{font-size:36px;margin-bottom:8px;display:block}
+    .drop-main{font-size:15px;font-weight:700;color:var(--pri);margin-bottom:4px}
+    .drop-hint{font-size:12px;color:var(--muted)}
+    .w-or{
+      display:flex;align-items:center;gap:12px;color:var(--muted);
+      font-size:12px;margin-bottom:14px;
+    }
+    .w-or::before,.w-or::after{content:'';flex:1;height:1px;background:var(--bdr)}
+    .hint-box{
+      background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);
+      border-radius:10px;padding:13px 15px;font-size:11.5px;color:var(--muted);
+      text-align:left;line-height:1.75;margin-top:18px;
+    }
+    .hint-box strong{color:var(--text)}
+    .hint-box code{background:rgba(0,0,0,.07);padding:1px 5px;border-radius:4px;font-size:11px}
+
+    /* ── TOAST ── */
+    #tc{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999}
+    .toast{
+      background:var(--panel);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+      border:1px solid var(--pb);border-left:4px solid var(--cmp);
+      padding:12px 18px;border-radius:10px;box-shadow:var(--sh-lg);
+      font-weight:600;font-size:13px;opacity:0;transform:translateX(120%);
+      animation:tIn .3s cubic-bezier(.175,.885,.32,1.275) forwards;max-width:300px;
+    }
+    .toast.err{border-left-color:var(--danger)}.toast.warn{border-left-color:var(--ong)}
+    @keyframes tIn{to{opacity:1;transform:translateX(0)}}
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar{width:7px;height:7px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:4px}
+    ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:900px){.stats{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:640px){.stats{grid-template-columns:1fr 1fr};.hdr{padding:12px 16px};.tabs,.main{padding-left:16px;padding-right:16px}}
+  </style>
+</head>
+<body>
+
+<!-- ╔═ HEADER ═╗ -->
+<header class="hdr">
+  <span class="hdr-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="M17 6l-2.5-2.5"/><path d="M14 8l-1-1"/><path d="M7 18l2.5 2.5"/><path d="M3.5 14.5l.5.5"/><path d="M20 9l.5.5"/><path d="M6.5 12.5l1 1"/><path d="M16.5 10.5l1 1"/><path d="M10 16l1.5 1.5"/></svg> Anderson Lab — Report Tracker</span>
+  <div class="hdr-actions">
+    <!-- Live-sync indicator -->
+    <div class="live-pill" id="live-pill">
+      <span class="live-dot"></span>
+      <span id="live-label">Connecting…</span>
+    </div>
+    <!-- Manual refresh -->
+    <button class="btn btn-pri" id="refresh-btn" onclick="fetchGoogleSheet()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Refresh Now
+    </button>
+    <!-- Logout -->
+    <form method="POST" action="/tracker/logout" style="margin:0">
+      <button class="btn btn-out btn-sm" type="submit" title="Sign out"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Sign Out</button>
+    </form>
+  </div>
+</header>
+
+<!-- ╔═ QUICK VIEW MODAL ═╗ -->
+<div id="qmodal-backdrop" onclick="closeQModal(event)">
+  <div id="qmodal">
+    <div id="qmodal-hdr">
+      <div><span id="qmodal-title"></span><span id="qmodal-count"></span></div>
+      <button id="qmodal-close" onclick="closeQModal(null)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div id="qmodal-body"></div>
+  </div>
+</div>
+
+<!-- ╔═ TABS ═╗ -->
+<nav class="tabs">
+  <button class="tab active" onclick="switchTab('dashboard',this)" id="t-dash"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Dashboard</button>
+  <button class="tab" onclick="switchTab('yet',this)" id="t-yet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1a2 2 0 000-4H8a2 2 0 000 4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24z"/></svg> Yet to Start <span class="tbadge" id="b-yet">0</span></button>
+  <button class="tab" onclick="switchTab('released',this)" id="t-rel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg> Released <span class="tbadge" id="b-rel">0</span></button>
+</nav>
+
+<!-- ╔═ MAIN ═╗ -->
+<main class="main">
+
+  <!-- ══ DASHBOARD ══ -->
+  <div id="page-dashboard" class="page active">
+
+    <!-- Stat cards -->
+    <div class="stats">
+      <div class="scard glass sc-all"><span class="s-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></span><div class="s-lbl">Total</div><div class="s-val" id="s-all">0</div><div class="s-sub">All samples</div></div>
+      <div class="scard glass sc-yet"><span class="s-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1a2 2 0 000-4H8a2 2 0 000 4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24z"/></svg></span><div class="s-lbl">Yet to Start</div><div class="s-val" id="s-yet">0</div><div class="s-sub">No reviewer assigned</div></div>
+      <div class="scard glass sc-ong"><span class="s-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><div class="s-lbl">In Review</div><div class="s-val" id="s-ong">0</div><div class="s-sub" id="s-ong-sub">Assigned to reviewers</div></div>
+      <div class="scard glass sc-rel"><span class="s-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></span><div class="s-val" id="s-rel">0</div><div class="s-lbl">Released</div><div class="s-sub">Reports out</div></div>
+    </div>
+
+    <!-- TAT alert blocks -->
+    <div class="tat-grid">
+      <div class="tat-card tat-soon glass">
+        <div class="tc-hdr">
+          <span class="tc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+          <span class="tc-title">TAT Due Soon <span style="font-size:11px;color:var(--muted)">(within 7 days)</span></span>
+          <span class="tc-count" id="tat-soon-count">0</span>
+        </div>
+        <div style="padding:6px 0 8px;display:flex;align-items:center;gap:6px">
+          <input id="tat-days-search" type="number" min="0" placeholder="Search days..."
+            style="width:100%;padding:5px 10px;border-radius:8px;border:1px solid var(--pb);background:var(--bg);color:var(--text);font-size:12px"
+            oninput="filterTatSoon()" />
+        </div>
+        <div class="tat-list" id="tat-soon-list"><div class="empty" style="padding:16px 0;font-size:13px">All good!</div></div>
+      </div>
+      <div class="tat-card tat-over glass">
+        <div class="tc-hdr">
+          <span class="tc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+          <span class="tc-title">TAT Overdue — Not Released</span>
+          <span class="tc-count" id="tat-over-count">0</span>
+        </div>
+        <div class="tat-list" id="tat-over-list"><div class="empty" style="padding:16px 0;font-size:13px">All good!</div></div>
+      </div>
+    </div>
+
+    <!-- Team workload -->
+    <div class="glass" style="padding:20px 22px;margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-size:14px;font-weight:700"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> Team Workload</span>
+      </div>
+      <div class="emp-grid" id="q-active"></div>
+    </div>
+
+    <!-- Recent releases -->
+    <div class="glass" style="padding:20px 22px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-size:14px;font-weight:700"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg> Recent Releases</span>
+        <button class="btn btn-sm btn-out" onclick="switchTab('released',document.getElementById('t-rel'))">See all →</button>
+      </div>
+      <div class="qgrid" id="q-released"></div>
+    </div>
+  </div>
+
+  <!-- ══ YET TO START ══ -->
+  <div id="page-yet" class="page">
+    <div class="toolbar">
+      <div class="search"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input type="text" id="q-yet" placeholder="Search Sample, Test, Gen_ID…" oninput="render('yet')" /></div>
+      <select class="sel" id="f-yet-test" onchange="render('yet')"><option value="">All Tests</option></select>
+      <select class="sel" id="f-yet-tat"  onchange="render('yet')"><option value="">All TAT</option></select>
+    </div>
+    <div class="tbl-wrap glass"><div id="tbl-yet"></div></div>
+  </div>
+
+  <!-- ══ ASSIGNED TO ══ -->
+  <div id="page-assigned" class="page">
+    <div class="toolbar">
+      <div class="search"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input type="text" id="q-asgn" placeholder="Search Sample, Reviewer, Test…" oninput="render('assigned')" /></div>
+      <select class="sel" id="f-asgn-test"     onchange="render('assigned')"><option value="">All Tests</option></select>
+      <select class="sel" id="f-asgn-employee" onchange="render('assigned')"><option value="">All Reviewers</option></select>
+      <select class="sel" id="f-asgn-tat"      onchange="render('assigned')"><option value="">All TAT</option></select>
+    </div>
+    <div class="tbl-wrap glass"><div id="tbl-asgn"></div></div>
+  </div>
+
+
+
+  <!-- ══ RELEASED ══ -->
+  <div id="page-released" class="page">
+    <div class="toolbar">
+      <div class="search"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input type="text" id="q-rel" placeholder="Search Sample, Analyst, Test, Gen_ID…" oninput="render('released')" /></div>
+      <select class="sel" id="f-rel-analyst" onchange="render('released')"><option value="">All Analysts</option></select>
+      <select class="sel" id="f-rel-test"    onchange="render('released')"><option value="">All Tests</option></select>
+      <select class="sel" id="f-rel-tat"     onchange="render('released')"><option value="">All TAT</option></select>
+      <select class="sel" id="f-rel-month"   onchange="render('released')"><option value="">All Months</option></select>
+      <select class="sel" id="f-rel-year"    onchange="render('released')"><option value="">All Years</option></select>
+      <input type="date" class="sel" id="f-rel-date" onchange="render('released')" title="Filter by release date" />
+    </div>
+    <div class="tbl-wrap glass"><div id="tbl-rel"></div></div>
+  </div>
+
+</main>
+
+<!-- ╔═ LOADING OVERLAY ═╗ -->
+<div id="welcome">
+  <div class="wcard">
+    <span class="w-logo"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="M17 6l-2.5-2.5"/><path d="M14 8l-1-1"/><path d="M7 18l2.5 2.5"/><path d="M3.5 14.5l.5.5"/><path d="M20 9l.5.5"/><path d="M6.5 12.5l1 1"/><path d="M16.5 10.5l1 1"/><path d="M10 16l1.5 1.5"/></svg></span>
+    <div class="w-title">Anderson Lab — Report Tracker</div>
+    <p class="w-sub">Connecting to Google Sheet…<br>Data will auto-sync every 30 seconds.</p>
+    <div style="text-align:center;padding:20px 0">
+      <div class="live-dot" style="width:12px;height:12px;margin:0 auto"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔═ TOAST ═╗ -->
+<div id="tc"></div>
+
+<script>
+// ================================================================
+//  STATE
+// ================================================================
+let rows   = [];          // parsed report rows
+
+// ================================================================
+//  SVG ICONS (inline, no emoji)
+// ================================================================
+const IC = {
+  dna:     '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="M17 6l-2.5-2.5"/><path d="M14 8l-1-1"/><path d="M7 18l2.5 2.5"/><path d="M3.5 14.5l.5.5"/><path d="M20 9l.5.5"/><path d="M6.5 12.5l1 1"/><path d="M16.5 10.5l1 1"/><path d="M10 16l1.5 1.5"/></svg>',
+  home:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  pin:     '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1a2 2 0 000-4H8a2 2 0 000 4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24z"/></svg>',
+  rocket:  '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+  folder:  '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>',
+  user:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  users:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>',
+  warn:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  alert:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+  refresh: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>',
+  lock:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+  search:  '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  check:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  party:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.8 11.3L2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="M22 2l-2.24.75a2.9 2.9 0 00-1.96 3.12v0c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="M22 13l-1.34-.45a2.9 2.9 0 00-3.12 1.96v0c-.3.86-1.2 1.3-2.06 1l-.55-.2a1.83 1.83 0 00-2.34 1.12L12 18"/><path d="M7.5 7.5c-.68 0-1.3.23-1.79.62A2.5 2.5 0 007.5 12.5a2.5 2.5 0 001.79-4.38A2.47 2.47 0 007.5 7.5z"/></svg>',
+  inbox:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>',
+  flask:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 9V3"/><path d="M14 9V3"/><path d="M10 9l-4.5 9.17A2 2 0 007.28 21h9.44a2 2 0 001.78-2.83L14 9"/></svg>',
+  id:      '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>',
+  x:       '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+};
+
+// ================================================================
+//  COLUMN MAPPING  (flexible — handles case/space variations)
+// ================================================================
+const COL_MAP = {
+  sno:       ['s.no','sno','serial','#'],
+  name:      ['sample_name','sample name','samplename','name'],
+  test:      ['test'],
+  gen_id:    ['gen_id','genid','genetic id','gen id'],
+  and_id:    ['anderson_id','andersonid','anderson id'],
+  client:    ['client'],
+  tat:       ['tat(30 days)','tat','turnaround'],
+  bio_time:  ['bioinfo analysis time','bioinfo time','analysis time'],
+  rep_exp:   ['repeat expansion','repeat'],
+  analyst:   ['analyze by','analysed by','analyzed by','analyst','analyze_by'],
+  ana_date:  ['analyze date','analysis date','analyzed date','date of analysis','analyze_date'],
+  pri_rev:   ['primary reviwer (diwakar/naveen)','primary reviewer','primary review','primary_reviewer'],
+  final:     ['final review','final_review','final'],
+  remark:    ['remark','remarks','note','notes'],
+  rel_date:  ['report release date','release date','released on','report_release_date'],
+  history:   ['history writeup','history','writeup'],
+};
+
+function mapRow(raw) {
+  const keys = Object.keys(raw).map(k => k.toLowerCase().trim());
+  function get(aliases) {
+    for (const a of aliases) {
+      const i = keys.findIndex(k => k === a || k.includes(a));
+      if (i !== -1) return String(Object.values(raw)[i] ?? '').trim();
+    }
+    return '';
+  }
+  const analystRaw = get(COL_MAP.analyst);
+  // Extract date embedded in parentheses e.g. "Diwakar(18-2-2026)" → "18-2-2026"
+  const assignDateMatch = analystRaw.match(/\(([^)]+)\)/);
+  const assignDate = assignDateMatch ? assignDateMatch[1].trim() : '';
+  // Normalize name: strip dates, fix spacing/case, apply aliases (Vamsi→Vamshi etc.)
+  const analystClean = normalizeAnalystName(analystRaw);
+
+  return {
+    sno:          get(COL_MAP.sno),
+    name:         get(COL_MAP.name),
+    test:         get(COL_MAP.test),
+    gen_id:       get(COL_MAP.gen_id),
+    and_id:       get(COL_MAP.and_id),
+    client:       get(COL_MAP.client),
+    tat:          get(COL_MAP.tat),
+    bio_time:     get(COL_MAP.bio_time),
+    rep_exp:      get(COL_MAP.rep_exp),
+    analyst:      analystClean,      // normalized name (Diwakar)
+    analyst_raw:  analystRaw,        // original value (Diwakar(18-2-2026)) — used in Released
+    assign_date:  assignDate,        // extracted date from parentheses
+    ana_date:     get(COL_MAP.ana_date),
+    pri_rev:      get(COL_MAP.pri_rev),
+    final:        get(COL_MAP.final),
+    remark:       get(COL_MAP.remark),
+    rel_date:     get(COL_MAP.rel_date),
+    history:      get(COL_MAP.history),
+  };
+}
+
+// ================================================================
+//  STATUS LOGIC
+//  Released     → rel_date filled
+//  Ongoing      → pri_rev (primary reviewer) filled, no rel_date
+//  Yet to Start → pri_rev empty and no rel_date
+// ================================================================
+function getStatus(r) {
+  if (r.rel_date) return 'Released';
+  if (r.pri_rev) return 'Ongoing';
+  return 'Yet to Start';
+}
+
+// Universal date parser handling DD-MM-YYYY, DD/MM/YYYY, DD-MM-YY, DD/MM/YY, DD MMM YYYY
+function parseDate(v) {
+  if (!v) return null;
+  const s = String(v).trim();
+  
+  // Format: 12 Mar 2026
+  const mStr = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3})[\s\-]+(\d{2,4})$/);
+  if (mStr) {
+    const day = parseInt(mStr[1], 10);
+    const monthStr = mStr[2].substring(0,3).toLowerCase();
+    const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    const month = months.indexOf(monthStr);
+    let year = parseInt(mStr[3], 10);
+    if (year < 100) year += 2000;
+    if (month !== -1) return new Date(year, month, day);
+  }
+
+  // Format: DD-MM-YYYY or DD/MM/YYYY or DD-MM-YY or DD.MM.YYYY
+  const parts = s.split(/[\-\/\.]/);
+  if (parts.length >= 3) {
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    let year = parseInt(parts[2].substring(0,4), 10);
+    if (year < 100) year += 2000; // handle YY -> YYYY
+    
+    // sanity check if it's actually YYYY-MM-DD
+    if (parts[0].length === 4) {
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      return new Date(y, m, d);
+    }
+    
+    // Check for logical sense
+    if (day >= 1 && day <= 31 && month >= 0 && month <= 11 && year >= 1900 && year <= 2100) {
+      return new Date(year, month, day);
+    }
+  }
+
+  // Fallback to native JS parser if all else fails
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) return d;
+  
+  return null;
+}
+
+// ================================================================
+//  TAT ALERT LOGIC
+// ================================================================
+const TAT_WARN_DAYS = 7;
+
+function parseTatDate(r) {
+  return parseDate(r.tat);
+}
+
+function getTatAlerts() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const warnLimit = new Date(today); warnLimit.setDate(warnLimit.getDate() + TAT_WARN_DAYS);
+
+  const dueSoon = [], overdue = [], dueToday = [];
+  rows.filter(r => getStatus(r) !== 'Released').forEach(r => {
+
+  console.log("Release raw:", r.rel_date);
+  const td = parseTatDate(r);
+    if (!td) return;
+    td.setHours(0,0,0,0);
+    const diff = Math.round((td - today) / 86400000); // days from today
+    if (diff < -45) return; // skip anything overdue more than 45 days
+    if (diff < 0)       overdue.push({...r, tatDate:td, diff});
+    else if (diff === 0) dueToday.push({...r, tatDate:td, diff});
+    else if (diff <= TAT_WARN_DAYS) dueSoon.push({...r, tatDate:td, diff});
+  });
+  // due soon: soonest deadline first
+  dueSoon.sort((a,b)=>a.diff-b.diff);
+  dueToday.sort((a,b)=>a.diff-b.diff);
+  // overdue: immediate past first (diff=-1 before diff=-10)
+  overdue.sort((a,b)=>b.diff-a.diff);
+  return { dueSoon, dueToday, overdue };
+}
+
+function renderTatAlerts() {
+  const { dueSoon, dueToday, overdue } = getTatAlerts();
+  const soonAll = [...dueToday, ...dueSoon]; // today counts as "due soon" in the block
+
+  // ── Due Soon block ──
+  _tatSoonAll = soonAll; // store for days filter
+  document.getElementById('tat-soon-count').textContent = soonAll.length;
+  const daysInput = document.getElementById('tat-days-search');
+  if (daysInput) daysInput.value = ''; // reset filter on refresh
+  renderTatSoonList(soonAll);
+
+  // ── Overdue block ──
+  document.getElementById('tat-over-count').textContent = overdue.length;
+  const overEl = document.getElementById('tat-over-list');
+  overEl.innerHTML = overdue.length ? overdue.map((r,i) => {
+    const days = Math.abs(r.diff);
+    return `<div class="tat-item" onclick="toggleTatDetail('over-${i}')">
+      <span class="ti-name" title="${esc(r.name||r.gen_id||'')}">${esc(r.name||r.gen_id||'—')}</span>
+      <span class="ti-date">${fmtDate(r.tat)}</span>
+      <span class="ti-days">${days}d overdue</span>
+    </div>
+    ${tatDetailBlock('over-'+i, r)}`;
+  }).join('') : `<div class="empty" style="padding:16px 0;font-size:13px">All good! ${IC.check}</div>`;
+
+}
+
+function tatDetailBlock(id, r) {
+  return `<div class="tat-detail" id="tat-d-${id}">
+    <table>
+      <thead><tr><th>Sample Name</th><th>Gen ID</th><th>Anderson ID</th><th>TAT</th><th>Analyst</th><th>Reviewer</th></tr></thead>
+      <tbody><tr>
+        <td>${esc(r.name||'—')}</td>
+        <td><span class="col-mono">${esc(r.gen_id||'—')}</span></td>
+        <td><span class="col-mono">${esc(r.and_id||'—')}</span></td>
+        <td>${fmtDate(r.tat)}</td>
+        <td>${esc(r.analyst||'—')}</td>
+        <td>${esc(r.pri_rev||'—')}</td>
+      </tr></tbody>
+    </table>
+  </div>`;
+}
+
+function toggleTatDetail(id) {
+  const el = document.getElementById('tat-d-' + id);
+  if (!el) return;
+  // close all others first
+  document.querySelectorAll('.tat-detail.open').forEach(d => { if (d !== el) d.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+let _tatSoonAll = []; // cached for days filter
+
+function renderTatSoonList(data) {
+  const el = document.getElementById('tat-soon-list');
+  el.innerHTML = data.length ? data.map((r,i) => {
+    const label = r.diff === 0 ? IC.alert + ' TODAY' : `${r.diff}d left`;
+    return `<div class="tat-item" onclick="toggleTatDetail('soon-${i}')">
+      <span class="ti-name" title="${esc(r.name||r.gen_id||'')}">${esc(r.name||r.gen_id||'—')}</span>
+      <span class="ti-date">${fmtDate(r.tat)}</span>
+      <span class="ti-days">${label}</span>
+    </div>
+    ${tatDetailBlock('soon-'+i, r)}`;
+  }).join('') : `<div class="empty" style="padding:16px 0;font-size:13px">No matches</div>`;
+}
+
+function filterTatSoon() {
+  const val = document.getElementById('tat-days-search').value.trim();
+  if (val === '') {
+    renderTatSoonList(_tatSoonAll);
+    document.getElementById('tat-soon-count').textContent = _tatSoonAll.length;
+    return;
+  }
+  const max = parseInt(val, 10);
+  if (isNaN(max) || max < 0) {
+    renderTatSoonList(_tatSoonAll);
+    document.getElementById('tat-soon-count').textContent = _tatSoonAll.length;
+    return;
+  }
+  // Search ALL non-released reports for TAT within max days from today
+  const today = new Date(); today.setHours(0,0,0,0);
+  const results = [];
+  rows.filter(r => getStatus(r) !== 'Released').forEach(r => {
+    const td = parseTatDate(r);
+    if (!td) return;
+    td.setHours(0,0,0,0);
+    const diff = Math.round((td - today) / 86400000);
+    if(diff === max) results.push({...r, tatDate:td, diff});
+  });
+  results.sort((a,b) => a.diff - b.diff);
+  document.getElementById('tat-soon-count').textContent = results.length;
+  renderTatSoonList(results);
+}
+
+function badgeHtml(status) {
+  const cls = {
+    'Yet to Start':'b-yet','Ongoing':'b-ong','Released':'b-rel'
+  }[status] || 'b-yet';
+  const icon = {'Yet to Start':IC.pin,'Ongoing':IC.user,'Released':IC.rocket}[status]||'';
+  return `<span class="badge ${cls}">${icon} ${esc(status)}</span>`;
+}
+
+// ================================================================
+//  PARSE BINARY → rows[]
+// ================================================================
+function parseBinary(binary) {
+  // Use raw parsing. No cellDates. This ensures we receive the EXACT raw strings typed by the user as cell.w.
+  const wb = XLSX.read(binary, { type:'binary' });
+
+  // Strictly find a sheet named "Sheet1" (case-insensitive) OR default to the 3rd sheet (index 2)
+  const targetName = wb.SheetNames.find(n => n.toLowerCase().replace(/\s+/g,'') === 'sheet1');
+  const sheetName = targetName || wb.SheetNames[2] || wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  if (!ws) { toast('Could not find sheet in this file.', 'err'); return []; }
+
+  // Force-include hidden rows
+  if (ws['!rows']) ws['!rows'].forEach(r => { if (r) r.hidden = false; });
+
+  const ref = ws['!ref'];
+  if (!ref) return [];
+  const range = XLSX.utils.decode_range(ref);
+
+  const grid = [];
+  for (let R = range.s.r; R <= range.e.r; R++) {
+    const row = [];
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const cell = ws[XLSX.utils.encode_cell({r: R, c: C})];
+      if (!cell) { row.push(''); continue; }
+
+      let val = '';
+      
+      // If cell.w is present, it is exactly the literal visual string that the user sees in Excel.
+      // (e.g. "12/04/26", "24-03-2026", "17 Jul 2026")
+      if (cell.w !== undefined) {
+        val = cell.w;
+      } else if (cell.v !== null && cell.v !== undefined) {
+        // Fallback: If no formatted string exists, convert the raw value directly ensuring no date auto-math.
+        val = String(cell.v);
+      }
+      
+      row.push(String(val).trim());
+    }
+    grid.push(row);
+  }
+
+
+  function cellVal(v) {
+    if (v == null) return '';
+    return String(v).trim();
+  }
+
+  // A row is a column-header row if its first non-empty cell looks like a serial-number header
+  function isHeaderRow(row) {
+    const first = cellVal(row.find(c => cellVal(c) !== '') || '').toLowerCase().replace(/[\\s.]/g,'');
+    return ['sno','s.no','srno','slno','no','#','serial'].includes(first);
+  }
+
+  const allRows = [];
+  let headers = null;
+
+  for (const row of grid) {
+    const nonEmpty = row.filter(c => cellVal(c) !== '');
+    if (nonEmpty.length === 0) continue;
+
+    if (isHeaderRow(row)) {
+      headers = row.map(c => cellVal(c));
+      continue;
+    }
+
+    if (!headers) continue;
+
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = cellVal(row[i] ?? ''); });
+
+    if (Object.values(obj).every(v => v === '')) continue;
+
+    allRows.push(obj);
+  }
+
+  return allRows.map(mapRow).filter(r => Object.values(r).some(v => v !== ''));
+}
+
+// ================================================================
+//  GOOGLE SHEET — LIVE FETCH
+// ================================================================
+let sheetTimer = null;
+const SYNC_INTERVAL = 30000; // 30 seconds
+
+async function fetchGoogleSheet(silent) {
+  try {
+    const resp = await fetch('/tracker/fetch-sheet');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const ab = await resp.arrayBuffer();
+    const binary = new Uint8Array(ab).reduce((s,b) => s + String.fromCharCode(b), '');
+    rows = parseBinary(binary);
+    saveToStorage(rows);
+    refreshAll();
+    setLivePill(true);
+    if (!silent) toast(`Synced — ${rows.length} rows from Google Sheet`);
+  } catch(e) {
+    setLivePill(false, e.message);
+    if (!silent) toast('Failed to fetch Google Sheet: ' + e.message, 'err');
+  }
+}
+
+function startAutoSync() {
+  if (sheetTimer) clearInterval(sheetTimer);
+  sheetTimer = setInterval(() => fetchGoogleSheet(true), SYNC_INTERVAL);
+}
+
+function setLivePill(connected, errMsg) {
+  const pill  = document.getElementById('live-pill');
+  const label = document.getElementById('live-label');
+  if (connected) {
+    pill.classList.add('watching');
+    label.textContent = 'Live · Google Sheet · 30s sync';
+  } else {
+    pill.classList.remove('watching');
+    label.textContent = errMsg ? 'Sync error' : 'Disconnected';
+  }
+}
+
+// ================================================================
+//  WELCOME SCREEN
+// ================================================================
+function dismissWelcome() { document.getElementById('welcome').classList.remove('show'); }
+
+// ================================================================
+//  TAB ROUTING
+// ================================================================
+const PAGE_MAP = { dashboard:'page-dashboard', yet:'page-yet', assigned:'page-assigned', released:'page-released' };
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(PAGE_MAP[id]).classList.add('active');
+  btn.classList.add('active');
+  if (id!=='dashboard') renderTable(id);
+}
+
+// ================================================================
+//  RENDER ALL
+// ================================================================
+function refreshAll() {
+  const yet = rows.filter(r=>getStatus(r)==='Yet to Start');
+  const ong = rows.filter(r=>getStatus(r)==='Ongoing');
+  const rel = rows.filter(r=>getStatus(r)==='Released');
+  const n   = rows.length;
+
+  // stat cards
+  document.getElementById('s-all').textContent = n;
+  document.getElementById('s-yet').textContent = yet.length;
+  document.getElementById('s-ong').textContent = ong.length;
+  document.getElementById('s-rel').textContent = rel.length;
+
+  // badges
+  document.getElementById('b-yet').textContent = yet.length;
+  document.getElementById('b-rel').textContent = rel.length;
+
+  // populate filter dropdowns
+  populateFilter('f-yet-test',      rows, 'test');
+  populateFilter('f-yet-tat',       rows, 'tat');
+  populateFilter('f-asgn-test',     rows, 'test');
+  populateFilter('f-asgn-employee', ong, 'pri_rev');
+  populateFilter('f-asgn-tat',      rows, 'tat');
+  populateNormalizedFilter('f-rel-analyst', rel);
+  populateFilter('f-rel-test',      rows, 'test');
+  populateFilter('f-rel-tat',       rows, 'tat');
+  populateDateFilters('f-rel-month', 'f-rel-year', rel);
+
+  // team workload + stat card subtext (grouped by primary reviewer)
+  const empNames = [...new Set(ong.map(r=>normalizeAnalystName(r.pri_rev)).filter(Boolean))];
+  document.getElementById('s-ong-sub').textContent =
+    empNames.length ? empNames.slice(0,3).join(', ') + (empNames.length>3?` +${empNames.length-3} more`:'') : 'Assigned to reviewers';
+
+  renderTeamWorkload('q-active', ong);
+  renderQuickCards('q-released', rel.slice(-6).reverse(), 'Released');
+  renderTatAlerts();
+
+  // re-render active table
+  const active = document.querySelector('.page.active');
+  if (active && active.id!=='page-dashboard') {
+    const key = Object.keys(PAGE_MAP).find(k=>PAGE_MAP[k]===active.id);
+    if (key) renderTable(key);
+  }
+}
+
+function populateFilter(selectId, data, field) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const cur = sel.value;
+  const label = field==='test'?'Tests':field==='tat'?'TAT':field==='analyst'?'Analysts':'Employees';
+  const vals = [...new Set(data.map(r=>r[field]).filter(Boolean))].sort();
+  sel.innerHTML = `<option value="">All ${label}</option>`;
+  vals.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+  if (vals.includes(cur)) sel.value=cur;
+}
+
+function populateNormalizedFilter(selectId, data) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const cur = sel.value;
+  const vals = [...new Set(data.map(r=>normalizeAnalystName(r.analyst)).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All Analysts</option>';
+  vals.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+  if (vals.includes(cur)) sel.value=cur;
+}
+
+function populateDateFilters(monthId, yearId, data) {
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mSel = document.getElementById(monthId);
+  const ySel = document.getElementById(yearId);
+  if (!mSel || !ySel) return;
+  const curM = mSel.value, curY = ySel.value;
+  const months = [...new Set(data.map(r=>{ const d=parseDate(r.rel_date); return d?d.getMonth()+1:null; }).filter(Boolean))].sort((a,b)=>a-b);
+  const years  = [...new Set(data.map(r=>{ const d=parseDate(r.rel_date); return d?d.getFullYear():null; }).filter(Boolean))].filter(y=>y<=2026).sort((a,b)=>b-a);
+  mSel.innerHTML = '<option value="">All Months</option>' + months.map(m=>`<option value="${m}">${MONTHS[m-1]}</option>`).join('');
+  ySel.innerHTML = '<option value="">All Years</option>'  + years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  if (months.map(String).includes(curM)) mSel.value=curM;
+  if (years.map(String).includes(curY))  ySel.value=curY;
+}
+
+// ================================================================
+//  TEAM WORKLOAD (groups assigned reports by employee)
+// ================================================================
+// Map variant spellings → canonical name (add more pairs here as needed)
+const ANALYST_ALIASES = {
+  'Vamsi':  'Vamshi',
+  'Meera':  'Dr. Meera',
+};
+
+function normalizeAnalystName(name) {
+  const n = (name || '')
+    .replace(/\(.*?\)/g, '')
+    .replace(/\.(?=[a-zA-Z])/g, '. ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase());
+  return ANALYST_ALIASES[n] || n;
+}
+
+function renderTeamWorkload(containerId, data) {
+  const el = document.getElementById(containerId);
+  if (!data.length) {
+    el.innerHTML=`<div class="empty" style="padding:30px 0;grid-column:1/-1"><div class="ei">${IC.party}</div><p>No reports in progress</p></div>`;
+    return;
+  }
+  // Sort all data by TAT descending (recent deadlines first)
+  const sorted = data.slice().sort((a,b) => {
+    const da = parseDate(a.tat), db = parseDate(b.tat);
+    return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
+  });
+  const byEmp = {};
+  sorted.forEach(r => {
+    const emp = normalizeAnalystName(r.pri_rev) || 'Unassigned';
+    if (!byEmp[emp]) byEmp[emp] = [];
+    byEmp[emp].push(r);
+  });
+  el.innerHTML = Object.entries(byEmp).sort((a,b)=>b[1].length-a[1].length).map(([emp, reports])=>`
+    <div class="emp-card glass" onclick="openEmpModal('${emp.replace(/'/g,"\\'")}')">
+      <div class="emp-avatar">${esc(emp.charAt(0).toUpperCase())}</div>
+      <div class="emp-name">${esc(emp)}</div>
+      <div class="emp-count">${reports.length} report${reports.length!==1?'s':''} in review</div>
+      <div class="emp-pills">
+        ${reports.slice(0,3).map(r=>`<span class="emp-pill" title="${esc(r.name||r.gen_id||'')}">${esc(r.name||r.gen_id||'—')}</span>`).join('')}
+        ${reports.length>3?`<span class="emp-pill">+${reports.length-3} more</span>`:''}
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Click to view samples ↗</div>
+    </div>`).join('');
+}
+
+// ================================================================
+//  QUICK MODAL (employee drill-down + stat card drill-down)
+// ================================================================
+const MODAL_COLS = {
+  assigned: ['assign_date','name','test','gen_id','and_id','client','tat','ana_date'],
+};
+
+function buildModalTable(data, cols) {
+  if (!data.length) return `<div class="empty" style="padding:40px"><div class="ei">${IC.inbox}</div><p>No records</p></div>`;
+  const ths = cols.map(c=>`<th>${COL_LABELS[c]||c}</th>`).join('');
+  const trs = data.map(r=>`<tr>${cols.map(c=>{
+    const v = r[c]||'';
+    if (c==='sno')     return `<td>${esc(v)||'—'}</td>`;
+    if (c==='name')    return `<td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(v)}">${esc(v)||'—'}</td>`;
+    if (c==='gen_id'||c==='and_id') return `<td><span class="col-mono">${esc(v)||'—'}</span></td>`;
+    if (c==='analyst') return `<td>${v?`<span class="analyst-pill">${IC.user} ${esc(v)}</span>`:`<span class="muted-val">—</span>`}</td>`;
+    if (c==='assign_date') return `<td class="col-date">${v?fmtDate(v):'<span class="muted-val">—</span>'}</td>`;
+    if (c==='rel_date') return `<td class="col-date">${fmtRelDate(v, r)}</td>`;
+    if (c==='ana_date') return `<td class="col-date">${fmtDate(v)}</td>`;
+    if (c==='tat') return `<td class="muted-val">${fmtDate(v)}</td>`;
+    if (c==='bio_time') return `<td>${esc(v)||'—'}</td>`;
+    return `<td>${esc(v)||'—'}</td>`;
+  }).join('')}</tr>`).join('');
+  return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+function openQModal(title, data, cols) {
+  document.getElementById('qmodal-title').textContent = title;
+  document.getElementById('qmodal-count').textContent = ` · ${data.length} record${data.length!==1?'s':''}`;
+  document.getElementById('qmodal-body').innerHTML = buildModalTable(data, cols);
+  document.getElementById('qmodal-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeQModal(e) {
+  if (e && e.target !== document.getElementById('qmodal-backdrop')) return;
+  document.getElementById('qmodal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeQModal(null); });
+
+function openEmpModal(empName) {
+  // Ongoing only: has pri_rev, NOT released
+  let empRows = rows.filter(r =>
+    !r.rel_date &&
+    r.pri_rev &&
+    normalizeAnalystName(r.pri_rev) === empName
+  );
+  // Most recent TAT first (descending)
+  empRows = empRows.slice().sort((a,b) => {
+    const da = parseDate(a.tat), db = parseDate(b.tat);
+    return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
+  });
+  openQModal(`${IC.user} ${empName}'s Reviews`, empRows, MODAL_COLS.assigned);
+}
+
+// ================================================================
+//  QUICK CARDS
+// ================================================================
+function renderQuickCards(containerId, data, status) {
+  const el = document.getElementById(containerId);
+  if (!data.length) {
+    el.innerHTML=`<div class="empty" style="padding:30px 0;grid-column:1/-1"><div class="ei">${IC.inbox}</div><p>None right now</p></div>`;
+    return;
+  }
+  el.innerHTML = data.map(r=>`
+    <div class="qcard glass" data-s="${esc(status)}">
+      <div class="qc-name">${esc(r.name||r.gen_id||'—')}</div>
+      <div class="qc-sub">${IC.flask} ${esc(r.test||'—')} · ${IC.id} ${esc(r.gen_id||'—')}${r.analyst ? ` · ${IC.user} <strong>${esc(r.analyst)}</strong>` : ''}</div>
+      <div class="qc-footer">${badgeHtml(status)}<span class="muted-val">${esc(r.client||'')}</span></div>
+    </div>`).join('');
+}
+
+// ================================================================
+//  TABLE RENDER
+// ================================================================
+const TABLE_CFG = {
+  yet:       { status:'Yet to Start', q:'q-yet',  test:'f-yet-test',  analyst:null,              tat:'f-yet-tat',  relMonth:null,          relYear:null,
+               cols:['sno','name','test','gen_id','and_id','client','tat','bio_time','rep_exp'] },
+  assigned:  { status:'Ongoing',      q:'q-asgn', test:'f-asgn-test', reviewer:'f-asgn-employee', tat:'f-asgn-tat', relMonth:null,          relYear:null,
+               cols:['sno','pri_rev','analyst','assign_date','name','test','gen_id','and_id','client','tat','ana_date','remark'] },
+  released:  { status:'Released',     q:'q-rel',  test:'f-rel-test',  analyst:'f-rel-analyst',  tat:'f-rel-tat',  relMonth:'f-rel-month', relYear:'f-rel-year', relDate:'f-rel-date',
+               cols:['analyst_txt','name','test','gen_id','and_id','client','tat','final','rel_date','remark'] },
+};
+
+const COL_LABELS = {
+  sno:'#', name:'Sample Name', test:'Test', gen_id:'Gen ID', and_id:'Anderson ID',
+  client:'Client', tat:'TAT', bio_time:'Bioinfo Time', rep_exp:'Repeat Exp',
+  analyst:'Assigned To', analyst_raw:'Assigned To', analyst_txt:'Analyst', assign_date:'Assigned Date', ana_date:'Analyze Date', pri_rev:'Primary Reviewer',
+  final:'Final Review', remark:'Remark', rel_date:'Release Date', history:'History',
+};
+
+function renderTable(key) {
+  const cfg = TABLE_CFG[key];
+  if (!cfg) return;
+  const q        = (document.getElementById(cfg.q)?.value||'').toLowerCase();
+  const test     = document.getElementById(cfg.test)?.value||'';
+  const ana      = cfg.analyst   ? (document.getElementById(cfg.analyst)?.value||'')   : '';
+  const reviewer = cfg.reviewer  ? (document.getElementById(cfg.reviewer)?.value||'') : '';
+  const tat      = cfg.tat       ? (document.getElementById(cfg.tat)?.value||'')      : '';
+  const relMonth = cfg.relMonth  ? (document.getElementById(cfg.relMonth)?.value||'') : '';
+  const relYear  = cfg.relYear   ? (document.getElementById(cfg.relYear)?.value||'')  : '';
+  const relDate  = cfg.relDate   ? (document.getElementById(cfg.relDate)?.value||'')  : '';
+
+  let data = rows.filter(r=>getStatus(r)===cfg.status);
+  if (test)     data = data.filter(r=>r.test===test);
+  if (ana)      data = data.filter(r=>normalizeAnalystName(r.analyst)===ana);
+  if (reviewer) data = data.filter(r=>r.pri_rev===reviewer);
+  if (tat)      data = data.filter(r=>r.tat===tat);
+  if (relMonth) data = data.filter(r=>{ const d=parseDate(r.rel_date); return d&&String(d.getMonth()+1)===relMonth; });
+  if (relYear)  data = data.filter(r=>{ const d=parseDate(r.rel_date); return d&&String(d.getFullYear())===relYear; });
+  if (relDate)  data = data.filter(r=>{ const d=parseDate(r.rel_date); if(!d) return false; const pick=new Date(relDate+'T00:00:00'); return d.getFullYear()===pick.getFullYear()&&d.getMonth()===pick.getMonth()&&d.getDate()===pick.getDate(); });
+  if (q)        data = data.filter(r=>
+    (r.name||'').toLowerCase().includes(q) ||
+    (r.test||'').toLowerCase().includes(q) ||
+    (r.gen_id||'').toLowerCase().includes(q) ||
+    (r.and_id||'').toLowerCase().includes(q) ||
+    (r.client||'').toLowerCase().includes(q) ||
+    (r.analyst||'').toLowerCase().includes(q) ||
+    (r.pri_rev||'').toLowerCase().includes(q)
+  );
+
+  // Sort descending — most recent/relevant first (uses clamped dates for 'released' to fix Excel autocorrect errors)
+  const dateSortDesc = (aVal, bVal, aRow, bRow, isRel) => {
+    const sA = isRel ? fmtRelDate(aVal, aRow) : aVal;
+    const sB = isRel ? fmtRelDate(bVal, bRow) : bVal;
+    const da = parseDate(sA), db = parseDate(sB);
+    return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
+  };
+  if (key === 'released')  data = data.slice().sort((a,b) => dateSortDesc(a.rel_date,    b.rel_date,    a, b, true));
+  if (key === 'yet')       data = data.slice().sort((a,b) => dateSortDesc(a.tat,          b.tat,          a, b, false));
+  if (key === 'assigned')  data = data.slice().sort((a,b) => dateSortDesc(a.assign_date,  b.assign_date,  a, b, false));
+
+  const tblId = { yet:'tbl-yet', assigned:'tbl-asgn', released:'tbl-rel' }[key];
+  const el = document.getElementById(tblId);
+
+  if (!data.length) {
+    el.innerHTML=`<div class="empty"><div class="ei">${IC.search}</div><p>${rows.filter(r=>getStatus(r)===cfg.status).length===0?'No reports in this category':'No results match your search'}</p></div>`;
+    return;
+  }
+
+  const ths = cfg.cols.map(c=>`<th>${COL_LABELS[c]||c}</th>`).join('');
+  const trs = data.map(r=>`<tr>${cfg.cols.map(c=>{
+    const v = r[c]||'';
+    if (c==='sno')     return `<td>${esc(v)||'—'}</td>`;
+    if (c==='name')    return `<td class="col-name" title="${esc(v)}">${esc(v)||'—'}</td>`;
+    if (c==='gen_id'||c==='and_id') return `<td><span class="col-mono">${esc(v)||'—'}</span></td>`;
+    if (c==='analyst') return `<td>${v?`<span class="analyst-pill">${IC.user} ${esc(v)}</span>`:`<span class="muted-val">—</span>`}</td>`;
+    if (c==='analyst_raw') return `<td>${v?`<span class="analyst-pill">${IC.user} ${esc(v)}</span>`:`<span class="muted-val">—</span>`}</td>`;
+    if (c==='analyst_txt') { const av = r.analyst||''; return `<td style="font-size:13px;color:var(--text)">${esc(av)||'<span class="muted-val">—</span>'}</td>`; }
+    if (c==='assign_date') return `<td class="col-date">${v?fmtDate(v):'<span class="muted-val">—</span>'}</td>`;
+    if (c==='remark'||c==='history') return `<td class="long-cell muted-val" title="${esc(v)}">${esc(v)||'—'}</td>`;
+    if (c==='rel_date') return `<td class="col-date">${fmtRelDate(v, r)}</td>`;
+    if (c==='ana_date') return `<td class="col-date">${fmtDate(v)}</td>`;
+    if (c==='pri_rev'||c==='final') return `<td>${v?`<span class="badge b-cmp">${IC.check} ${fmtDate(v)}</span>`:`<span class="muted-val">—</span>`}</td>`;
+    if (c==='tat') return `<td class="muted-val">${fmtDate(v)}</td>`;
+    if (c==='bio_time') return `<td>${esc(v)||'—'}</td>`;
+    return `<td>${esc(v)||'—'}</td>`;
+  }).join('')}</tr>`).join('');
+
+  el.innerHTML=`<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+function render(key) { renderTable(key); }
+
+// ================================================================
+//  HELPERS
+// ================================================================
+// ── Exact literal date normalization ──
+// Takes DD/MM/YY, DD.MM.YYYY, 12 Mar 2026, etc. and forces DD-MM-YYYY exactly as seen.
+function fmtDate(v) {
+  if (!v) return '—';
+  const s = String(v).trim();
+  
+  // Format: 12 Mar 2026
+  const mStr = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3})[\s\-]+(\d{2,4})$/);
+  if (mStr) {
+    const d = mStr[1].padStart(2, '0');
+    const monthStr = mStr[2].substring(0,3).toLowerCase();
+    const months = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+    const m = String(months[monthStr] || 1).padStart(2,'0');
+    let y = mStr[3];
+    if (y.length === 2) {
+      const yr = parseInt(y, 10);
+      y = (yr < 100 ? yr + 2000 : yr).toString();
+    }
+    return `${d}-${m}-${y}`;
+  }
+
+  // Format: DD-MM-YYYY or DD/MM/YYYY or DD-MM-YY or DD.MM.YYYY
+  const parts = s.split(/[\-\/\.]/);
+  if (parts.length >= 3) {
+    const d = parts[0].padStart(2, '0');
+    const m = parts[1].padStart(2, '0');
+    let y = parts[2].substring(0,4);
+    if (y.length === 2) {
+      const yr = parseInt(y, 10);
+      y = (yr < 100 ? yr + 2000 : yr).toString();
+    }
+    return `${d}-${m}-${y}`;
+  }
+  
+  return s; // If it's a completely wacky string, just return it so we don't destroy info.
+}
+
+// User requested released dates use the exact same DD-MM-YYYY format
+// Added anomaly rectifier to clamp Excel drag-fill typos (future dates) back to TAT anchors
+function fmtRelDate(v, r) {
+  const f = fmtDate(v);
+  if (f === '—' || !r || !r.tat) return f;
+
+  const relD = parseDate(f);
+  const tatD = parseDate(fmtDate(r.tat));
+  const now = new Date();
+
+  // If the Extracted Excel date is mathematically strictly in the future
+  if (relD && tatD && relD > now) {
+    let y = relD.getFullYear();
+    let m = relD.getMonth();
+    let d = relD.getDate();
+
+    // 1. If year is explicitly > current year (e.g. 2027), snap immediately to TAT year
+    if (y > now.getFullYear()) {
+      y = tatD.getFullYear();
+    }
+
+    let corr = new Date(y, m, d);
+    // 2. If it is still in the future (e.g. July 2026 vs Today Mar 2026)
+    if (corr > now) {
+      if (y > tatD.getFullYear()) {
+         y = tatD.getFullYear(); // pull it back completely to TAT year
+         corr = new Date(y, m, d);
+      }
+      
+      if (corr > now) {
+        // Clamp month to TAT month
+        m = tatD.getMonth();
+        corr = new Date(y, m, d);
+        if (corr > now) {
+          // Clamp day to TAT day+1 if still in future
+          d = tatD.getDate();
+          if (d < 28) d += 1; // careful of month boundary
+          corr = new Date(y, m, d);
+        }
+      }
+    }
+    
+    // Avoid printing impossible days like Feb 31 by relying on Date math bounds
+    const finalDate = new Date(y, m, d);
+    const dd = String(finalDate.getDate()).padStart(2, '0');
+    const mm = String(finalDate.getMonth() + 1).padStart(2, '0');
+    return `${dd}-${mm}-${finalDate.getFullYear()}`;
+  }
+  return f;
+}
+
+function esc(s) {
+  return String(s||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg, type) {
+  const el=document.createElement('div');
+  el.className=`toast${type?' '+type:''}`;
+  el.textContent=msg;
+  document.getElementById('tc').appendChild(el);
+  setTimeout(()=>{el.style.animation='tIn .25s reverse forwards';setTimeout(()=>el.remove(),260)},3500);
+}
+
+// Keyboard shortcut: Ctrl/Cmd+R → force refresh from Google Sheet
+document.addEventListener('keydown',e=>{
+  if ((e.ctrlKey||e.metaKey)&&e.key==='r'){e.preventDefault();fetchGoogleSheet();}
+});
+
+// ================================================================
+//  LOCAL STORAGE — persist rows across page refreshes
+// ================================================================
+const STORAGE_KEY = 'tracker_rows_v5';
+
+function saveToStorage(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function loadFromStorage() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(e) { return null; }
+}
+
+// ================================================================
+//  IDLE AUTO-LOGOUT — 30 minutes of inactivity
+// ================================================================
+const IDLE_MS = 30 * 60 * 1000;
+let idleTimer;
+
+function resetIdle() {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    toast('Session timed out due to inactivity. Signing out…', 'warn');
+    setTimeout(() => {
+      const f = document.createElement('form');
+      f.method = 'POST'; f.action = '/tracker/logout';
+      document.body.appendChild(f); f.submit();
+    }, 2000);
+  }, IDLE_MS);
+}
+
+['mousemove','mousedown','keydown','scroll','touchstart'].forEach(evt =>
+  document.addEventListener(evt, resetIdle, { passive: true })
+);
+resetIdle();
+
+// ================================================================
+//  BOOT — auto-fetch from Google Sheet
+// ================================================================
+(async function boot() {
+  // Show loading overlay while first fetch happens
+  document.getElementById('welcome').classList.add('show');
+
+  // Try to show cached data immediately while fetching live data
+  const saved = loadFromStorage();
+  if (saved && saved.length) {
+    rows = saved;
+    refreshAll();
+  }
+
+  // Fetch live data from Google Sheet
+  await fetchGoogleSheet(false);
+  dismissWelcome();
+
+  // Start auto-sync every 30s
+  startAutoSync();
+})();
+</script>
+</body>
+</html>

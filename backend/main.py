@@ -481,89 +481,139 @@ async def pgta_parse_excel(file: UploadFile = File(...)):
         contents = await file.read()
         xl = pd.ExcelFile(io.BytesIO(contents))
         sheets = xl.sheet_names
+        sheet_names_lower = [s.lower().strip() for s in sheets]
 
-        def clean_val(v):
-            if v is None:
-                return ""
-            if isinstance(v, float) and math.isnan(v):
-                return ""
-            return str(v).strip()
+        # 1. Helper functions from desktop app
+        def get_clean_value(row, keys, default=''):
+            if isinstance(keys, str): keys = [keys]
+            for k in keys:
+                if k in row:
+                    val = row[k]
+                    if pd.isna(val): continue
+                    s_val = str(val).strip(' \t\r\f\v')
+                    if s_val.lower() in ['nan', 'none', 'nat', 'null']: continue
+                    if s_val: return s_val
+            return default
+
+        def format_date(d_val):
+            if not d_val: return ""
+            s = str(d_val).split(' ')[0]
+            try:
+                for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y", "%d.%m.%Y"):
+                    try:
+                        dt = datetime.strptime(s, fmt)
+                        return dt.strftime("%d-%m-%Y")
+                    except ValueError: continue
+                return s.replace('/', '-')
+            except:
+                return s.replace('/', '-')
+
+        def normalize_str(s):
+            if not s: return ""
+            s = str(s).upper().strip()
+            prefixes = ['MRS.', 'MR.', 'SMT.', 'DR.', 'MS.', 'MISS.', 'PROF.', 'R.', 'S.', 'K.', 'M.', 'D.', 'P.', 'A.', 'B.', 'C.', 'G.', 'H.', 'J.', 'L.', 'N.', 'T.', 'V.', 'W.']
+            for prefix in prefixes:
+                if s.startswith(prefix):
+                    s = s[len(prefix):].strip()
+                    break
+            s = re.sub(r'\([^)]*\)', '', s)
+            s = re.sub(r'[^A-Z0-9]', '', s)
+            return s
+
+        # 2. Find Details and Summary sheets
+        details_idx = next((i for i, s in enumerate(sheet_names_lower) if 'detail' in s), None)
+        summary_idx = next((i for i, s in enumerate(sheet_names_lower) if 'summary' in s), None)
+
+        if details_idx is None and summary_idx is None and len(sheets) >= 2:
+            details_idx, summary_idx = 0, 1
+        elif details_idx is None and len(sheets) == 1:
+            summary_idx = 0
 
         details_df = None
         summary_df = None
 
-        for sheet in sheets:
-            sname = sheet.lower().strip()
-            if 'detail' in sname:
-                details_df = xl.parse(sheet)
-            elif 'summary' in sname:
-                summary_df = xl.parse(sheet)
-
-        # Fallback: use first two sheets
-        if details_df is None and summary_df is None and len(sheets) >= 2:
-            details_df = xl.parse(sheets[0])
-            summary_df = xl.parse(sheets[1])
-        elif details_df is None and len(sheets) == 1:
-            summary_df = xl.parse(sheets[0])
+        if details_idx is not None:
+            details_df = xl.parse(sheets[details_idx])
+            details_df.columns = [str(c).strip() for c in details_df.columns]
+        
+        if summary_idx is not None:
+            # Header discovery for summary sheet
+            try:
+                df_full = xl.parse(sheets[summary_idx], header=None)
+                header_row_idx = 0
+                for r_idx, row in df_full.iterrows():
+                    if any('sample name' in str(val).lower() for val in row.values):
+                        header_row_idx = r_idx
+                        break
+                summary_df = xl.parse(sheets[summary_idx], header=header_row_idx)
+                summary_df.columns = [str(c).strip() for c in summary_df.columns]
+            except:
+                summary_df = xl.parse(sheets[summary_idx])
+                summary_df.columns = [str(c).strip() for c in summary_df.columns]
 
         patient_map = {}
         patients = []
 
+        # 3. Process Details (Patients)
         if details_df is not None:
-            details_df.columns = [str(c).strip() for c in details_df.columns]
-            for _, row in details_df.iterrows():
-                row = {k: clean_val(v) for k, v in row.items()}
-                pid = row.get('Sample ID', '') or row.get('Patient ID', '') or row.get('sample_id', '')
-                pname = row.get('Patient Name', '') or row.get('patient_name', '')
-                if not pname and not pid:
-                    continue
+            for _, p_row in details_df.iterrows():
+                p_name = get_clean_value(p_row, ['Patient Name', 'patient_name', 'Name'])
+                if not p_name: continue
+                
+                pid = get_clean_value(p_row, ['Sample ID', 'Patient ID', 'sample_id', 'PIN', 'pin'])
+                b_date = format_date(get_clean_value(p_row, ['Date of Biopsy', 'Biopsy Date']))
+                r_date = format_date(get_clean_value(p_row, ['Date Sample Received', 'Receipt Date', 'Sample Receipt Date']))
+
                 patient = {
-                    "patient_name": pname,
+                    "patient_name": p_name,
                     "sample_number": pid,
-                    "hospital_clinic": row.get('Center name', '') or row.get('Center Name', '') or row.get('center_name', ''),
-                    "biopsy_date": row.get('Date of Biopsy', '') or row.get('Biopsy Date', ''),
-                    "sample_receipt_date": row.get('Date Sample Received', '') or row.get('Date of Sample Received', ''),
-                    "biopsy_performed_by": row.get('EMBRYOLOGIST NAME', '') or row.get('Embryologist Name', '') or row.get('embryologist_name', ''),
-                    "spouse_name": row.get('Spouse Name', '') or row.get('spouse_name', 'w/o'),
-                    "pin": row.get('PIN', '') or row.get('pin', ''),
-                    "age": row.get('Age', '') or row.get('age', ''),
-                    "referring_clinician": row.get('Referring Clinician', '') or row.get('referring_clinician', ''),
-                    "sample_collection_date": row.get('Sample Collection Date', '') or row.get('Date Collected', ''),
-                    "specimen": row.get('Specimen', '') or row.get('specimen', 'DAY 5 TROPHECTODERM BIOPSY'),
-                    "report_date": row.get('Report Date', '') or datetime.now().strftime('%d-%m-%Y'),
-                    "indication": row.get('Indication', '') or row.get('indication', ''),
+                    "hospital_clinic": get_clean_value(p_row, ['Center name', 'Center Name', 'center_name', 'Hospital', 'Clinic']),
+                    "biopsy_date": b_date,
+                    "sample_receipt_date": r_date,
+                    "biopsy_performed_by": get_clean_value(p_row, ['EMBRYOLOGIST NAME', 'Embryologist Name', 'Biologist']),
+                    "spouse_name": get_clean_value(p_row, ['Spouse Name', 'Husband Name', 'Partner Name', 'spouse_name']) or 'w/o',
+                    "pin": pid,
+                    "age": get_clean_value(p_row, ['Age', 'age', 'Patient Age']),
+                    "referring_clinician": get_clean_value(p_row, ['Referring Clinician', 'referring_clinician', 'Doctor']),
+                    "sample_collection_date": b_date,
+                    "specimen": get_clean_value(p_row, ['Specimen', 'Specimen Type', 'Sample Type'], 'DAY 5 TROPHECTODERM BIOPSY'),
+                    "report_date": datetime.now().strftime('%d-%m-%Y'),
+                    "indication": get_clean_value(p_row, ['Indication', 'indication', 'Clinical Indication']),
                     "embryos": []
                 }
-                patient_map[pid] = patient
+                patient_map[normalize_str(pid)] = patient
+                patient_map[normalize_str(p_name)] = patient
                 patients.append(patient)
 
+        # 4. Process Summary (Embryos)
         if summary_df is not None:
-            summary_df.columns = [str(c).strip() for c in summary_df.columns]
-            for _, row in summary_df.iterrows():
-                row = {k: clean_val(v) for k, v in row.items()}
-                sample_name = row.get('Sample name', '') or row.get('Sample Name', '') or row.get('sample_name', '')
-                if not sample_name:
-                    continue
+            for _, s_row in summary_df.iterrows():
+                sample_name = get_clean_value(s_row, ['Sample name', 'Sample Name', 'sample_name', 'Sample ID'])
+                if not sample_name: continue
+                
                 embryo = {
                     "embryo_id": sample_name,
                     "embryo_id_detail": sample_name,
-                    "result_summary": row.get('Result', '') or row.get('result', ''),
-                    "interpretation": row.get('Conclusion', '') or row.get('Interpretation', '') or row.get('interpretation', ''),
-                    "mtcopy": row.get('MTcopy', '') or row.get('MT Copy', '') or row.get('mtcopy', ''),
-                    "autosomes": row.get('AUTOSOMES', '') or row.get('Autosomes', '') or row.get('autosomes', ''),
-                    "sex_chromosomes": row.get('SEX', '') or row.get('Sex Chromosomes', '') or row.get('sex_chromosomes', 'Normal'),
-                    "result_description": row.get('Result', '') or row.get('result_description', ''),
+                    "result_summary": get_clean_value(s_row, ['Result', 'result', 'Summary']),
+                    "interpretation": get_clean_value(s_row, ['Conclusion', 'Interpretation', 'interpretation', 'Result']),
+                    "mtcopy": get_clean_value(s_row, ['MTcopy', 'MT Copy', 'mtcopy', 'MT']),
+                    "autosomes": get_clean_value(s_row, ['AUTOSOMES', 'Autosomes', 'autosomes', 'Aneuploidy']),
+                    "sex_chromosomes": get_clean_value(s_row, ['SEX', 'Sex Chromosomes', 'sex_chromosomes', 'Sex'], 'Normal'),
+                    "result_description": get_clean_value(s_row, ['Result', 'result_description', 'Result Description']),
                     "chromosome_statuses": {},
                     "mosaic_percentages": {},
                     "inconclusive_comment": ""
                 }
-                # Match to patient by sample_name prefix
+                
+                # Match to patient
+                norm_sample = normalize_str(sample_name)
                 matched = False
-                for pid, patient in patient_map.items():
-                    if pid and sample_name.startswith(pid):
+                for key, patient in patient_map.items():
+                    if key and key in norm_sample:
                         patient["embryos"].append(embryo)
                         matched = True
                         break
+                
                 if not matched and patients:
                     patients[-1]["embryos"].append(embryo)
 

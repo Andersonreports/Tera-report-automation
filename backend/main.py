@@ -573,3 +573,39 @@ async def pgta_parse_excel(file: UploadFile = File(...)):
         traceback.print_exc()
         return {"error": str(e)}
 
+
+@app.post("/pgta/compare")
+async def pgta_compare_reports(manual: UploadFile = File(...), automated: UploadFile = File(...)):
+    """Compare a manual PGT-A PDF report with an automated one."""
+    try:
+        import sys
+        comp_dir = os.path.join(BASE_DIR, "anderson-report-automation")
+        if comp_dir not in sys.path:
+            sys.path.insert(0, comp_dir)
+        from report_comparator import PGTAReportComparator
+
+        m_id = str(uuid.uuid4()) + ".pdf"
+        a_id = str(uuid.uuid4()) + ".pdf"
+        m_path = os.path.join(TEMP_DIR, m_id)
+        a_path = os.path.join(TEMP_DIR, a_id)
+
+        with open(m_path, "wb") as f:
+            f.write(await manual.read())
+        with open(a_path, "wb") as f:
+            f.write(await automated.read())
+
+        try:
+            comparator = PGTAReportComparator()
+            result = comparator.compare_single_pair(m_path, a_path)
+            return result
+        finally:
+            for p in [m_path, a_path]:
+                try:
+                    os.unlink(p)
+                except:
+                    pass
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+

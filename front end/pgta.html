@@ -1103,7 +1103,7 @@ async function generatePreview() {
     const res=await fetch(`${BASE}/pgta/preview`,{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({patient_data:getPatientData(),embryos_data:getEmbryosData(),show_logo:opts.show_logo,show_grid:opts.show_grid})});
     const data=await res.json(); if(data.error) throw new Error(data.error);
-    const url=`${BASE}${data.preview_url}?t=${Date.now()}`;
+    const url=`${BASE}${data.preview_url}?t=${Date.now()}#toolbar=0&navpanes=0`;
     if(frame){frame.src=url; frame.style.display="block";}
     if(loading) loading.style.display="none";
   } catch(err) {
@@ -1275,7 +1275,7 @@ async function previewBulkPatient(i) {
     const res=await fetch(`${BASE}/pgta/preview`,{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify(buildBulkPayload(p,showLogo,showGrid))});
     const data=await res.json(); if(data.error) throw new Error(data.error);
-    document.getElementById("modalPreviewFrame").src=`${BASE}${data.preview_url}?t=${Date.now()}`;
+    document.getElementById("modalPreviewFrame").src=`${BASE}${data.preview_url}?t=${Date.now()}#toolbar=0&navpanes=0`;
   } catch(err) { showToast("Preview failed: "+err.message,"error"); closePreviewModal(); }
 }
 

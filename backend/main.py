@@ -578,10 +578,6 @@ async def pgta_parse_excel(file: UploadFile = File(...)):
 async def pgta_compare_reports(manual: UploadFile = File(...), automated: UploadFile = File(...)):
     """Compare a manual PGT-A PDF report with an automated one."""
     try:
-        import sys
-        comp_dir = os.path.join(BASE_DIR, "anderson-report-automation")
-        if comp_dir not in sys.path:
-            sys.path.insert(0, comp_dir)
         from report_comparator import PGTAReportComparator
 
         m_id = str(uuid.uuid4()) + ".pdf"

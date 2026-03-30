@@ -86,12 +86,12 @@ body.loaded{opacity:1;}
 .user-dropdown .role-tag:hover{background:transparent;}
 
 /* ── Main Content ── */
-.main{height:calc(100vh - var(--topbar-h));padding:20px 24px;display:flex;flex-direction:column;overflow:hidden;}
+.main{height:calc(100vh - var(--topbar-h));padding:10px 24px;display:flex;flex-direction:column;overflow:hidden;}
 
 /* ── Page Header ── */
 .page-hdr{
   display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:18px;flex-wrap:wrap;gap:12px;
+  margin-bottom:10px;flex-wrap:wrap;gap:12px;
 }
 .page-hdr-left h1{
   font-size:20px;font-weight:700;
@@ -112,7 +112,7 @@ body.loaded{opacity:1;}
 .btn-danger-outline:hover{background:var(--danger);color:#fff;}
 
 /* ── Tabs ── */
-.tab-bar{display:flex;gap:8px;margin-bottom:20px;}
+.tab-bar{display:flex;gap:8px;margin-bottom:12px;}
 .tab{
   padding:9px 22px;background:rgba(255,255,255,0.75);
   border:1px solid var(--panel-border);border-radius:8px;
@@ -700,12 +700,12 @@ body.loaded{opacity:1;}
   <div id="tab-bulk" class="tab-content">
 
     <!-- Step 1: File Upload -->
-    <div class="card" id="bulkUploadCard">
-      <h3><i class="fas fa-file-excel"></i> 1. Select Excel File</h3>
+    <div class="card" id="bulkUploadCard" style="padding:12px 16px;margin-bottom:12px;">
+      <h3 style="margin-bottom:8px;"><i class="fas fa-file-excel"></i> 1. Select Excel File</h3>
       <div style="display:flex;align-items:center;gap:12px;">
-        <div class="drop-zone" id="dropZone" onclick="document.getElementById('bulkFileInput').click()" style="flex:1;padding:20px 16px;">
-          <i class="fas fa-file-excel"></i>
-          <p>Drop Excel file here or click to browse</p>
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('bulkFileInput').click()" style="flex:1;padding:12px 16px;">
+          <i class="fas fa-file-excel" style="font-size:24px;margin-bottom:6px;"></i>
+          <p style="font-size:12px;">Drop Excel file here or click to browse</p>
           <small>Supported: .xlsx, .xls</small>
         </div>
       </div>
@@ -1515,7 +1515,13 @@ async function handleBulkFile(file) {
     const data=await res.json(); if(data.error) throw new Error(data.error);
     state.bulkPatients=data.patients||[];
     renderBulkPatients();
-    dropZone.innerHTML=`<i class="fas fa-check-circle" style="color:#10b981;"></i><p>Loaded: <strong>${file.name}</strong></p><small>${state.bulkPatients.length} patient(s) found</small>`;
+    dropZone.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;gap:12px;">
+      <i class="fas fa-check-circle" style="color:#10b981;font-size:20px;"></i>
+      <div style="text-align:left;">
+        <p style="font-size:12px;margin:0;">Loaded: <strong>${file.name}</strong></p>
+        <small style="font-size:10px;color:var(--text-muted);">${state.bulkPatients.length} patient(s) found</small>
+      </div>
+    </div>`;
   } catch(err) {
     dropZone.innerHTML=`<i class="fas fa-times-circle" style="color:#ef4444;"></i><p>Error: ${err.message}</p>`;
     showToast("Parse failed: "+err.message,"error");

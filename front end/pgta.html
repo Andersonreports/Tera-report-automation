@@ -385,6 +385,39 @@ body.loaded{opacity:1;}
 .btn-generate-all:hover{background:var(--primary);color:#fff;}
 .btn-generate-all:disabled{border-color:#94a3b8;color:#94a3b8;cursor:not-allowed;}
 
+/* ── Bulk 3-Column Layout ── */
+.bulk-3col{display:flex;gap:12px;align-items:stretch;min-height:calc(100vh - var(--topbar-h) - 160px);}
+.bulk-col-left{width:280px;flex-shrink:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.bulk-col-center{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.bulk-col-right{width:380px;flex-shrink:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.bulk-col-header{padding:10px 14px;font-size:12px;font-weight:700;color:var(--primary);border-bottom:2px solid var(--accent);display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.bulk-search{margin:8px;padding:7px 10px 7px 28px;border:1px solid var(--input-border);border-radius:6px;font-size:11px;width:calc(100% - 16px);background:var(--input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 8px center no-repeat;}
+.bulk-col-left .bulk-patient-list{flex:1;overflow-y:auto;padding:0;border:none;max-height:none;}
+.bulk-col-left .bulk-patient-item{padding:8px 12px;border-bottom:1px solid #eee;cursor:pointer;display:flex;align-items:center;gap:8px;transition:0.15s;}
+.bulk-col-left .bulk-patient-item:hover{background:#f0f4f8;}
+.bulk-col-left .bulk-patient-item.active{background:#dbeafe;border-left:3px solid var(--primary);}
+.bulk-col-left .patient-name{font-size:11px;}
+.bulk-col-left .patient-meta{font-size:10px;}
+.bulk-bottom-controls{padding:10px 12px;border-top:1px solid var(--input-border);flex-shrink:0;}
+.bulk-options-compact{display:flex;gap:8px;margin-bottom:6px;}
+.bulk-options-compact .opt-field{flex:1;}
+.bulk-options-compact .opt-field label{font-size:10px;font-weight:600;color:var(--text-muted);}
+.bulk-options-compact .opt-field select{width:100%;padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--input-border);}
+.bulk-preview-wrap{flex:1;overflow-y:auto;background:#e8e8e8;display:flex;flex-direction:column;align-items:center;padding:8px;gap:4px;min-height:300px;}
+.bulk-preview-wrap .preview-page-canvas{display:block;box-shadow:0 2px 8px rgba(0,0,0,0.2);margin-bottom:6px;width:100%;}
+/* Editor inside bulk center */
+.bulk-editor-embryo{padding:10px 14px;border-bottom:1px solid #eee;}
+.bulk-editor-embryo h4{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.bulk-editor-field{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;}
+.bulk-editor-field label{width:120px;font-weight:600;color:var(--text-muted);text-align:right;flex-shrink:0;}
+.bulk-editor-field input,.bulk-editor-field select,.bulk-editor-field textarea{flex:1;padding:5px 8px;border:1px solid var(--input-border);border-radius:4px;font-size:11px;font-family:'Inter',sans-serif;}
+.bulk-chr-grid{display:grid;grid-template-columns:auto 1fr auto auto 1fr auto;gap:2px 6px;align-items:center;font-size:10px;padding:6px;}
+.bulk-chr-grid .chr-label{font-weight:600;color:var(--text-muted);text-align:center;width:24px;}
+.bulk-chr-grid select{padding:2px 4px;font-size:10px;border:1px solid var(--input-border);border-radius:3px;}
+.bulk-chr-grid input{width:40px;padding:2px 4px;font-size:10px;border:1px solid var(--input-border);border-radius:3px;text-align:center;}
+
+@media(max-width:1200px){.bulk-col-right{width:300px;}.bulk-col-left{width:240px;}}
+@media(max-width:900px){.bulk-3col{flex-direction:column;}.bulk-col-left,.bulk-col-center,.bulk-col-right{width:100%;}}
 
 /* ── Toast ── */
 .toast{
@@ -624,58 +657,77 @@ body.loaded{opacity:1;}
   <!-- ╔══════════════ TAB 2: BULK UPLOAD ══════════════╗ -->
   <div id="tab-bulk" class="tab-content">
 
-    <div class="card">
-      <h3><i class="fas fa-file-excel"></i> Upload Excel File</h3>
-      <p class="info-text" style="margin-bottom:12px;">
-        Excel should have a <strong>Details</strong> sheet (Patient Name, Sample ID, Center name, Date of Biopsy, Date Sample Received, EMBRYOLOGIST NAME)
-        and a <strong>summary</strong> sheet (Sample name, Conclusion, Result, MTcopy, AUTOSOMES, SEX).
-      </p>
-      <div class="drop-zone" id="dropZone" onclick="document.getElementById('bulkFileInput').click()">
-        <i class="fas fa-file-excel"></i>
-        <p>Drop Excel file here or click to browse</p>
-        <small>Supported: .xlsx, .xls</small>
+    <!-- Step 1: File Upload -->
+    <div class="card" id="bulkUploadCard">
+      <h3><i class="fas fa-file-excel"></i> 1. Select Excel File</h3>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('bulkFileInput').click()" style="flex:1;padding:20px 16px;">
+          <i class="fas fa-file-excel"></i>
+          <p>Drop Excel file here or click to browse</p>
+          <small>Supported: .xlsx, .xls</small>
+        </div>
       </div>
       <input type="file" id="bulkFileInput" accept=".xlsx,.xls" style="display:none;">
     </div>
 
-    <div class="card hidden" id="bulkPatientSection">
-      <h3><i class="fas fa-users"></i> Patients Found <span id="bulkPatientCount" style="font-weight:400;color:var(--text-muted);"></span></h3>
+    <!-- Step 2+3: Three-column editor (hidden until file loaded) -->
+    <div class="hidden" id="bulkPatientSection">
 
-      <!-- Bulk Options -->
-      <div class="bulk-options">
-        <div class="opt-field"><label>Branding / Logo</label>
-          <select id="bulkLogoOption"><option value="with_logo">With Logo</option><option value="without_logo">Without Logo</option></select>
+      <!-- 3-column bulk layout -->
+      <div class="bulk-3col">
+
+        <!-- LEFT: Patient List -->
+        <div class="bulk-col-left">
+          <div class="bulk-col-header"><i class="fas fa-users"></i> Patients: <span id="bulkPatientCount" style="font-weight:400;color:var(--text-muted);"></span></div>
+          <input type="text" class="bulk-search" id="bulkSearch" placeholder="Search by patient name..." oninput="filterBulkPatients()">
+          <div class="bulk-patient-list" id="bulkPatientList"></div>
+
+          <!-- Options -->
+          <div class="bulk-bottom-controls">
+            <div class="bulk-options-compact">
+              <div class="opt-field"><label>Branding:</label>
+                <select id="bulkLogoOption"><option value="with_logo">With Logo</option><option value="without_logo">Without Logo</option></select>
+              </div>
+              <div class="opt-field"><label>Grid lines:</label>
+                <select id="bulkGridOption"><option value="without_grid">No Grid</option><option value="with_grid">With Grid</option></select>
+              </div>
+            </div>
+            <button class="btn-primary" id="generateAllBtn" onclick="generateBulkReports()" style="width:100%;margin-top:8px;">
+              <i class="fas fa-rocket"></i> Generate All Reports
+            </button>
+            <!-- Progress -->
+            <div class="progress-bar-wrap" id="bulkProgressWrap" style="margin-top:6px;"><div class="progress-bar-fill" id="bulkProgressBar"></div></div>
+            <p class="progress-text" id="bulkProgressText" style="font-size:10px;margin-top:2px;"></p>
+            <div class="result-box hidden" id="bulkResult" style="margin-top:6px;"></div>
+          </div>
         </div>
-        <div class="opt-field"><label>Grid Lines</label>
-          <select id="bulkGridOption"><option value="without_grid">Without Grid Lines</option><option value="with_grid">With Grid Lines</option></select>
+
+        <!-- CENTER: Patient Editor -->
+        <div class="bulk-col-center">
+          <div class="bulk-col-header"><i class="fas fa-edit"></i> Patient Editor</div>
+          <div id="bulkEditorContent">
+            <p class="info-text" style="padding:30px;text-align:center;">Select a patient from the list to edit their embryo data.</p>
+          </div>
         </div>
-      </div>
 
-      <!-- Selection Controls -->
-      <div class="bulk-controls">
-        <button class="bulk-select-all" onclick="selectAllBulk(true)"><i class="fas fa-check-square"></i> Select All</button>
-        <button class="bulk-deselect-all" onclick="selectAllBulk(false)"><i class="fas fa-square"></i> Deselect All</button>
-        <span class="bulk-selected-count" id="bulkSelectedCount">0 selected</span>
-      </div>
+        <!-- RIGHT: Batch Report Preview -->
+        <div class="bulk-col-right">
+          <div class="bulk-col-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><i class="fas fa-file-pdf"></i> Batch Report Preview</span>
+            <button class="btn-refresh-preview" onclick="previewSelectedBulkPatient()" style="font-size:10px;padding:3px 8px;background:rgba(31,73,125,0.15);color:var(--primary);border:1px solid var(--primary);">
+              <i class="fas fa-sync-alt"></i> Refresh Preview
+            </button>
+          </div>
+          <div class="bulk-preview-wrap" id="bulkPreviewWrap">
+            <div class="preview-placeholder" id="bulkPreviewPlaceholder">
+              <i class="fas fa-file-pdf"></i>
+              <span>Select a patient and click Refresh</span>
+            </div>
+          </div>
+        </div>
 
-      <!-- Patient List -->
-      <div class="bulk-patient-list" id="bulkPatientList"></div>
+      </div><!-- /bulk-3col -->
 
-      <!-- Progress -->
-      <div class="progress-bar-wrap" id="bulkProgressWrap"><div class="progress-bar-fill" id="bulkProgressBar"></div></div>
-      <p class="progress-text" id="bulkProgressText"></p>
-
-      <!-- Action Buttons -->
-      <div class="bulk-action-btns">
-        <button class="btn-generate-selected" id="generateSelectedBtn" onclick="generateBulkReports(false)">
-          <i class="fas fa-check"></i> Generate Selected
-        </button>
-        <button class="btn-generate-all" id="generateAllBtn" onclick="generateBulkReports(true)">
-          <i class="fas fa-rocket"></i> Generate All
-        </button>
-      </div>
-
-      <div class="result-box hidden" id="bulkResult"></div>
     </div>
 
   </div><!-- /tab-bulk -->
@@ -907,9 +959,9 @@ function switchTab(tab) {
   document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
   document.querySelector(`.tab[data-tab="${tab}"]`).classList.add("active");
   document.getElementById(`tab-${tab}`).classList.add("active");
-  // Show preview sidebar only for manual/bulk tabs
+  // Show preview sidebar only for manual tab (bulk has its own preview column)
   const sidebar = document.getElementById("previewSidebar");
-  if(sidebar) sidebar.style.display = (tab==="compare"||tab==="guide") ? "none" : "flex";
+  if(sidebar) sidebar.style.display = (tab==="manual") ? "flex" : "none";
 }
 
 // ═══════════════════════════════════════════════
@@ -1410,6 +1462,8 @@ async function handleBulkFile(file) {
   }
 }
 
+let bulkSelectedIndex=-1;
+
 function renderBulkPatients() {
   const section=document.getElementById("bulkPatientSection");
   const list=document.getElementById("bulkPatientList");
@@ -1419,36 +1473,104 @@ function renderBulkPatients() {
   list.innerHTML="";
   state.bulkPatients.forEach((p,i)=>{
     const div=document.createElement("div");
-    div.className="bulk-patient-item selected"; div.id=`bulk-patient-${i}`;
+    div.className="bulk-patient-item"; div.id=`bulk-patient-${i}`;
+    div.onclick=function(e){if(e.target.tagName!=="BUTTON"&&!e.target.closest("button"))selectBulkPatient(i);};
     div.innerHTML=`
-      <input type="checkbox" class="bulk-cb" id="cb-${i}" checked onchange="updateSelectedCount()">
       <div class="patient-info">
-        <div class="patient-name">${esc(p.patient_name||"Unknown")}</div>
-        <div class="patient-meta">Sample: ${esc(p.sample_number||"—")} &nbsp;|&nbsp; ${(p.embryos||[]).length} embryo(s) &nbsp;|&nbsp; ${esc(p.hospital_clinic||"")}</div>
+        <div class="patient-name">${esc(p.patient_name||"Unknown")} (${(p.embryos||[]).length} embryos)</div>
+        <div class="patient-meta">${esc(p.sample_number||"—")}</div>
       </div>
-      <div class="patient-actions">
-        <button class="btn-preview-patient" onclick="previewBulkPatient(${i})"><i class="fas fa-eye"></i> Preview</button>
-        <span class="patient-status" id="bulk-status-${i}">Pending</span>
-      </div>`;
+      <span class="patient-status" id="bulk-status-${i}" style="font-size:9px;">Pending</span>`;
     list.appendChild(div);
   });
-  updateSelectedCount();
+  bulkSelectedIndex=-1;
+  if(state.bulkPatients.length>0) selectBulkPatient(0);
 }
 
-function updateSelectedCount() {
-  const all=document.querySelectorAll(".bulk-cb");
-  const checked=[...all].filter(c=>c.checked).length;
-  document.getElementById("bulkSelectedCount").textContent=`${checked} selected`;
-  document.querySelectorAll(".bulk-patient-item").forEach((item,i)=>{
-    const cb=document.getElementById(`cb-${i}`);
-    item.classList.toggle("selected",cb&&cb.checked);
+function filterBulkPatients() {
+  const q=(document.getElementById("bulkSearch").value||"").toLowerCase();
+  document.querySelectorAll("#bulkPatientList .bulk-patient-item").forEach((item,i)=>{
+    const name=(state.bulkPatients[i]?.patient_name||"").toLowerCase();
+    item.style.display=name.includes(q)?"":"none";
   });
 }
 
-function selectAllBulk(val) {
-  document.querySelectorAll(".bulk-cb").forEach(cb=>cb.checked=val);
-  updateSelectedCount();
+function selectBulkPatient(i) {
+  bulkSelectedIndex=i;
+  document.querySelectorAll("#bulkPatientList .bulk-patient-item").forEach((item,j)=>{
+    item.classList.toggle("active",j===i);
+  });
+  renderBulkEditor(i);
 }
+
+function renderBulkEditor(i) {
+  const p=state.bulkPatients[i];
+  if(!p) return;
+  const el=document.getElementById("bulkEditorContent");
+  const embryos=p.embryos||[];
+  let html=`<div style="padding:10px 14px;border-bottom:1px solid #eee;">
+    <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:6px;">${esc(p.patient_name||"Unknown")}</div>
+    <div style="font-size:10px;color:var(--text-muted);">Sample: ${esc(p.sample_number||"")} | PIN: ${esc(p.pin||"")}</div>
+  </div>`;
+
+  if(embryos.length===0){
+    html+=`<p class="info-text" style="padding:20px;text-align:center;">No embryo data for this patient.</p>`;
+  }
+  embryos.forEach((emb,ei)=>{
+    html+=`<div class="bulk-editor-embryo">
+      <h4><i class="fas fa-microscope"></i> Embryo: ${esc(emb.embryo_id||("Embryo "+(ei+1)))}</h4>
+      <div class="bulk-editor-field"><label>Result:</label><input value="${esc(emb.result_summary||"")}" onchange="state.bulkPatients[${i}].embryos[${ei}].result_summary=this.value"></div>
+      <div class="bulk-editor-field"><label>Autosomes:</label><input value="${esc(emb.autosomes||"Normal")}" onchange="state.bulkPatients[${i}].embryos[${ei}].autosomes=this.value"></div>
+      <div class="bulk-editor-field"><label>Sex Chromosomes:</label>
+        <select onchange="state.bulkPatients[${i}].embryos[${ei}].sex_chromosomes=this.value">
+          ${["Normal","Abnormal","Mosaic"].map(v=>`<option ${(emb.sex_chromosomes||"Normal")===v?"selected":""}>${v}</option>`).join("")}
+        </select>
+      </div>
+      <div class="bulk-editor-field"><label>Interpretation:</label>
+        <select onchange="state.bulkPatients[${i}].embryos[${ei}].interpretation=this.value">
+          ${INTERP_OPTIONS.map(v=>`<option ${(emb.interpretation||"Euploid")===v?"selected":""}>${v}</option>`).join("")}
+        </select>
+      </div>
+      <div class="bulk-editor-field"><label>MTcopy:</label><input value="${esc(emb.mtcopy||"")}" onchange="state.bulkPatients[${i}].embryos[${ei}].mtcopy=this.value" style="width:80px;"></div>
+      <div style="margin-top:6px;padding:6px 8px;background:var(--grey-box);border-radius:6px;">
+        <div style="font-size:10px;font-weight:700;color:var(--primary);margin-bottom:4px;"><i class="fas fa-dna"></i> Chromosome Details (1–22)</div>
+        <div class="bulk-chr-grid">${renderBulkChrGrid(i,ei,emb)}</div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+function renderBulkChrGrid(pi,ei,emb) {
+  const cs=emb.chromosome_statuses||{};
+  const mp=emb.mosaic_percentages||{};
+  let html="";
+  for(let c=1;c<=22;c++){
+    const s=cs[String(c)]||"N";
+    const m=mp[String(c)]||"";
+    const opts=CHR_STATUSES.map(o=>`<option${s===o?" selected":""}>${o}</option>`).join("");
+    html+=`<span class="chr-label">${c}</span>
+      <select onchange="onBulkChrChange(${pi},${ei},${c},'status',this.value)">${opts}</select>
+      <input type="text" value="${esc(m)}" placeholder="-" oninput="onBulkChrChange(${pi},${ei},${c},'mosaic',this.value)">`;
+  }
+  return html;
+}
+
+function onBulkChrChange(pi,ei,chr,type,value) {
+  const emb=state.bulkPatients[pi]?.embryos?.[ei];
+  if(!emb) return;
+  const k=String(chr);
+  if(!emb.chromosome_statuses) emb.chromosome_statuses={};
+  if(!emb.mosaic_percentages) emb.mosaic_percentages={};
+  if(type==="status") emb.chromosome_statuses[k]=value;
+  else emb.mosaic_percentages[k]=value;
+}
+
+function previewSelectedBulkPatient() {
+  if(bulkSelectedIndex<0){showToast("Select a patient first","info");return;}
+  previewBulkPatient(bulkSelectedIndex);
+}
+
 
 // ── Build payload for a single bulk patient ──
 function buildBulkPayload(p, showLogo, showGrid) {
@@ -1480,46 +1602,61 @@ function buildBulkPayload(p, showLogo, showGrid) {
   };
 }
 
-// ── Preview a bulk patient in the sidebar panel ──
+// ── Preview a bulk patient in the bulk right-column panel ──
 async function previewBulkPatient(i) {
   const p=state.bulkPatients[i];
   const showLogo=document.getElementById("bulkLogoOption").value==="with_logo";
   const showGrid=document.getElementById("bulkGridOption").value==="with_grid";
-  const btn=document.querySelector(`[onclick="previewBulkPatient(${i})"]`);
-  if(btn){btn.disabled=true;btn.innerHTML=`<span class="spinner" style="border-top-color:#1F497D"></span>`;}
-  setPreviewPlaceholder(`Loading ${p.patient_name||"Patient"}...`, true);
+  const wrap=document.getElementById("bulkPreviewWrap");
+  const ph=document.getElementById("bulkPreviewPlaceholder");
+  // Show loading state in bulk preview
+  if(wrap) wrap.querySelectorAll("canvas").forEach(c=>c.remove());
+  if(ph){ph.style.display="flex";ph.innerHTML=`<i class="fas fa-spinner fa-spin" style="font-size:32px;color:#94a3b8;"></i><span style="font-size:11px;color:#94a3b8;">Loading ${esc(p.patient_name||"Patient")}...</span>`;}
   try {
     const res=await fetch(`${BASE}/pgta/preview`,{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify(buildBulkPayload(p,showLogo,showGrid))});
     const data=await res.json(); if(data.error) throw new Error(data.error);
-    await loadPdfToPreview(`${BASE}${data.preview_url}?t=${Date.now()}`);
+    await loadPdfToBulkPreview(`${BASE}${data.preview_url}?t=${Date.now()}`);
   } catch(err) {
-    setPreviewPlaceholder("Preview failed: "+err.message, false, true);
+    if(ph){ph.style.display="flex";ph.innerHTML=`<i class="fas fa-exclamation-triangle" style="font-size:32px;color:#ef4444;"></i><span style="font-size:11px;color:#ef4444;">Preview failed: ${esc(err.message)}</span>`;}
     showToast("Preview failed: "+err.message,"error");
   }
-  finally { if(btn){btn.disabled=false;btn.innerHTML=`<i class="fas fa-eye"></i> Preview`;} }
 }
 
-// ── Generate bulk reports (selected or all) ──
-async function generateBulkReports(all) {
+// ── Load PDF into bulk preview panel (right column) ──
+async function loadPdfToBulkPreview(url) {
+  const lib=window['pdfjs-dist/build/pdf'];
+  if(!lib) return;
+  const doc=await lib.getDocument(url).promise;
+  const wrap=document.getElementById("bulkPreviewWrap");
+  const ph=document.getElementById("bulkPreviewPlaceholder");
+  if(ph) ph.style.display="none";
+  if(wrap) wrap.querySelectorAll("canvas").forEach(c=>c.remove());
+  const containerW=(wrap?wrap.offsetWidth:360)-16;
+  for(let num=1;num<=doc.numPages;num++){
+    const page=await doc.getPage(num);
+    const vp=page.getViewport({scale:1});
+    const scale=Math.max(0.5,containerW/vp.width);
+    const scaledVp=page.getViewport({scale});
+    const canvas=document.createElement("canvas");
+    canvas.className="preview-page-canvas";
+    canvas.width=scaledVp.width; canvas.height=scaledVp.height;
+    wrap.appendChild(canvas);
+    await page.render({canvasContext:canvas.getContext("2d"),viewport:scaledVp}).promise;
+  }
+}
+
+// ── Generate bulk reports (all patients) ──
+async function generateBulkReports() {
   const showLogo=document.getElementById("bulkLogoOption").value==="with_logo";
   const showGrid=document.getElementById("bulkGridOption").value==="with_grid";
 
-  // Determine which indices to process
-  let indices=[];
-  if(all) {
-    indices=state.bulkPatients.map((_,i)=>i);
-  } else {
-    indices=state.bulkPatients.map((_,i)=>i).filter(i=>{
-      const cb=document.getElementById(`cb-${i}`); return cb&&cb.checked;
-    });
-  }
-  if(!indices.length){showToast("No patients selected","info");return;}
+  const indices=state.bulkPatients.map((_,i)=>i);
+  if(!indices.length){showToast("No patients loaded","info");return;}
 
-  const selBtn=document.getElementById("generateSelectedBtn");
   const allBtn=document.getElementById("generateAllBtn");
-  selBtn.disabled=true; allBtn.disabled=true;
-  selBtn.innerHTML=`<span class="spinner"></span> Generating...`;
+  allBtn.disabled=true;
+  allBtn.innerHTML=`<span class="spinner"></span> Generating...`;
 
   const progressWrap=document.getElementById("bulkProgressWrap");
   const progressBar=document.getElementById("bulkProgressBar");
@@ -1543,17 +1680,6 @@ async function generateBulkReports(all) {
         body:JSON.stringify(buildBulkPayload(p,showLogo,showGrid))});
       const data=await res.json(); if(data.error) throw new Error(data.error);
       if(statusEl){statusEl.textContent="Done ✓";statusEl.className="patient-status done";}
-      // Add download link on the patient row
-      const item=document.getElementById(`bulk-patient-${i}`);
-      if(item){
-        const old=item.querySelector(".dl-link"); if(old) old.remove();
-        const a=document.createElement("a");
-        a.href=`${BASE}${data.url}`; a.target="_blank"; a.download=data.file;
-        a.className="download-link dl-link";
-        a.style.cssText="font-size:11px;padding:4px 10px;";
-        a.innerHTML=`<i class="fas fa-download"></i>`;
-        item.querySelector(".patient-actions").prepend(a);
-      }
       done++;
     } catch(err) {
       errors.push({patient:p.patient_name,error:err.message});
@@ -1562,8 +1688,8 @@ async function generateBulkReports(all) {
     progressBar.style.width=`${Math.round(((n+1)/total)*100)}%`;
   }
 
-  selBtn.disabled=false; allBtn.disabled=false;
-  selBtn.innerHTML=`<i class="fas fa-check"></i> Generate Selected`;
+  allBtn.disabled=false;
+  allBtn.innerHTML=`<i class="fas fa-rocket"></i> Generate All Reports`;
   progressText.textContent=`Done: ${done} success, ${errors.length} failed`;
 
   resultBox.classList.remove("hidden");

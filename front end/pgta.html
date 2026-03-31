@@ -53,177 +53,55 @@
       opacity: 1;
     }
 
-    /* ── Top Header Bar ── */
-    .topbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: var(--topbar-h);
-      background: #1F5EA8;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 0 24px;
-      z-index: 200;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
-    }
-
-    .topbar-logo {
-      height: 42px;
-      background: #fff;
-      border-radius: 8px;
-      padding: 4px 10px;
-      display: flex;
-      align-items: center;
-    }
-
-    .topbar-logo img {
-      height: 34px;
-      object-fit: contain;
-    }
-
-    .topbar-divider {
-      width: 1px;
-      height: 32px;
-      background: rgba(255, 255, 255, 0.25);
-      margin: 0 6px;
-    }
-
-    .topbar-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      letter-spacing: 0.2px;
-    }
-
-    .topbar-title i {
-      color: rgba(255, 255, 255, 0.8);
-      font-size: 14px;
-    }
-
-    .topbar-spacer {
-      flex: 1;
-    }
-
-    .topbar-back {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 16px;
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      border-radius: 8px;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      transition: 0.2s;
-    }
-
-    .topbar-back:hover {
-      background: rgba(255, 255, 255, 0.28);
-    }
-
-    .topbar-user {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 7px 14px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 20px;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      position: relative;
-      transition: 0.2s;
-    }
-
-    .topbar-user:hover {
-      background: rgba(255, 255, 255, 0.25);
-    }
-
-    .user-dropdown {
-      display: none;
-      position: absolute;
-      top: calc(100% + 8px);
-      right: 0;
-      background: #fff;
-      border-radius: 8px;
-      min-width: 150px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      overflow: hidden;
-      z-index: 300;
-    }
-
-    .user-dropdown a {
-      display: block;
-      padding: 10px 14px;
-      color: #333;
-      text-decoration: none;
-      font-size: 12px;
-      transition: 0.15s;
-    }
-
-    .user-dropdown a:hover {
-      background: #f0f4f8;
-      color: var(--primary);
-    }
-
-    .user-dropdown .role-tag {
-      font-weight: 700;
-      color: var(--primary);
-      cursor: default;
-    }
-
-    .user-dropdown .role-tag:hover {
-      background: transparent;
-    }
 
     /* ── Main Content ── */
     .main {
-      height: calc(100vh - var(--topbar-h));
-      padding: 10px 24px;
+      height: calc(100vh - 100px); /* Adjust based on new header height */
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
-    /* ── Page Header ── */
-    .page-hdr {
+    /* ── Desktop Header ── */
+    .app-header {
+      background: #f0f0f0;
+      padding: 10px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-      gap: 12px;
+      border-bottom: 1px solid #ddd;
     }
 
-    .page-hdr-left h1 {
-      font-size: 20px;
+    .app-title-main {
+      font-size: 24px;
       font-weight: 700;
-      background: linear-gradient(135deg, #1F497D, #4F81BD);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: #000;
+      margin: 0;
     }
 
-    .page-hdr-left p {
-      color: var(--text-muted);
-      font-size: 11px;
-      margin-top: 2px;
+    .template-selector {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 500;
     }
 
+    .template-select {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 13px;
+      min-width: 180px;
+      outline: none;
+    }
+
+    /* ── Page Header ── */
+    /* Draft buttons now in sub-header or sidebar if needed */
     .draft-btns {
       display: flex;
       gap: 8px;
-      flex-wrap: wrap;
     }
 
     .btn-sm {
@@ -262,33 +140,42 @@
     }
 
     /* ── Tabs ── */
+    /* ── Tab Bar ── */
     .tab-bar {
+      background: #f0f0f0;
+      padding: 0 24px 10px;
       display: flex;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 4px;
+      border-bottom: 1px solid #ddd;
     }
 
     .tab {
-      padding: 9px 22px;
-      background: rgba(255, 255, 255, 0.75);
-      border: 1px solid var(--panel-border);
-      border-radius: 8px;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 6px 18px;
       font-size: 13px;
       font-weight: 500;
+      color: #333;
       cursor: pointer;
-      color: var(--text-muted);
-      transition: 0.2s;
-    }
-
-    .tab:hover {
-      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 4px;
+      transition: none;
     }
 
     .tab.active {
-      background: var(--primary);
+      background: #007bff;
       color: #fff;
-      border-color: var(--primary);
-      font-weight: 600;
+      border-color: #007bff;
+    }
+
+    .tab:hover:not(.active) {
+      background: #e9ecef;
+    }
+
+    .tab i {
+      font-size: 14px;
     }
 
     .tab-content {
@@ -2023,50 +1910,43 @@
 
 <body>
 
-  <!-- ════ TOP BAR ════ -->
-  <div class="topbar">
-    <div class="topbar-logo">
-      <img src="/static/backend/logo.png" alt="Logo" onerror="this.style.display='none'">
-    </div>
-    <div class="topbar-divider"></div>
-    <div class="topbar-title"><i class="fas fa-dna"></i> PGT-A Report Generator</div>
-    <div class="topbar-spacer"></div>
-    <a href="/home" class="topbar-back"><i class="fas fa-arrow-left"></i> Home</a>
-    <div class="topbar-user" id="userBtn">
-      <i class="fas fa-user-circle"></i>
-      <span id="userLabel">User</span>
-      <i class="fas fa-caret-down"></i>
-      <div class="user-dropdown" id="userMenu">
-        <a href="#" class="role-tag" id="roleLabel">User</a>
-        <hr style="border:none;border-top:1px solid #eee;margin:0;">
-        <a href="#" onclick="signOut()"><i class="fas fa-sign-out-alt" style="margin-right:6px;"></i>Sign Out</a>
-      </div>
+  <!-- ════ APP HEADER ════ -->
+  <div class="app-header">
+    <h1 class="app-title-main">PGT-A Report Generator</h1>
+    <div class="template-selector">
+      <span>Select Template:</span>
+      <select class="template-select">
+        <option value="pgta">PGT-A</option>
+        <option value="pgtm">PGT-M (Coming Soon)</option>
+        <option value="nipt">NIPT (Coming Soon)</option>
+      </select>
     </div>
   </div>
 
   <!-- ════ MAIN ════ -->
   <div class="main">
 
-    <div class="page-hdr">
-      <div class="page-hdr-left">
-        <h1><i class="fas fa-dna" style="color:#1F497D;margin-right:6px;"></i>PGT-A Report Generator</h1>
-        <p>Preimplantation Genetic Testing for Aneuploidies — Professional PDF Report Generation</p>
-      </div>
+    <div class="tab-bar">
+      <button class="tab active" data-tab="manual" onclick="switchTab('manual')">
+        <i class="fas fa-file-invoice"></i> Manual Entry
+      </button>
+      <button class="tab" data-tab="bulk" onclick="switchTab('bulk')">
+        <i class="fas fa-table"></i> Bulk Upload
+      </button>
+      <button class="tab" data-tab="compare" onclick="switchTab('compare')">
+        <i class="fas fa-sync-alt"></i> Report Comparison
+      </button>
+      <button class="tab" data-tab="guide" onclick="switchTab('guide')">
+        <i class="fas fa-info-circle"></i> User Guide
+      </button>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; padding: 0 24px 10px; background: #f0f0f0;">
       <div class="draft-btns">
         <button class="btn-sm btn-outline" onclick="saveDraft()"><i class="fas fa-save"></i> Save Draft</button>
         <button class="btn-sm btn-outline" onclick="loadDraft()"><i class="fas fa-folder-open"></i> Load Draft</button>
-        <button class="btn-sm btn-danger-outline" onclick="clearForm()"><i class="fas fa-trash"></i> Clear</button>
-        <span id="draftStatus" class="info-text"></span>
+        <button class="btn-sm btn-danger-outline" onclick="clearForm()"><i class="fas fa-trash"></i> Clear All</button>
       </div>
-    </div>
-
-    <div class="tab-bar">
-      <button class="tab active" data-tab="manual" onclick="switchTab('manual')"><i class="fas fa-list-ul"></i> Manual
-        Entry</button>
-      <button class="tab" data-tab="bulk" onclick="switchTab('bulk')"><i class="fas fa-th"></i> Bulk Upload</button>
-      <button class="tab" data-tab="compare" onclick="switchTab('compare')"><i class="fas fa-exchange-alt"></i> Report
-        Comparison</button>
-      <button class="tab" data-tab="guide" onclick="switchTab('guide')">User Guide</button>
     </div>
 
     <div class="workspace">

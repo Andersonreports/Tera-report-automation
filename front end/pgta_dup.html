@@ -434,21 +434,15 @@ body.loaded{opacity:1;}
   background:#F2F2F2;
   padding:8px 10px;
   margin-bottom:4px;
-  border-radius:2px;
-}
-.guide-point-id{
-  background:#e9ecef;
-  color:#1F497D;
-  min-width:24px;
-  height:24px;
-  border-radius:50%;
-  display:inline-flex;
+  border-radius:2px;}
+.guide-point{
+  display:flex;
   align-items:center;
-  justify-content:center;
-  font-weight:bold;
-  font-size:13px;
-  flex-shrink:0;
-}
+  gap:12px;
+  background:#F2F2F2;
+  padding:8px 10px;
+  margin-bottom:4px;
+  border-radius:2px;}
 .guide-point-text{
   font-size:12px;
   color:#333;
@@ -920,123 +914,19 @@ body.loaded{opacity:1;}
         <h3 class="guide-category-h">4. Productivity Features</h3>
         <ul class="guide-category-list">
           <li class="guide-point">
-            <span class="guide-point-id">⚡</span>
+            <span class="guide-point-id"><i class="fas fa-bolt" style="color:#fbbf24;"></i></span>
             <span class="guide-point-text"><b>Copy Logic:</b> Use 'Copy Last Sample' to duplicate data across multiple entries instantly.</span>
           </li>
           <li class="guide-point">
-            <span class="guide-point-id">💾</span>
+            <span class="guide-point-id"><i class="fas fa-save" style="color:#94a3b8;"></i></span>
             <span class="guide-point-text"><b>Drafts:</b> Save your current work as a JSON draft to reload and finish later.</span>
           </li>
           <li class="guide-point">
-            <span class="guide-point-id">🖼️</span>
+            <span class="guide-point-id"><i class="fas fa-image" style="color:#10b981;"></i></span>
             <span class="guide-point-text"><b>Image Auto-Match:</b> Place sample charts in the same folder as the Excel file for automatic bulk matching.</span>
           </li>
-          <li class="guide-point">
-            <span class="guide-point-id">📄</span>
-            <span class="guide-point-text"><b>Dual Export:</b> Generate Word (DOCX) files alongside PDFs for further manual customization.</span>
-          </li>
         </ul>
       </div>
-
-      <!-- 5. Color Coding System -->
-      <div class="guide-category">
-        <h3 class="guide-category-h">5. Color Coding System</h3>
-        <ul class="guide-category-list">
-          <li class="guide-point">
-            <span class="guide-point-id" style="background:#FF0000;color:white;">R</span>
-            <span class="guide-point-text"><b>Red:</b> Non-mosaic abnormalities - del/dup without %, CNV status L/G/SL/SG/SL/SG/SG/SL</span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id" style="background:#0000FF;color:white;">B</span>
-            <span class="guide-point-text"><b>Blue:</b> Mosaic abnormalities - del/dup/mos with %, CNV status M/ML/MG/SML/SMG/SML/SMG/SMG/SML</span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id" style="background:#0000FF;color:white;">B</span>
-            <span class="guide-point-text"><b>Blue:</b> Mosaic abnormalities - any result containing % (e.g., +15(~30%), dup with ~32%)</span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id" style="background:#000000;color:white;">N</span>
-            <span class="guide-point-text"><b>Black:</b> Normal/Euploid results</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- 6. Excel File Format -->
-      <div class="guide-category">
-        <h3 class="guide-category-h">6. Excel File Format</h3>
-        <ul class="guide-category-list">
-          <li class="guide-point">
-            <span class="guide-point-id">📊</span>
-            <span class="guide-point-text"><b>Required Sheets:</b> 'Details' (patient info) and 'summary' (embryo results)</span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id">📝</span>
-            <span class="guide-point-text"><b>Details Columns:</b> Patient Name, Sample ID, Center name, Date of Biopsy, Date Sample Received, EMBRYOLOGIST NAME</span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id">🧬</span>
-            <span class="guide-point-text"><b>Summary Columns:</b> Sample name, QC, Conclusion, Result, MTcopy, AUTOSOMES, SEX</span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id">⚠️</span>
-            <span class="guide-point-text"><b>Note:</b> Referring Clinician and Sample Number fields are NOT auto-filled - enter manually</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- 7. System Requirements -->
-      <div class="guide-category">
-        <h3 class="guide-category-h">7. System Requirements</h3>
-        <ul class="guide-category-list">
-          <li class="guide-point">
-            <span class="guide-point-id">🐍</span>
-            <span class="guide-point-text"><b>Python:</b> Version 3.8 or higher</span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id">📦</span>
-            <span class="guide-point-text"><b>Required Packages:</b> PyQt6, ReportLab, python-docx, pandas, openpyxl, Pillow</span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id">💻</span>
-            <span class="guide-point-text"><b>OS:</b> Windows, Linux, or macOS</span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id">📁</span>
-            <span class="guide-point-text"><b>Storage:</b> 100MB for application + space for generated reports</span>
-          </li>
-        </ul>
-        <p style="margin-top:12px;font-size:12px;"><b>Installation:</b> <code style="background:#f1f1f1;padding:3px 8px;border-radius:3px;font-size:11px;">pip install -r requirements.txt</code></p>
-      </div>
-
-      <!-- 8. Quick Start -->
-      <div class="guide-category">
-        <h3 class="guide-category-h">8. Quick Start</h3>
-        <ul class="guide-category-list">
-          <li class="guide-point">
-            <span class="guide-point-id">1</span>
-            <span class="guide-point-text">Install requirements: <code style="background:#f1f1f1;padding:2px 6px;border-radius:3px;">pip install -r requirements.txt</code></span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id">2</span>
-            <span class="guide-point-text">Run application: <code style="background:#f1f1f1;padding:2px 6px;border-radius:3px;">python pgta_report_generator.py</code></span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id">3</span>
-            <span class="guide-point-text">For Manual Entry: Fill patient details → Add embryo data → Generate</span>
-          </li>
-          <li class="guide-point">
-            <span class="guide-point-id">4</span>
-            <span class="guide-point-text">For Bulk Upload: Browse Excel → Search/Select patient → Review → Generate All</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Pro Tip -->
-      <div style="background:#e7f3ff;border:1px solid #b8daff;padding:14px 16px;border-radius:6px;color:#004085;font-style:italic;font-size:12px;margin-bottom:16px;">
-        <b>Pro Tip:</b> Use the search box in Bulk Upload to quickly find patients by name instead of scrolling through the list.
-      </div>
-
-      <p style="text-align:center;color:#888;margin-top:20px;font-size:11px;">PGT-A Clinical Reporting Suite v2.0 | © 2026 Andrology Center</p>
 
     </div>
   </div><!-- /tab-guide -->

@@ -1292,6 +1292,83 @@
       color: var(--text-muted);
     }
 
+    /* ── Compact Bulk Top Bar ── */
+    .bulk-top-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
+
+    .bulk-top-file {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .drop-zone-compact {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 14px;
+      border: 2px dashed var(--input-border);
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 12px;
+      transition: 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .drop-zone-compact:hover,
+    .drop-zone-compact.drag-over {
+      border-color: var(--primary);
+      background: rgba(31, 73, 125, 0.04);
+      color: var(--primary);
+    }
+
+    .drop-zone-compact i {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .bulk-top-sep {
+      width: 1px;
+      height: 28px;
+      background: var(--input-border);
+      flex-shrink: 0;
+    }
+
+    .bulk-top-folder {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .bulk-top-folder label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .bulk-top-folder input {
+      padding: 6px 10px;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      font-size: 11px;
+      width: 180px;
+      background: var(--input-bg);
+    }
+
     /* ── Bulk Controls Bar ── */
     .bulk-controls {
       display: flex;
@@ -2601,28 +2678,20 @@
         <!-- ╔══════════════ TAB 2: BULK UPLOAD ══════════════╗ -->
         <div id="tab-bulk" class="tab-content">
 
-          <!-- Step 1: File Upload -->
-          <div class="card" id="bulkUploadCard" style="padding:12px 16px;margin-bottom:8px;">
-            <h3 style="margin-bottom:8px;"><i class="fas fa-file-excel"></i> 1. Select Excel File</h3>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div class="drop-zone" id="dropZone" onclick="document.getElementById('bulkFileInput').click()"
-                style="flex:1;padding:12px 16px;">
-                <i class="fas fa-file-excel" style="font-size:24px;margin-bottom:6px;"></i>
-                <p style="font-size:12px;">Drop Excel file here or click to browse</p>
-                <small>Supported: .xlsx, .xls</small>
+          <!-- Compact: File Upload + Output Folder in one bar -->
+          <div class="bulk-top-bar">
+            <div class="bulk-top-file">
+              <div class="drop-zone-compact" id="dropZone" onclick="document.getElementById('bulkFileInput').click()">
+                <i class="fas fa-file-excel"></i>
+                <span id="dropZoneLabel">Drop Excel file or click to upload (.xlsx, .xls)</span>
               </div>
+              <input type="file" id="bulkFileInput" accept=".xlsx,.xls" style="display:none;">
             </div>
-            <input type="file" id="bulkFileInput" accept=".xlsx,.xls" style="display:none;">
-          </div>
-
-          <!-- Step 2: Output Folder -->
-          <div class="card" id="bulkOutputCard" style="padding:12px 16px;margin-bottom:8px;">
-            <h3 style="margin-bottom:8px;"><i class="fas fa-folder-open"></i> 2. Select Output Folder</h3>
-            <div class="output-folder-row" style="margin-bottom:0;">
-              <label><i class="fas fa-folder"></i> Path:</label>
-              <input type="text" id="bulkOutputDir" placeholder="Leave blank for default server directory" value="">
-              <button class="btn-folder" onclick="selectOutputFolder('bulkOutputDir')"><i
-                  class="fas fa-folder-open"></i> Select Folder</button>
+            <div class="bulk-top-sep"></div>
+            <div class="bulk-top-folder">
+              <label><i class="fas fa-folder"></i> Output:</label>
+              <input type="text" id="bulkOutputDir" placeholder="Default server directory" value="">
+              <button class="btn-folder" onclick="selectOutputFolder('bulkOutputDir')"><i class="fas fa-folder-open"></i> Select</button>
             </div>
           </div>
 
@@ -3514,11 +3583,35 @@
     }
 
     // ═══════════════════════════════════════════════
+    // OUTPUT FOLDER PICKER
+    // ═══════════════════════════════════════════════
+    async function selectOutputFolder(inputId) {
+      try {
+        const res = await fetch(`${BASE}/pgta/select-folder`);
+        const data = await res.json();
+        if (data.folder) {
+          document.getElementById(inputId).value = data.folder;
+        } else if (data.error) {
+          showToast("Folder picker unavailable — type the path manually", "info");
+        }
+        // if folder is empty string, user cancelled — do nothing
+      } catch (err) {
+        showToast("Folder picker failed: " + err.message, "error");
+      }
+    }
+
+    // ═══════════════════════════════════════════════
     // DRAFT
     // ═══════════════════════════════════════════════
+    function _setDraftStatus(msg) {
+      const s1 = document.getElementById("draftStatus");
+      const s2 = document.getElementById("draftStatusInline");
+      if (s1) s1.textContent = msg;
+      if (s2) s2.textContent = msg;
+    }
     function saveDraft() {
       localStorage.setItem("pgta_draft", JSON.stringify({ patientData: getPatientData(), summaryRows: state.summaryRows, embryoForms: state.embryoForms, embryoCount: state.embryoCount, cnvImages: state.cnvImages }));
-      document.getElementById("draftStatus").textContent = `Saved ${new Date().toLocaleTimeString()}`;
+      _setDraftStatus(`Saved ${new Date().toLocaleTimeString()}`);
       showToast("Draft saved", "success");
     }
     function loadDraft() {
@@ -3531,7 +3624,7 @@
         document.getElementById("embryoCount").value = state.embryoCount;
         document.getElementById("embryoCountHint").textContent = `${state.embryoCount} embryo${state.embryoCount > 1 ? "s" : ""}`;
         renderSummaryTable(); renderEmbryoForms();
-        document.getElementById("draftStatus").textContent = "Loaded"; showToast("Draft loaded", "success"); schedulePreview();
+        _setDraftStatus("Loaded"); showToast("Draft loaded", "success"); schedulePreview();
       } catch (err) { showToast("Load failed: " + err.message, "error"); }
     }
     function clearForm() {
@@ -3545,7 +3638,7 @@
       document.getElementById("f_report_date").value = todayStr();
       state.summaryRows = []; state.embryoForms = []; state.cnvImages = {}; state.embryoCount = 1;
       document.getElementById("embryoCount").value = 1; setEmbryoCount(1);
-      document.getElementById("draftStatus").textContent = ""; showToast("Form cleared", "info");
+      _setDraftStatus(""); showToast("Form cleared", "info");
     }
     function saveData() {
       // Export current form data as a JSON file for download
@@ -3577,22 +3670,16 @@
     bulkInput.addEventListener("change", () => { if (bulkInput.files[0]) handleBulkFile(bulkInput.files[0]); });
 
     async function handleBulkFile(file) {
-      dropZone.innerHTML = `<span class="spinner" style="border-color:#1F497D;border-top-color:#4F81BD;width:24px;height:24px;"></span><p style="margin-top:10px;">Parsing ${file.name}...</p>`;
+      dropZone.innerHTML = `<span class="spinner" style="border-color:#1F497D;border-top-color:#4F81BD;width:16px;height:16px;flex-shrink:0;"></span><span>Parsing <strong>${file.name}</strong>...</span>`;
       const fd = new FormData(); fd.append("file", file);
       try {
         const res = await fetch(`${BASE}/pgta/parse-excel`, { method: "POST", body: fd });
         const data = await res.json(); if (data.error) throw new Error(data.error);
         state.bulkPatients = data.patients || [];
         renderBulkPatients();
-        dropZone.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:12px;">
-      <i class="fas fa-check-circle" style="color:#10b981;font-size:20px;"></i>
-      <div style="text-align:left;">
-        <p style="font-size:12px;margin:0;">Loaded: <strong>${file.name}</strong></p>
-        <small style="font-size:10px;color:var(--text-muted);">${state.bulkPatients.length} patient(s) found</small>
-      </div>
-    </div>`;
+        dropZone.innerHTML = `<i class="fas fa-check-circle" style="color:#10b981;flex-shrink:0;"></i><span><strong>${file.name}</strong> &mdash; ${state.bulkPatients.length} patient(s) found &nbsp;<small style="color:var(--text-muted);cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();document.getElementById('bulkFileInput').click()">change</small></span>`;
       } catch (err) {
-        dropZone.innerHTML = `<i class="fas fa-times-circle" style="color:#ef4444;"></i><p>Error: ${err.message}</p>`;
+        dropZone.innerHTML = `<i class="fas fa-times-circle" style="color:#ef4444;flex-shrink:0;"></i><span>Error: ${err.message} &nbsp;<small style="cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();document.getElementById('bulkFileInput').click()">try again</small></span>`;
         showToast("Parse failed: " + err.message, "error");
       }
     }

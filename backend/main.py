@@ -397,6 +397,23 @@ def pgta_page():
     return {"error": "pgta.html not found"}
 
 
+@app.get("/pgta/select-folder")
+def pgta_select_folder():
+    """Open a native OS folder picker dialog and return the selected path."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.lift()
+        root.attributes('-topmost', True)
+        folder = filedialog.askdirectory(title="Select Output Folder")
+        root.destroy()
+        return {"folder": folder or ""}
+    except Exception as e:
+        return {"folder": "", "error": str(e)}
+
+
 @app.post("/pgta/upload-cnv")
 async def pgta_upload_cnv(file: UploadFile = File(...)):
     """Upload a CNV chart image for an embryo. Returns server-side path."""

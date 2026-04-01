@@ -65,18 +65,7 @@
 
     /* ── Top Header Bar ── */
     .topbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: var(--topbar-h);
-      background: #1F5EA8;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 0 24px;
-      z-index: 200;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+      display: none;
     }
 
     .topbar-logo {
@@ -319,8 +308,8 @@
 
     /* ── Main Content ── */
     .main {
-      height: calc(100vh - var(--topbar-h));
-      margin-top: var(--topbar-h);
+      height: 100vh;
+      margin-top: 0;
       padding: 10px 24px;
       display: flex;
       flex-direction: column;
@@ -432,6 +421,7 @@
       flex-direction: column;
       flex: 1;
       min-height: 0;
+      overflow-y: auto;
     }
 
     /* ── Form Panel ── */
@@ -2598,7 +2588,7 @@
       }
 
       .main {
-        padding: calc(var(--topbar-h) + 14px) 14px 20px;
+        padding: 14px 14px 20px;
       }
     }
   </style>

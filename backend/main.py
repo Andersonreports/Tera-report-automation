@@ -29,8 +29,6 @@ except ImportError:
     save_report = None
 
 
-
-
 app = FastAPI()
 
 app.add_middleware(

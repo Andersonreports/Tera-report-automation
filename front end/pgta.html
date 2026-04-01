@@ -1905,11 +1905,48 @@
     }
 
     .bulk-bottom-controls {
-      padding: 8px 12px;
-      border-top: 1px solid var(--input-border);
+      padding: 10px 16px;
+      border: 1px solid var(--panel-border);
+      border-top: 2px solid var(--accent);
       flex-shrink: 0;
-      max-height: 220px;
-      overflow-y: auto;
+      background: var(--panel);
+      border-radius: 0 0 var(--radius) var(--radius);
+      box-shadow: var(--shadow);
+      margin-top: 4px;
+    }
+
+    .bulk-bottom-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .bulk-bottom-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--input-border);
+      flex-shrink: 0;
+    }
+
+    .bulk-bottom-controls .opt-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bulk-bottom-controls .opt-field label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .bulk-bottom-controls .opt-field select {
+      padding: 4px 6px;
+      font-size: 10px;
+      border-radius: 4px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
     }
 
     .bulk-options-compact {
@@ -2611,58 +2648,6 @@
 
                 <div class="bulk-patient-list" id="bulkPatientList"></div>
 
-                <!-- Options & Actions -->
-                <div class="bulk-bottom-controls">
-                  <!-- Bulk Draft Buttons -->
-                  <div class="bulk-draft-btns">
-                    <button class="btn-bulk-save-draft" onclick="saveBulkDraft()"><i class="fas fa-save"></i> Save All
-                      Draft</button>
-                    <button class="btn-bulk-load-draft" onclick="loadBulkDraft()"><i class="fas fa-folder-open"></i>
-                      Load Draft</button>
-                  </div>
-                  <div class="bulk-options-compact">
-                    <div class="opt-field"><label>Branding:</label>
-                      <select id="bulkLogoOption">
-                        <option value="with_logo">With Logo</option>
-                        <option value="without_logo">Without Logo</option>
-                      </select>
-                    </div>
-                    <div class="opt-field"><label>Grid lines:</label>
-                      <select id="bulkGridOption">
-                        <option value="without_grid">No Grid</option>
-                        <option value="with_grid">With Grid</option>
-                      </select>
-                    </div>
-                  </div>
-                  <button class="btn-primary" id="generateAllBtn" onclick="generateBulkReports()"
-                    style="width:100%;margin-top:6px;background:transparent;color:var(--primary);border:2px solid var(--primary);">
-                    <i class="fas fa-rocket"></i> Generate All Reports
-                  </button>
-
-                  <div style="border-top:1px solid rgba(0,0,0,0.1); margin-top:8px; padding-top:8px;">
-                    <div class="bulk-options-compact">
-                      <div class="opt-field" style="flex:1;">
-                        <label>Generate Selected Formats:</label>
-                        <div style="display:flex;gap:10px;margin-top:2px;">
-                          <label class="format-check" style="font-size:10px;"><input type="checkbox" id="bulkFmtPdf"
-                              checked style="width:13px;height:13px;"> PDF</label>
-                          <label class="format-check" style="font-size:10px;"><input type="checkbox" id="bulkFmtDocx"
-                              checked style="width:13px;height:13px;"> DOCX</label>
-                        </div>
-                      </div>
-                    </div>
-                    <button class="btn-primary" id="generateSelectedBtn" onclick="generateSelectedBulkReports()"
-                      style="width:100%;margin-top:6px;">
-                      <i class="fas fa-check-circle"></i> Generate Selected
-                    </button>
-                  </div>
-                  <!-- Progress -->
-                  <div class="progress-bar-wrap" id="bulkProgressWrap" style="margin-top:6px;">
-                    <div class="progress-bar-fill" id="bulkProgressBar"></div>
-                  </div>
-                  <p class="progress-text" id="bulkProgressText" style="font-size:10px;margin-top:2px;"></p>
-                  <div class="result-box hidden" id="bulkResult" style="margin-top:6px;"></div>
-                </div>
               </div>
 
               <!-- CENTER: Patient Editor -->
@@ -2692,6 +2677,57 @@
               </div>
 
             </div><!-- /bulk-3col -->
+
+            <!-- Options & Actions bar (below 3-column layout for maximum patient list visibility) -->
+            <div class="bulk-bottom-controls">
+              <div class="bulk-bottom-row">
+                <!-- Draft Buttons -->
+                <div class="bulk-draft-btns" style="margin-bottom:0;flex-shrink:0;">
+                  <button class="btn-bulk-save-draft" onclick="saveBulkDraft()"><i class="fas fa-save"></i> Save All Draft</button>
+                  <button class="btn-bulk-load-draft" onclick="loadBulkDraft()"><i class="fas fa-folder-open"></i> Load Draft</button>
+                </div>
+                <div class="bulk-bottom-divider"></div>
+                <!-- Branding & Grid options -->
+                <div style="display:flex;gap:12px;align-items:center;flex-shrink:0;">
+                  <div class="opt-field" style="min-width:120px;">
+                    <label>Branding:</label>
+                    <select id="bulkLogoOption">
+                      <option value="with_logo">With Logo</option>
+                      <option value="without_logo">Without Logo</option>
+                    </select>
+                  </div>
+                  <div class="opt-field" style="min-width:110px;">
+                    <label>Grid lines:</label>
+                    <select id="bulkGridOption">
+                      <option value="without_grid">No Grid</option>
+                      <option value="with_grid">With Grid</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="bulk-bottom-divider"></div>
+                <!-- Generate All Reports -->
+                <button class="btn-primary" id="generateAllBtn" onclick="generateBulkReports()"
+                  style="background:transparent;color:var(--primary);border:2px solid var(--primary);flex-shrink:0;">
+                  <i class="fas fa-rocket"></i> Generate All Reports
+                </button>
+                <div class="bulk-bottom-divider"></div>
+                <!-- Generate Selected -->
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                  <span style="font-size:10px;font-weight:600;color:var(--text-muted);">Formats:</span>
+                  <label class="format-check" style="font-size:11px;"><input type="checkbox" id="bulkFmtPdf" checked style="width:13px;height:13px;"> PDF</label>
+                  <label class="format-check" style="font-size:11px;"><input type="checkbox" id="bulkFmtDocx" checked style="width:13px;height:13px;"> DOCX</label>
+                  <button class="btn-primary" id="generateSelectedBtn" onclick="generateSelectedBulkReports()" style="flex-shrink:0;">
+                    <i class="fas fa-check-circle"></i> Generate Selected
+                  </button>
+                </div>
+              </div>
+              <!-- Progress & Result -->
+              <div class="progress-bar-wrap" id="bulkProgressWrap" style="margin-top:6px;">
+                <div class="progress-bar-fill" id="bulkProgressBar"></div>
+              </div>
+              <p class="progress-text" id="bulkProgressText" style="font-size:10px;margin-top:2px;"></p>
+              <div class="result-box hidden" id="bulkResult" style="margin-top:6px;"></div>
+            </div>
 
           </div>
 

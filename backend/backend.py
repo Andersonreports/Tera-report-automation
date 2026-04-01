@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import FileResponse
+import math
 import os
 import uuid
 import pandas as pd
@@ -66,5 +67,16 @@ async def upload_excel(file: UploadFile = File(...)):
     df = df.dropna(how="all")
     df.columns = df.columns.str.strip()
 
-    return df.to_dict(orient="records")
+    rows = df.to_dict(orient="records")
+    cleaned_rows = []
+    for row in rows:
+        r = {}
+        for key, value in row.items():
+            if isinstance(value, float) and math.isnan(value):
+                r[str(key)] = None
+            else:
+                r[str(key)] = value
+        cleaned_rows.append(r)
+
+    return {"rows": cleaned_rows}
 

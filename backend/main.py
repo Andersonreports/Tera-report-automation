@@ -13,7 +13,7 @@ import uuid
 import math
 import re
 import difflib
-from datetime import datetime 
+from datetime import datetime
 
 import pdfplumber
 
@@ -334,13 +334,10 @@ async def upload_excel(file: UploadFile = File(...)):
     rows = df.to_dict(orient="records")
 
     # Convert NaN values to None
-    cleaned_rows = []
-    for row in rows:
-        r = dict(row)
-        for key, value in r.items():
-            if isinstance(value, float) and math.isnan(value):
-                r[key] = None
-        cleaned_rows.append(r)
+    cleaned_rows = [
+        {k: (None if isinstance(v, float) and math.isnan(v) else v) for k, v in row.items()}
+        for row in rows
+    ]
 
     return {"rows": cleaned_rows}
 
@@ -676,10 +673,10 @@ async def pgta_parse_excel(file: UploadFile = File(...)):
                 }
                 
                 # Match to patient
-                norm_sample = normalize_str(sample_name)
+                norm_sample = str(normalize_str(sample_name))
                 matched = False
                 for key, patient in patient_map.items():
-                    if key and key in norm_sample:
+                    if key and str(key) in norm_sample:
                         if "embryos" not in patient or not isinstance(patient["embryos"], list):
                             patient["embryos"] = []
                         patient["embryos"].append(embryo)

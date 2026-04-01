@@ -2409,12 +2409,7 @@
                     style="font-weight:400;color:var(--text-muted);"></span></div>
                 <input type="text" class="bulk-search" id="bulkSearch" placeholder="Search by patient name..."
                   oninput="filterBulkPatients()">
-                <!-- Select All / Deselect All -->
-                <div class="bulk-select-btns">
-                  <button onclick="bulkSelectAll()"><i class="fas fa-check-double"></i> Select All</button>
-                  <button onclick="bulkDeselectAll()"><i class="fas fa-times"></i> Deselect All</button>
-                  <span class="bulk-selected-count-label" id="bulkSelectedCountLabel">0 selected</span>
-                </div>
+
                 <div class="bulk-patient-list" id="bulkPatientList"></div>
 
                 <!-- Options & Actions -->
@@ -2446,6 +2441,12 @@
                   </button>
 
                   <div style="border-top:1px solid rgba(0,0,0,0.1); margin-top:12px; padding-top:10px;">
+                    <!-- Select All / Deselect All -->
+                    <div class="bulk-select-btns" style="margin-bottom:12px; background:rgba(255,255,255,0.5); padding:6px; border-radius:6px; border:1px solid #ddd;">
+                      <button onclick="bulkSelectAll()"><i class="fas fa-check-double"></i> Select All</button>
+                      <button onclick="bulkDeselectAll()"><i class="fas fa-times"></i> Deselect All</button>
+                      <span class="bulk-selected-count-label" id="bulkSelectedCountLabel" style="margin-left:auto;">0 selected</span>
+                    </div>
                     <div class="bulk-options-compact">
                       <div class="opt-field" style="flex:1;">
                         <label>Generate Selected Formats:</label>

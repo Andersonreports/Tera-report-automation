@@ -185,6 +185,31 @@
       background: transparent;
     }
 
+    /* ── Home Button ── */
+    .page-hdr-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .home-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 14px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .home-btn:hover {
+      background: var(--primary-hover);
+    }
+
     /* ── Template Selector ── */
     .template-select-group {
       display: flex;
@@ -2602,17 +2627,16 @@
       <img src="/static/backend/logo.png" alt="Logo" onerror="this.style.display='none'">
     </div>
     <div class="topbar-divider"></div>
-    <div class="topbar-title"><i class="fas fa-dna"></i> PGT-A Report Generator</div>
+    <div class="topbar-title"> PGT-A Report Generator</div>
     <div class="topbar-spacer"></div>
-    <a href="/home" class="topbar-back"><i class="fas fa-arrow-left"></i> Home</a>
+    <a href="/home" class="topbar-back"> Home</a>
     <div class="topbar-user" id="userBtn">
-      <i class="fas fa-user-circle"></i>
       <span id="userLabel">User</span>
-      <i class="fas fa-caret-down"></i>
+
       <div class="user-dropdown" id="userMenu">
         <a href="#" class="role-tag" id="roleLabel">User</a>
         <hr style="border:none;border-top:1px solid #eee;margin:0;">
-        <a href="#" onclick="signOut()"><i class="fas fa-sign-out-alt" style="margin-right:6px;"></i>Sign Out</a>
+        <a href="#" onclick="signOut()">Sign Out</a>
       </div>
     </div>
   </div>
@@ -2622,6 +2646,7 @@
 
     <div class="page-hdr">
       <div class="page-hdr-left">
+        <a href="/home" class="home-btn">&#8592; Home</a>
         <h1>PGT-A Report Generator</h1>
       </div>
       <div class="template-select-group">
@@ -2633,12 +2658,12 @@
     </div>
 
     <div class="tab-bar">
-      <button class="tab active" data-tab="manual" onclick="switchTab('manual')"><i class="fas fa-list-ul"></i> Manual
+      <button class="tab active" data-tab="manual" onclick="switchTab('manual')"> Manual
         Entry</button>
-      <button class="tab" data-tab="bulk" onclick="switchTab('bulk')"><i class="fas fa-th"></i> Bulk Upload</button>
-      <button class="tab" data-tab="compare" onclick="switchTab('compare')"><i class="fas fa-exchange-alt"></i> Report
+      <button class="tab" data-tab="bulk" onclick="switchTab('bulk')"> Bulk Upload</button>
+      <button class="tab" data-tab="compare" onclick="switchTab('compare')"> Report
         Comparison</button>
-      <button class="tab" data-tab="guide" onclick="switchTab('guide')"><i class="fas fa-info-circle"></i> User
+      <button class="tab" data-tab="guide" onclick="switchTab('guide')"> User
         Guide</button>
     </div>
 
@@ -2651,7 +2676,7 @@
 
             <!-- PATIENT INFORMATION -->
             <div class="card">
-              <h3><i class="fas fa-user"></i> Patient Information</h3>
+              <h3> Patient Information</h3>
               <div class="field-grid">
                 <div class="field"><label>Patient Name <span class="req">*</span></label><textarea id="f_patient_name"
                     rows="2" placeholder="Mrs. Priya Sharma"></textarea></div>
@@ -2684,16 +2709,16 @@
 
             <!-- TRF VERIFICATION -->
             <div class="card trf-card">
-              <h3><i class="fas fa-file-medical-alt"></i> TRF Verification (Optional)</h3>
+              <h3> TRF Verification (Optional)</h3>
               <div class="trf-upload-row">
                 <span class="trf-status-text" id="trfStatusText">No TRF uploaded</span>
                 <input type="file" id="trfFileInput" accept=".pdf,image/*" style="display:none;"
                   onchange="onTRFFileSelected(this)">
                 <button class="trf-upload-btn" onclick="document.getElementById('trfFileInput').click()">
-                  <i class="fas fa-file-upload"></i> Upload TRF
+                   Upload TRF
                 </button>
                 <button class="trf-verify-btn" id="trfVerifyBtn" onclick="verifyTRF()" disabled>
-                  <i class="fas fa-check"></i> Verify
+                   Verify
                 </button>
               </div>
               <div class="trf-placeholder" id="trfPlaceholder">Upload a TRF (image or PDF) to verify patient details</div>
@@ -2702,7 +2727,7 @@
 
             <!-- RESULTS SUMMARY -->
             <div class="card">
-              <h3><i class="fas fa-table"></i> Page 1: Results Summary</h3>
+              <h3> Page 1: Results Summary</h3>
               <div class="count-row">
                 <label>Number of Embryos:</label>
                 <div class="count-controls">
@@ -2736,7 +2761,7 @@
 
             <!-- EMBRYO DETAILS -->
             <div class="card">
-              <h3><i class="fas fa-microscope"></i> Page 4+: Embryo Details (Detail View)</h3>
+              <h3> Page 4+: Embryo Details (Detail View)</h3>
               <p class="info-text" style="margin-bottom:12px;">Click each embryo header to expand and fill details.</p>
               <div class="embryo-accordion" id="embryoForms"></div>
             </div>
@@ -2745,22 +2770,22 @@
             <div>
               <!-- Save Draft / Load Draft / Save Data / Clear Form toolbar -->
               <div class="manual-action-bar">
-                <button class="btn-action btn-draft" onclick="saveDraft()"><i class="fas fa-save"></i> Save Draft</button>
-                <button class="btn-action btn-draft" onclick="loadDraft()"><i class="fas fa-folder-open"></i> Load Draft</button>
-                <button class="btn-action btn-save-data" onclick="saveData()"><i class="fas fa-database"></i> Save Data</button>
-                <button class="btn-action btn-clear" onclick="clearForm()"><i class="fas fa-trash-alt"></i> Clear Form</button>
+                <button class="btn-action btn-draft" onclick="saveDraft()"> Save Draft</button>
+                <button class="btn-action btn-draft" onclick="loadDraft()"> Load Draft</button>
+                <button class="btn-action btn-save-data" onclick="saveData()"> Save Data</button>
+                <button class="btn-action btn-clear" onclick="clearForm()"> Clear Form</button>
                 <span id="draftStatusInline" class="info-text" style="font-size:11px;margin-left:4px;"></span>
               </div>
 
               <!-- Fast Report Generation card -->
               <div class="fast-report-section">
-                <div class="fast-report-title"><i class="fas fa-bolt"></i> Fast Report Generation</div>
+                <div class="fast-report-title"> Fast Report Generation</div>
 
                 <!-- Output folder row -->
                 <div class="fast-report-folder-row">
                   <input type="text" id="manualOutputDir" placeholder="No directory selected" value="" readonly>
                   <button class="btn-folder-sm" onclick="selectOutputFolder('manualOutputDir')">
-                    <i class="fas fa-folder-open"></i> Select Output Folder
+                     Select Output Folder
                   </button>
                 </div>
 
@@ -2783,7 +2808,7 @@
                   </select>
 
                   <button class="btn-generate-fast" id="generateBtn" onclick="generateReport()">
-                    <i class="fas fa-play"></i> Generate Report(s)
+                     Generate Report(s)
                   </button>
                 </div>
 
@@ -2811,16 +2836,15 @@
           <div class="bulk-top-bar">
             <div class="bulk-top-file">
               <div class="drop-zone-compact" id="dropZone" onclick="document.getElementById('bulkFileInput').click()">
-                <i class="fas fa-file-excel"></i>
                 <span id="dropZoneLabel">Drop Excel file or click to upload (.xlsx, .xls)</span>
               </div>
               <input type="file" id="bulkFileInput" accept=".xlsx,.xls" style="display:none;">
             </div>
             <div class="bulk-top-sep"></div>
             <div class="bulk-top-folder">
-              <label><i class="fas fa-folder"></i> Output:</label>
+              <label> Output:</label>
               <input type="text" id="bulkOutputDir" placeholder="Default server directory" value="">
-              <button class="btn-folder" onclick="selectOutputFolder('bulkOutputDir')"><i class="fas fa-folder-open"></i> Select</button>
+              <button class="btn-folder" onclick="selectOutputFolder('bulkOutputDir')"> Select</button>
             </div>
           </div>
 
@@ -2832,15 +2856,15 @@
 
               <!-- LEFT: Patient List -->
               <div class="bulk-col-left">
-                <div class="bulk-col-header"><i class="fas fa-users"></i> Patients: <span id="bulkPatientCount"
+                <div class="bulk-col-header"> Patients: <span id="bulkPatientCount"
                     style="font-weight:400;color:var(--text-muted);"></span></div>
                 <input type="text" class="bulk-search" id="bulkSearch" placeholder="Search by patient name..."
                   oninput="filterBulkPatients()">
 
                 <!-- Select All / Deselect All (above list) -->
                 <div class="bulk-select-btns" style="margin:0 8px 4px; background:rgba(255,255,255,0.5); padding:5px 6px; border-radius:6px; border:1px solid #ddd; flex-shrink:0;">
-                  <button onclick="bulkSelectAll()"><i class="fas fa-check-double"></i> Select All</button>
-                  <button onclick="bulkDeselectAll()"><i class="fas fa-times"></i> Deselect All</button>
+                  <button onclick="bulkSelectAll()"> Select All</button>
+                  <button onclick="bulkDeselectAll()"> Deselect All</button>
                   <span class="bulk-selected-count-label" id="bulkSelectedCountLabel" style="margin-left:auto;">0 selected</span>
                 </div>
 
@@ -2850,7 +2874,7 @@
 
               <!-- CENTER: Patient Editor -->
               <div class="bulk-col-center">
-                <div class="bulk-col-header"><i class="fas fa-edit"></i> Patient Editor</div>
+                <div class="bulk-col-header"> Patient Editor</div>
                 <div class="bulk-editor-scroll" id="bulkEditorContent">
                   <p class="info-text" style="padding:30px;text-align:center;">Select a patient from the list to edit
                     their embryo data.</p>
@@ -2860,15 +2884,14 @@
               <!-- RIGHT: Batch Report Preview -->
               <div class="bulk-col-right">
                 <div class="bulk-col-header" style="display:flex;align-items:center;justify-content:space-between;">
-                  <span><i class="fas fa-file-pdf"></i> Batch Report Preview</span>
+                  <span> Batch Report Preview</span>
                   <button class="btn-refresh-preview" onclick="previewSelectedBulkPatient()"
                     style="font-size:10px;padding:3px 8px;background:rgba(31,73,125,0.15);color:var(--primary);border:1px solid var(--primary);">
-                    <i class="fas fa-sync-alt"></i> Refresh Preview
+                     Refresh Preview
                   </button>
                 </div>
                 <div class="bulk-preview-wrap" id="bulkPreviewWrap">
                   <div class="preview-placeholder" id="bulkPreviewPlaceholder">
-                    <i class="fas fa-file-pdf"></i>
                     <span>Select a patient and click Refresh</span>
                   </div>
                 </div>
@@ -2881,8 +2904,8 @@
               <div class="bulk-bottom-row">
                 <!-- Draft Buttons -->
                 <div class="bulk-draft-btns" style="margin-bottom:0;flex-shrink:0;">
-                  <button class="btn-bulk-save-draft" onclick="saveBulkDraft()"><i class="fas fa-save"></i> Save All Draft</button>
-                  <button class="btn-bulk-load-draft" onclick="loadBulkDraft()"><i class="fas fa-folder-open"></i> Load Draft</button>
+                  <button class="btn-bulk-save-draft" onclick="saveBulkDraft()"> Save All Draft</button>
+                  <button class="btn-bulk-load-draft" onclick="loadBulkDraft()"> Load Draft</button>
                 </div>
                 <div class="bulk-bottom-divider"></div>
                 <!-- Branding & Grid options -->
@@ -2906,7 +2929,7 @@
                 <!-- Generate All Reports -->
                 <button class="btn-primary" id="generateAllBtn" onclick="generateBulkReports()"
                   style="background:transparent;color:var(--primary);border:2px solid var(--primary);flex-shrink:0;">
-                  <i class="fas fa-rocket"></i> Generate All Reports
+                   Generate All Reports
                 </button>
                 <div class="bulk-bottom-divider"></div>
                 <!-- Generate Selected -->
@@ -2915,7 +2938,7 @@
                   <label class="format-check" style="font-size:11px;"><input type="checkbox" id="bulkFmtPdf" checked style="width:13px;height:13px;"> PDF</label>
                   <label class="format-check" style="font-size:11px;"><input type="checkbox" id="bulkFmtDocx" checked style="width:13px;height:13px;"> DOCX</label>
                   <button class="btn-primary" id="generateSelectedBtn" onclick="generateSelectedBulkReports()" style="flex-shrink:0;">
-                    <i class="fas fa-check-circle"></i> Generate Selected
+                     Generate Selected
                   </button>
                 </div>
               </div>
@@ -2956,9 +2979,9 @@
           </div>
 
           <div class="cmp-actions">
-            <button class="btn-run-cmp" onclick="runBulkComparison()"><i class="fas fa-rocket"></i> Run
+            <button class="btn-run-cmp" onclick="runBulkComparison()"> Run
               Comparison</button>
-            <button class="btn-view-dash" onclick="viewDashboard()"><i class="fas fa-chart-bar"></i> View HTML
+            <button class="btn-view-dash" onclick="viewDashboard()"> View HTML
               Dashboard</button>
           </div>
 
@@ -3012,16 +3035,16 @@
               <div class="guide-card">
                 <h3>3. Report Comparison &amp; Validation</h3>
                 <ul class="guide-feature-list">
-                  <li><span class="guide-icon"><i class="fas fa-search" style="font-size:11px;"></i></span> <b>Name
+                  <li><span class="guide-icon"></span> <b>Name
                       Validation:</b>&nbsp;Select individual files and use the 'Validate Patient Names Match' button to
                     prevent errors.</li>
-                  <li><span class="guide-icon"><i class="fas fa-folder" style="font-size:11px;"></i></span> <b>Directory
+                  <li><span class="guide-icon"></span> <b>Directory
                       Mode:</b>&nbsp;Bulk-compare two folders of reports to automatically find and analyze all matching
                     pairs.</li>
-                  <li><span class="guide-icon"><i class="fas fa-id-card" style="font-size:11px;"></i></span> <b>Visual
+                  <li><span class="guide-icon"></span> <b>Visual
                       Cards:</b>&nbsp;View structured results in the GUI with color-coded status badges and detailed
                     discrepancy lists.</li>
-                  <li><span class="guide-icon"><i class="fas fa-tachometer-alt" style="font-size:11px;"></i></span>
+                  <li><span class="guide-icon"></span>
                     <b>Dashboard:</b>&nbsp;Click 'View HTML Dashboard' for a premium performance summary with
                     concordance statistics.</li>
                 </ul>
@@ -3031,16 +3054,15 @@
               <div class="guide-card">
                 <h3>4. Productivity Features</h3>
                 <ul class="guide-feature-list">
-                  <li><span class="guide-icon"><i class="fas fa-bolt" style="font-size:11px;color:#fbbf24;"></i></span>
+                  <li><span class="guide-icon"></span>
                     <b>Copy Logic:</b>&nbsp;Use 'Copy Last Sample' to duplicate data across multiple entries instantly.
                   </li>
-                  <li><span class="guide-icon"><i class="fas fa-save" style="font-size:11px;color:#94a3b8;"></i></span>
+                  <li><span class="guide-icon"></span>
                     <b>Drafts:</b>&nbsp;Save your current work as a JSON draft to reload and finish later.</li>
-                  <li><span class="guide-icon"><i class="fas fa-image" style="font-size:11px;color:#10b981;"></i></span>
+                  <li><span class="guide-icon"></span>
                     <b>Image Auto-Match:</b>&nbsp;Place sample charts in the same folder as the Excel file for automatic
                     bulk matching.</li>
-                  <li><span class="guide-icon"><i class="fas fa-file-word"
-                        style="font-size:11px;color:#2b579a;"></i></span> <b>Dual Export:</b>&nbsp;Generate Word (DOCX)
+                  <li><span class="guide-icon"></span> <b>Dual Export:</b>&nbsp;Generate Word (DOCX)
                     files alongside PDFs for further manual customization.</li>
                 </ul>
               </div>
@@ -3064,15 +3086,14 @@
               <div class="guide-card">
                 <h3>6. Excel File Format</h3>
                 <ul class="guide-feature-list">
-                  <li><span class="guide-icon"><i class="fas fa-table" style="font-size:11px;"></i></span> <b>Required
+                  <li><span class="guide-icon"></span> <b>Required
                       Sheets:</b>&nbsp;'Details' (patient info) and 'summary' (embryo results)</li>
-                  <li><span class="guide-icon"><i class="fas fa-pencil-alt" style="font-size:11px;"></i></span>
+                  <li><span class="guide-icon"></span>
                     <b>Details Columns:</b>&nbsp;Patient Name, Sample ID, Center name, Date of Biopsy, Date Sample
                     Received, EMBRYOLOGIST NAME</li>
-                  <li><span class="guide-icon"><i class="fas fa-dna" style="font-size:11px;"></i></span> <b>Summary
+                  <li><span class="guide-icon"></span> <b>Summary
                       Columns:</b>&nbsp;Sample name, QC, Conclusion, Result, MTcopy, AUTOSOMES, SEX</li>
-                  <li><span class="guide-icon"><i class="fas fa-exclamation-triangle"
-                        style="font-size:11px;color:#e67e22;"></i></span> <b>Note:</b>&nbsp;Referring Clinician and
+                  <li><span class="guide-icon"></span> <b>Note:</b>&nbsp;Referring Clinician and
                     Sample Number fields are NOT auto-filled - enter manually</li>
                 </ul>
               </div>
@@ -3081,13 +3102,13 @@
               <div class="guide-card">
                 <h3>7. System Requirements</h3>
                 <ul class="guide-feature-list">
-                  <li><span class="guide-icon"><i class="fas fa-server" style="font-size:11px;"></i></span>
+                  <li><span class="guide-icon"></span>
                     <b>Platform:</b>&nbsp;Web-based application accessible from any modern browser</li>
-                  <li><span class="guide-icon"><i class="fas fa-cloud" style="font-size:11px;"></i></span>
+                  <li><span class="guide-icon"></span>
                     <b>Backend:</b>&nbsp;Python Flask server with ReportLab, python-docx, pandas, openpyxl</li>
-                  <li><span class="guide-icon"><i class="fas fa-desktop" style="font-size:11px;"></i></span>
+                  <li><span class="guide-icon"></span>
                     <b>Browser:</b>&nbsp;Chrome, Firefox, Safari, or Edge (latest versions)</li>
-                  <li><span class="guide-icon"><i class="fas fa-hdd" style="font-size:11px;"></i></span>
+                  <li><span class="guide-icon"></span>
                     <b>Storage:</b>&nbsp;Reports are generated server-side and downloaded to your device</li>
                 </ul>
               </div>
@@ -3122,23 +3143,20 @@
       <!-- ── Preview Sidebar (persistent for Manual + Bulk) ── -->
       <div class="preview-sidebar" id="previewSidebar">
         <div class="preview-sidebar-header">
-          <h4><i class="fas fa-file-pdf"></i> Report Preview (PDF)</h4>
-          <button class="btn-refresh-preview" onclick="triggerPreview()"><i class="fas fa-sync-alt"></i>
+          <h4> Report Preview (PDF)</h4>
+          <button class="btn-refresh-preview" onclick="triggerPreview()">
             Refresh</button>
         </div>
         <div class="preview-canvas-wrap" id="previewCanvasWrap">
           <div class="preview-placeholder" id="previewPlaceholder">
-            <i class="fas fa-file-pdf"></i>
             <span>Preview will appear here</span>
             <span style="font-size:10px;color:#cbd5e1;">Fill form and click Refresh</span>
           </div>
         </div>
         <div class="preview-nav">
-          <button class="preview-nav-btn" id="previewPrevBtn" onclick="prevPreviewPage()" disabled><i
-              class="fas fa-chevron-left"></i></button>
+          <button class="preview-nav-btn" id="previewPrevBtn" onclick="prevPreviewPage()" disabled></button>
           <span id="previewPageInfo" style="font-size:11px;color:var(--text-muted);flex:1;text-align:center;"></span>
-          <button class="preview-nav-btn" id="previewNextBtn" onclick="nextPreviewPage()" disabled><i
-              class="fas fa-chevron-right"></i></button>
+          <button class="preview-nav-btn" id="previewNextBtn" onclick="nextPreviewPage()" disabled></button>
         </div>
       </div>
 
@@ -3224,7 +3242,7 @@
     function runBulkComparison() {
       const area = document.getElementById('cmpResultsArea');
       if (!area) return;
-      area.innerHTML = '<div style="padding:20px;color:var(--primary);font-weight:600;"><i class="fas fa-spinner fa-spin"></i> Running cross-validation with local engine...</div>';
+      area.innerHTML = '<div style="padding:20px;color:var(--primary);font-weight:600;"> Running cross-validation with local engine...</div>';
       setTimeout(() => {
         area.innerHTML = '<div style="padding:20px;font-size:12px;color:var(--text-muted);">Sync complete. Found 24 matching report pairs. 0 discrepancies detected.</div>';
       }, 1500);
@@ -3386,13 +3404,12 @@
       div.innerHTML = `
     <div class="embryo-header" id="embryo-header-${idx}" onclick="toggleEmbryo(${idx})">
       <div class="embryo-title">
-        <i class="fas fa-circle-dot" style="font-size:9px;"></i>
         Embryo <span class="eid-display">${esc(ef.embryo_id || `PS${idx + 1}`)}</span>
         <span class="interp-badge" id="badge-${idx}" style="background:${bgBadge};color:#333;">${esc(ef.interpretation)}</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        ${idx > 0 ? `<button class="copy-btn" onclick="copyFromPrev(event,${idx})"><i class="fas fa-copy"></i> Copy from Embryo ${idx}</button>` : ""}
-        <i class="fas fa-chevron-down" id="chevron-${idx}"></i>
+        ${idx > 0 ? `<button class="copy-btn" onclick="copyFromPrev(event,${idx})"> Copy from Embryo ${idx}</button>` : ""}
+        <span id="chevron-${idx}"></span>
       </div>
     </div>
     <div class="embryo-body" id="embryo-body-${idx}">
@@ -3430,18 +3447,18 @@
       </div>
     </div>
     <div class="cnv-upload-row">
-      <span style="font-size:11px;font-weight:600;color:var(--text-muted);"><i class="fas fa-chart-bar"></i> CNV Chart</span>
-      <button class="cnv-upload-btn" onclick="triggerCnvUpload(${idx})"><i class="fas fa-upload"></i> Upload Image</button>
+      <span style="font-size:11px;font-weight:600;color:var(--text-muted);"> CNV Chart</span>
+      <button class="cnv-upload-btn" onclick="triggerCnvUpload(${idx})"> Upload Image</button>
       <input type="file" id="cnv-input-${idx}" accept=".png,.jpg,.jpeg" style="display:none;" onchange="handleCnvUpload(${idx},this.files[0])">
       ${cnvThumb}
       <span class="cnv-file-name" id="cnv-name-${idx}">${cnvName}</span>
     </div>
     <div class="inconclusive-box" id="inconclusive-box-${idx}" style="${showInc}">
-      <label><i class="fas fa-exclamation-triangle"></i> Inconclusive Comment</label>
+      <label> Inconclusive Comment</label>
       <textarea rows="3" placeholder="Enter inconclusive result details..." oninput="onEmbryoChange(${idx},'inconclusive_comment',this.value)">${esc(ef.inconclusive_comment || "")}</textarea>
     </div>
     <div class="chr-section">
-      <div class="chr-section-title"><i class="fas fa-dna"></i> CNV Status — Chromosomes 1–22</div>
+      <div class="chr-section-title"> CNV Status — Chromosomes 1–22</div>
       <div class="chr-grid-wrap">
         <div class="chr-half">${renderChrTable(idx, ef, 1, 11)}</div>
         <div class="chr-half">${renderChrTable(idx, ef, 12, 22)}</div>
@@ -3610,7 +3627,7 @@
       } catch (err) {
         setPreviewPlaceholder("Preview error: " + err.message, false, true);
       } finally {
-        if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.innerHTML = `<i class="fas fa-sync-alt"></i> Refresh`; }
+        if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.innerHTML = ` Refresh`; }
       }
     }
 
@@ -3684,7 +3701,7 @@
       const formats = [];
       if (document.getElementById("fmtPdf").checked) formats.push("pdf");
       if (document.getElementById("fmtDocx").checked) formats.push("docx");
-      if (!formats.length) { showToast("Select at least one format (PDF or DOCX)", "info"); btn.disabled = false; btn.innerHTML = `<i class="fas fa-file-pdf"></i> Generate Report(s)`; progressWrap.style.display = "none"; return; }
+      if (!formats.length) { showToast("Select at least one format (PDF or DOCX)", "info"); btn.disabled = false; btn.innerHTML = ` Generate Report(s)`; progressWrap.style.display = "none"; return; }
       const outputDir = document.getElementById("manualOutputDir").value.trim();
       try {
         progressFill.style.width = "40%"; progressText.textContent = "Generating report...";
@@ -3696,17 +3713,17 @@
         progressFill.style.width = "100%"; progressText.textContent = "Complete!";
         box.className = "result-box success"; box.style.display = "block";
         let links = "";
-        if (data.results?.pdf) links += `<a class="download-link" href="${BASE}${data.results.pdf.url}" target="_blank" download><i class="fas fa-file-pdf"></i> Download PDF</a> `;
-        if (data.results?.docx) links += `<a class="download-link" href="${BASE}${data.results.docx.url}" target="_blank" download style="background:#2b579a;"><i class="fas fa-file-word"></i> Download DOCX</a>`;
-        box.innerHTML = `<i class="fas fa-check-circle"></i> <strong>Report generated!</strong>${outputDir ? `<br><small>Saved to: ${esc(outputDir)}</small>` : ""}<br>${links}`;
+        if (data.results?.pdf) links += `<a class="download-link" href="${BASE}${data.results.pdf.url}" target="_blank" download> Download PDF</a> `;
+        if (data.results?.docx) links += `<a class="download-link" href="${BASE}${data.results.docx.url}" target="_blank" download style="background:#2b579a;"> Download DOCX</a>`;
+        box.innerHTML = ` <strong>Report generated!</strong>${outputDir ? `<br><small>Saved to: ${esc(outputDir)}</small>` : ""}<br>${links}`;
         showToast("Report generated!", "success");
       } catch (err) {
         progressFill.style.width = "100%"; progressFill.style.background = "#ef4444"; progressText.textContent = "Failed";
         box.className = "result-box error"; box.style.display = "block";
-        box.innerHTML = `<i class="fas fa-times-circle"></i> <strong>Error:</strong> ${err.message}`;
+        box.innerHTML = ` <strong>Error:</strong> ${err.message}`;
         showToast("Error: " + err.message, "error");
       } finally {
-        btn.disabled = false; btn.innerHTML = `<i class="fas fa-file-pdf"></i> Generate Report(s)`;
+        btn.disabled = false; btn.innerHTML = ` Generate Report(s)`;
         setTimeout(() => { progressFill.style.background = ""; }, 2000);
       }
     }
@@ -3814,7 +3831,7 @@
       if (!input.files || !input.files[0]) return;
       const btn = document.getElementById("trfVerifyBtn");
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+      btn.innerHTML = ' Verifying...';
       const fd = new FormData();
       fd.append("file", input.files[0]);
       try {
@@ -3823,7 +3840,7 @@
         if (data.error) throw new Error(data.error);
         const ext = data.extracted_data || {};
         const div = document.getElementById("trfExtractedData");
-        div.innerHTML = `<strong><i class="fas fa-check-circle"></i> Extracted:</strong> ` +
+        div.innerHTML = `<strong> Extracted:</strong> ` +
           Object.entries(ext).map(([k, v]) => `<span style="margin-left:8px;"><b>${k.replace(/_/g,' ')}:</b> ${v}</span>`).join("");
         div.style.display = "";
         // Pre-fill patient form fields
@@ -3831,12 +3848,12 @@
         if (ext.biopsy_date) document.getElementById("f_biopsy_date").value = ext.biopsy_date;
         if (ext.clinician) document.getElementById("f_referring_clinician").value = ext.clinician;
         if (ext.sample_id) document.getElementById("f_sample_number").value = ext.sample_id;
-        btn.innerHTML = '<i class="fas fa-check"></i> Verify';
+        btn.innerHTML = ' Verify';
         btn.disabled = false;
         showToast("TRF verified — fields pre-filled", "success");
         schedulePreview();
       } catch (err) {
-        btn.innerHTML = '<i class="fas fa-check"></i> Verify';
+        btn.innerHTML = ' Verify';
         btn.disabled = false;
         showToast("TRF verification failed: " + err.message, "error");
       }
@@ -3860,9 +3877,9 @@
         const data = await res.json(); if (data.error) throw new Error(data.error);
         state.bulkPatients = data.patients || [];
         renderBulkPatients();
-        dropZone.innerHTML = `<i class="fas fa-check-circle" style="color:#10b981;flex-shrink:0;"></i><span><strong>${file.name}</strong> &mdash; ${state.bulkPatients.length} patient(s) found &nbsp;<small style="color:var(--text-muted);cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();document.getElementById('bulkFileInput').click()">change</small></span>`;
+        dropZone.innerHTML = `<span><strong>${file.name}</strong> &mdash; ${state.bulkPatients.length} patient(s) found &nbsp;<small style="color:var(--text-muted);cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();document.getElementById('bulkFileInput').click()">change</small></span>`;
       } catch (err) {
-        dropZone.innerHTML = `<i class="fas fa-times-circle" style="color:#ef4444;flex-shrink:0;"></i><span>Error: ${err.message} &nbsp;<small style="cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();document.getElementById('bulkFileInput').click()">try again</small></span>`;
+        dropZone.innerHTML = `<span>Error: ${err.message} &nbsp;<small style="cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();document.getElementById('bulkFileInput').click()">try again</small></span>`;
         showToast("Parse failed: " + err.message, "error");
       }
     }
@@ -3939,7 +3956,7 @@
 
       // Patient Info section
       let html = `<div class="bulk-editor-section">
-    <h4><i class="fas fa-user"></i> Patient Information</h4>
+    <h4> Patient Information</h4>
     <div class="bulk-editor-field"><label>Patient Name:</label><textarea rows="2" oninput="state.bulkPatients[${i}].patient_name=this.value;scheduleBulkPreview()">${esc(p.patient_name || "")}</textarea></div>
     <div class="bulk-editor-field"><label>Spouse Name:</label><textarea rows="2" oninput="state.bulkPatients[${i}].spouse_name=this.value;scheduleBulkPreview()">${esc(p.spouse_name || "w/o")}</textarea></div>
     <div class="bulk-editor-field"><label>PIN:</label><input value="${esc(p.pin || "")}" oninput="state.bulkPatients[${i}].pin=this.value;scheduleBulkPreview()"></div>
@@ -3962,7 +3979,7 @@
       }
       embryos.forEach((emb, ei) => {
         html += `<div class="bulk-editor-section">
-      <h4><i class="fas fa-microscope"></i> Embryo: ${esc(emb.embryo_id || ("Embryo " + (ei + 1)))}</h4>
+      <h4> Embryo: ${esc(emb.embryo_id || ("Embryo " + (ei + 1)))}</h4>
       <div class="bulk-editor-field"><label>Embryo ID:</label><input value="${esc(emb.embryo_id || "")}" oninput="state.bulkPatients[${i}].embryos[${ei}].embryo_id=this.value;scheduleBulkPreview()"></div>
       <div class="bulk-editor-field"><label>Result Summary:</label>
         <select onchange="state.bulkPatients[${i}].embryos[${ei}].result_summary=this.value;scheduleBulkPreview()">
@@ -3984,7 +4001,7 @@
       <div class="bulk-editor-field"><label>MTcopy:</label><input value="${esc(emb.mtcopy || "")}" oninput="state.bulkPatients[${i}].embryos[${ei}].mtcopy=this.value;scheduleBulkPreview()" style="width:80px;"></div>
       <div class="bulk-editor-field"><label>Inconclusive Comment:</label><input value="${esc(emb.inconclusive_comment || "")}" oninput="state.bulkPatients[${i}].embryos[${ei}].inconclusive_comment=this.value;scheduleBulkPreview()" placeholder="If inconclusive..."></div>
       <div style="margin-top:6px;padding:6px 8px;background:var(--grey-box);border-radius:6px;">
-        <div style="font-size:10px;font-weight:700;color:var(--primary);margin-bottom:4px;"><i class="fas fa-dna"></i> Chromosome Details (1–22)</div>
+        <div style="font-size:10px;font-weight:700;color:var(--primary);margin-bottom:4px;"> Chromosome Details (1–22)</div>
         <div class="bulk-chr-grid">${renderBulkChrGrid(i, ei, emb)}</div>
       </div>
     </div>`;
@@ -4084,7 +4101,7 @@
       const ph = document.getElementById("bulkPreviewPlaceholder");
       // Show loading state in bulk preview
       if (wrap) wrap.querySelectorAll("canvas").forEach(c => c.remove());
-      if (ph) { ph.style.display = "flex"; ph.innerHTML = `<i class="fas fa-spinner fa-spin" style="font-size:32px;color:#94a3b8;"></i><span style="font-size:11px;color:#94a3b8;">Loading ${esc(p.patient_name || "Patient")}...</span>`; }
+      if (ph) { ph.style.display = "flex"; ph.innerHTML = `<span style="font-size:11px;color:#94a3b8;">Loading ${esc(p.patient_name || "Patient")}...</span>`; }
       try {
         const res = await fetch(`${BASE}/pgta/preview`, {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -4093,7 +4110,7 @@
         const data = await res.json(); if (data.error) throw new Error(data.error);
         await loadPdfToBulkPreview(`${BASE}${data.preview_url}?t=${Date.now()}`);
       } catch (err) {
-        if (ph) { ph.style.display = "flex"; ph.innerHTML = `<i class="fas fa-exclamation-triangle" style="font-size:32px;color:#ef4444;"></i><span style="font-size:11px;color:#ef4444;">Preview failed: ${esc(err.message)}</span>`; }
+        if (ph) { ph.style.display = "flex"; ph.innerHTML = `<span style="font-size:11px;color:#ef4444;">Preview failed: ${esc(err.message)}</span>`; }
         showToast("Preview failed: " + err.message, "error");
       }
     }
@@ -4198,7 +4215,7 @@
       resultBox.classList.remove("hidden");
       if (!errors.length) {
         resultBox.className = "result-box success";
-        resultBox.innerHTML = `<i class="fas fa-check-circle"></i> <strong>${done} report${done > 1 ? "s" : ""} generated successfully!</strong>${opts.outputDir ? `<br><small>Saved to: ${esc(opts.outputDir)}</small>` : ""}`;
+        resultBox.innerHTML = ` <strong>${done} report${done > 1 ? "s" : ""} generated successfully!</strong>${opts.outputDir ? `<br><small>Saved to: ${esc(opts.outputDir)}</small>` : ""}`;
         showToast(`${done} report${done > 1 ? "s" : ""} done`, "success");
       } else {
         resultBox.className = "result-box error";
@@ -4270,7 +4287,7 @@
       const btn = document.getElementById("cmpBtn");
       btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Comparing...`;
       const resultEl = document.getElementById("cmpResults");
-      resultEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin" style="font-size:24px;"></i><p style="margin-top:8px;">Extracting and comparing report data...</p></div>`;
+      resultEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);"><p style="margin-top:8px;">Extracting and comparing report data...</p></div>`;
       try {
         const fd = new FormData();
         fd.append("manual", cmpFiles.manual);
@@ -4280,9 +4297,9 @@
         if (data.error) throw new Error(data.error);
         renderComparisonResult(data);
       } catch (err) {
-        resultEl.innerHTML = `<div class="result-box error" style="display:block;"><i class="fas fa-times-circle"></i> Comparison error: ${err.message}</div>`;
+        resultEl.innerHTML = `<div class="result-box error" style="display:block;"> Comparison error: ${err.message}</div>`;
       } finally {
-        btn.disabled = false; btn.innerHTML = `<i class="fas fa-search"></i> Compare Reports`;
+        btn.disabled = false; btn.innerHTML = ` Compare Reports`;
       }
     }
 
@@ -4295,7 +4312,7 @@
 
       let html = `<div class="compare-result-card">
     <div class="compare-result-header">
-      <strong><i class="fas fa-user" style="margin-right:6px;"></i>${data.patient || "Unknown Patient"}</strong>
+      <strong>${data.patient || "Unknown Patient"}</strong>
       ${badge}
     </div>
     <div style="padding:12px 14px;">
@@ -4311,9 +4328,9 @@
       </div>`;
 
       if (isMatch) {
-        html += `<div class="compare-match"><i class="fas fa-check-circle"></i> All extracted fields match perfectly between both reports.</div>`;
+        html += `<div class="compare-match"> All extracted fields match perfectly between both reports.</div>`;
       } else {
-        html += `<div style="font-size:11px;font-weight:700;color:#991b1b;margin-bottom:6px;"><i class="fas fa-exclamation-triangle" style="margin-right:4px;"></i>Discrepancies found:</div>`;
+        html += `<div style="font-size:11px;font-weight:700;color:#991b1b;margin-bottom:6px;">Discrepancies found:</div>`;
         data.discrepancies.forEach(d => {
           html += `<div class="compare-discrepancy">${d}</div>`;
         });

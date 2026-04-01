@@ -1005,6 +1005,183 @@
       margin-top: 4px;
     }
 
+    /* ── Manual Action Bar (Save Draft / Load Draft / Save Data / Clear Form) ── */
+    .manual-action-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      flex-wrap: wrap;
+    }
+
+    .manual-action-bar .btn-action {
+      padding: 5px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 5px;
+      cursor: pointer;
+      border: 1.5px solid;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: 0.15s;
+      background: transparent;
+    }
+
+    .manual-action-bar .btn-action.btn-draft {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .manual-action-bar .btn-action.btn-draft:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .manual-action-bar .btn-action.btn-save-data {
+      border-color: #059669;
+      color: #059669;
+    }
+
+    .manual-action-bar .btn-action.btn-save-data:hover {
+      background: #059669;
+      color: #fff;
+    }
+
+    .manual-action-bar .btn-action.btn-clear {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .manual-action-bar .btn-action.btn-clear:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    /* ── Fast Report Generation Section ── */
+    .fast-report-section {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+    }
+
+    .fast-report-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .fast-report-folder-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .fast-report-folder-row input {
+      flex: 1;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      background: #fff;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-muted);
+    }
+
+    .fast-report-folder-row .btn-folder-sm {
+      padding: 6px 12px;
+      background: #f59e0b;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: 0.15s;
+    }
+
+    .fast-report-folder-row .btn-folder-sm:hover {
+      background: #d97706;
+    }
+
+    .fast-report-controls-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .fast-report-controls-row .fr-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .fast-report-controls-row .fr-check {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .fast-report-controls-row .fr-check input[type=checkbox] {
+      width: 14px;
+      height: 14px;
+      accent-color: var(--primary);
+    }
+
+    .fast-report-controls-row select {
+      border: 1px solid var(--input-border);
+      border-radius: 5px;
+      padding: 4px 8px;
+      font-size: 11px;
+      background: #fff;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .fast-report-controls-row .btn-generate-fast {
+      margin-left: auto;
+      padding: 7px 18px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: 0.2s;
+      white-space: nowrap;
+    }
+
+    .fast-report-controls-row .btn-generate-fast:hover {
+      background: var(--primary-hover);
+    }
+
+    .fast-report-bulk-info {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
     /* ── Bulk Draft Buttons ── */
     .bulk-draft-btns {
       display: flex;
@@ -1728,9 +1905,11 @@
     }
 
     .bulk-bottom-controls {
-      padding: 10px 12px;
+      padding: 8px 12px;
       border-top: 1px solid var(--input-border);
       flex-shrink: 0;
+      max-height: 220px;
+      overflow-y: auto;
     }
 
     .bulk-options-compact {
@@ -2319,51 +2498,64 @@
               <div class="embryo-accordion" id="embryoForms"></div>
             </div>
 
-            <!-- OUTPUT FOLDER -->
-            <div class="card">
-              <h3><i class="fas fa-folder-open"></i> Output Folder</h3>
-              <div class="output-folder-row">
-                <label><i class="fas fa-folder"></i> Path:</label>
-                <input type="text" id="manualOutputDir" placeholder="Leave blank for default server directory" value="">
-                <button class="btn-folder" onclick="selectOutputFolder('manualOutputDir')"><i
-                    class="fas fa-folder-open"></i> Select Folder</button>
+            <!-- ACTION BAR + FAST REPORT GENERATION -->
+            <div>
+              <!-- Save Draft / Load Draft / Save Data / Clear Form toolbar -->
+              <div class="manual-action-bar">
+                <button class="btn-action btn-draft" onclick="saveDraft()"><i class="fas fa-save"></i> Save Draft</button>
+                <button class="btn-action btn-draft" onclick="loadDraft()"><i class="fas fa-folder-open"></i> Load Draft</button>
+                <button class="btn-action btn-save-data" onclick="saveData()"><i class="fas fa-database"></i> Save Data</button>
+                <button class="btn-action btn-clear" onclick="clearForm()"><i class="fas fa-trash-alt"></i> Clear Form</button>
+                <span id="draftStatusInline" class="info-text" style="font-size:11px;margin-left:4px;"></span>
               </div>
-            </div>
 
-            <!-- GENERATE OPTIONS -->
-            <div class="card">
-              <h3><i class="fas fa-cog"></i> Generate Report</h3>
-              <div class="options-row">
-                <div class="opt-field"><label>Branding / Logo</label>
+              <!-- Fast Report Generation card -->
+              <div class="fast-report-section">
+                <div class="fast-report-title"><i class="fas fa-bolt"></i> Fast Report Generation</div>
+
+                <!-- Output folder row -->
+                <div class="fast-report-folder-row">
+                  <input type="text" id="manualOutputDir" placeholder="No directory selected" value="" readonly>
+                  <button class="btn-folder-sm" onclick="selectOutputFolder('manualOutputDir')">
+                    <i class="fas fa-folder-open"></i> Select Output Folder
+                  </button>
+                </div>
+
+                <!-- Controls row: Output Forms + Branding + Grid lines + Generate button -->
+                <div class="fast-report-controls-row">
+                  <span class="fr-label">Output Forms:</span>
+                  <label class="fr-check"><input type="checkbox" id="fmtPdf" checked> PDF</label>
+                  <label class="fr-check"><input type="checkbox" id="fmtDocx" checked> DOCX</label>
+
+                  <span class="fr-label" style="margin-left:8px;">Branding:</span>
                   <select id="logoOption">
                     <option value="with_logo">With Logo</option>
                     <option value="without_logo">Without Logo</option>
                   </select>
-                </div>
-                <div class="opt-field"><label>Grid Lines</label>
+
+                  <span class="fr-label">Grid lines:</span>
                   <select id="gridOption">
-                    <option value="without_grid">Without Grid Lines</option>
-                    <option value="with_grid">With Grid Lines</option>
+                    <option value="without_grid">No Grid</option>
+                    <option value="with_grid">With Grid</option>
                   </select>
+
+                  <button class="btn-generate-fast" id="generateBtn" onclick="generateReport()">
+                    <i class="fas fa-play"></i> Generate Report(s)
+                  </button>
                 </div>
-                <div class="format-checks">
-                  <label class="format-check"><input type="checkbox" id="fmtPdf" checked> PDF</label>
-                  <label class="format-check"><input type="checkbox" id="fmtDocx" checked> DOCX</label>
+
+                <!-- Progress & Result -->
+                <div class="manual-progress-wrap" id="manualProgressWrap" style="margin-top:10px;">
+                  <div class="manual-progress-bar">
+                    <div class="manual-progress-fill" id="manualProgressFill"></div>
+                  </div>
+                  <div class="manual-progress-text" id="manualProgressText"></div>
                 </div>
+                <div class="result-box" id="generateResult"></div>
+
+                <!-- Bulk data info -->
+                <div class="fast-report-bulk-info" id="manualBulkInfo"></div>
               </div>
-              <div class="action-btns">
-                <button class="btn-secondary" onclick="triggerPreview(true)"><i class="fas fa-eye"></i> Preview
-                  PDF</button>
-                <button class="btn-primary" id="generateBtn" onclick="generateReport()"><i class="fas fa-file-pdf"></i>
-                  Generate Report(s)</button>
-              </div>
-              <div class="manual-progress-wrap" id="manualProgressWrap">
-                <div class="manual-progress-bar">
-                  <div class="manual-progress-fill" id="manualProgressFill"></div>
-                </div>
-                <div class="manual-progress-text" id="manualProgressText"></div>
-              </div>
-              <div class="result-box" id="generateResult"></div>
             </div>
 
           </div><!-- /form-panel -->
@@ -2410,6 +2602,13 @@
                 <input type="text" class="bulk-search" id="bulkSearch" placeholder="Search by patient name..."
                   oninput="filterBulkPatients()">
 
+                <!-- Select All / Deselect All (above list) -->
+                <div class="bulk-select-btns" style="margin:0 8px 4px; background:rgba(255,255,255,0.5); padding:5px 6px; border-radius:6px; border:1px solid #ddd; flex-shrink:0;">
+                  <button onclick="bulkSelectAll()"><i class="fas fa-check-double"></i> Select All</button>
+                  <button onclick="bulkDeselectAll()"><i class="fas fa-times"></i> Deselect All</button>
+                  <span class="bulk-selected-count-label" id="bulkSelectedCountLabel" style="margin-left:auto;">0 selected</span>
+                </div>
+
                 <div class="bulk-patient-list" id="bulkPatientList"></div>
 
                 <!-- Options & Actions -->
@@ -2436,17 +2635,11 @@
                     </div>
                   </div>
                   <button class="btn-primary" id="generateAllBtn" onclick="generateBulkReports()"
-                    style="width:100%;margin-top:8px;background:transparent;color:var(--primary);border:2px solid var(--primary);">
+                    style="width:100%;margin-top:6px;background:transparent;color:var(--primary);border:2px solid var(--primary);">
                     <i class="fas fa-rocket"></i> Generate All Reports
                   </button>
 
-                  <div style="border-top:1px solid rgba(0,0,0,0.1); margin-top:12px; padding-top:10px;">
-                    <!-- Select All / Deselect All -->
-                    <div class="bulk-select-btns" style="margin-bottom:12px; background:rgba(255,255,255,0.5); padding:6px; border-radius:6px; border:1px solid #ddd;">
-                      <button onclick="bulkSelectAll()"><i class="fas fa-check-double"></i> Select All</button>
-                      <button onclick="bulkDeselectAll()"><i class="fas fa-times"></i> Deselect All</button>
-                      <span class="bulk-selected-count-label" id="bulkSelectedCountLabel" style="margin-left:auto;">0 selected</span>
-                    </div>
+                  <div style="border-top:1px solid rgba(0,0,0,0.1); margin-top:8px; padding-top:8px;">
                     <div class="bulk-options-compact">
                       <div class="opt-field" style="flex:1;">
                         <label>Generate Selected Formats:</label>
@@ -2459,7 +2652,7 @@
                       </div>
                     </div>
                     <button class="btn-primary" id="generateSelectedBtn" onclick="generateSelectedBulkReports()"
-                      style="width:100%;margin-top:8px;">
+                      style="width:100%;margin-top:6px;">
                       <i class="fas fa-check-circle"></i> Generate Selected
                     </button>
                   </div>
@@ -3317,6 +3510,24 @@
       state.summaryRows = []; state.embryoForms = []; state.cnvImages = {}; state.embryoCount = 1;
       document.getElementById("embryoCount").value = 1; setEmbryoCount(1);
       document.getElementById("draftStatus").textContent = ""; showToast("Form cleared", "info");
+    }
+    function saveData() {
+      // Export current form data as a JSON file for download
+      const data = {
+        patientData: getPatientData(),
+        summaryRows: state.summaryRows,
+        embryoForms: state.embryoForms,
+        embryoCount: state.embryoCount
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const patientName = (data.patientData.patient_name || 'patient').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      a.href = url;
+      a.download = `pgta_data_${patientName}_${todayStr()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Data saved as JSON file', 'success');
     }
 
     // ═══════════════════════════════════════════════

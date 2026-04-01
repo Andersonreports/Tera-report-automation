@@ -196,6 +196,127 @@
       background: transparent;
     }
 
+    /* ── Template Selector ── */
+    .template-select-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .template-select-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .template-select-group select {
+      padding: 7px 32px 7px 12px;
+      border: 2px solid var(--primary);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231F497D' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 10px center;
+      -webkit-appearance: none;
+      appearance: none;
+      cursor: pointer;
+      min-width: 110px;
+    }
+
+    .template-select-group select:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(31, 73, 125, 0.12);
+    }
+
+    /* ── TRF Verification ── */
+    .trf-card {
+      margin-top: 0;
+    }
+
+    .trf-upload-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--grey-box);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+    }
+
+    .trf-status-text {
+      flex: 1;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .trf-upload-btn {
+      padding: 6px 14px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .trf-upload-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .trf-verify-btn {
+      padding: 6px 14px;
+      background: transparent;
+      color: var(--success);
+      border: 1.5px solid var(--success);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .trf-verify-btn:hover:not(:disabled) {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .trf-verify-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .trf-placeholder {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: #f8f9ff;
+      border: 1px dashed var(--input-border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .trf-extracted {
+      margin-top: 10px;
+      background: #ecfdf5;
+      border: 1px solid #6ee7b7;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 11px;
+      color: #065f46;
+    }
+
     /* ── Main Content ── */
     .main {
       height: calc(100vh - var(--topbar-h));
@@ -2510,14 +2631,13 @@
 
     <div class="page-hdr">
       <div class="page-hdr-left">
-        <h1><i class="fas fa-dna" style="color:#1F497D;margin-right:6px;"></i>PGT-A Report Generator</h1>
-        <p>Preimplantation Genetic Testing for Aneuploidies — Professional PDF Report Generation</p>
+        <h1>PGT-A Report Generator</h1>
       </div>
-      <div class="draft-btns">
-        <button class="btn-sm btn-outline" onclick="saveDraft()"><i class="fas fa-save"></i> Save Draft</button>
-        <button class="btn-sm btn-outline" onclick="loadDraft()"><i class="fas fa-folder-open"></i> Load Draft</button>
-        <button class="btn-sm btn-danger-outline" onclick="clearForm()"><i class="fas fa-trash"></i> Clear</button>
-        <span id="draftStatus" class="info-text"></span>
+      <div class="template-select-group">
+        <label>Select Template:</label>
+        <select id="templateSelect" onchange="handleTemplateChange(this.value)">
+          <option value="pgta">PGT-A</option>
+        </select>
       </div>
     </div>
 
@@ -2571,9 +2691,27 @@
               </div>
             </div>
 
+            <!-- TRF VERIFICATION -->
+            <div class="card trf-card">
+              <h3><i class="fas fa-file-medical-alt"></i> TRF Verification (Optional)</h3>
+              <div class="trf-upload-row">
+                <span class="trf-status-text" id="trfStatusText">No TRF uploaded</span>
+                <input type="file" id="trfFileInput" accept=".pdf,image/*" style="display:none;"
+                  onchange="onTRFFileSelected(this)">
+                <button class="trf-upload-btn" onclick="document.getElementById('trfFileInput').click()">
+                  <i class="fas fa-file-upload"></i> Upload TRF
+                </button>
+                <button class="trf-verify-btn" id="trfVerifyBtn" onclick="verifyTRF()" disabled>
+                  <i class="fas fa-check"></i> Verify
+                </button>
+              </div>
+              <div class="trf-placeholder" id="trfPlaceholder">Upload a TRF (image or PDF) to verify patient details</div>
+              <div id="trfExtractedData" class="trf-extracted" style="display:none;"></div>
+            </div>
+
             <!-- RESULTS SUMMARY -->
             <div class="card">
-              <h3><i class="fas fa-table"></i> Results Summary</h3>
+              <h3><i class="fas fa-table"></i> Page 1: Results Summary</h3>
               <div class="count-row">
                 <label>Number of Embryos:</label>
                 <div class="count-controls">
@@ -2607,7 +2745,7 @@
 
             <!-- EMBRYO DETAILS -->
             <div class="card">
-              <h3><i class="fas fa-microscope"></i> Embryo Details</h3>
+              <h3><i class="fas fa-microscope"></i> Page 4+: Embryo Details (Detail View)</h3>
               <p class="info-text" style="margin-bottom:12px;">Click each embryo header to expand and fill details.</p>
               <div class="embryo-accordion" id="embryoForms"></div>
             </div>
@@ -3657,6 +3795,60 @@
       a.click();
       URL.revokeObjectURL(url);
       showToast('Data saved as JSON file', 'success');
+    }
+
+    // ═══════════════════════════════════════════════
+    // TEMPLATE SELECTOR
+    // ═══════════════════════════════════════════════
+    function handleTemplateChange(val) {
+      // Currently only PGT-A is supported; placeholder for future templates
+      if (val !== "pgta") {
+        showToast("Only PGT-A template is currently available.", "info");
+        document.getElementById("templateSelect").value = "pgta";
+      }
+    }
+
+    // ═══════════════════════════════════════════════
+    // TRF VERIFICATION
+    // ═══════════════════════════════════════════════
+    function onTRFFileSelected(input) {
+      if (!input.files || !input.files[0]) return;
+      document.getElementById("trfStatusText").textContent = input.files[0].name;
+      document.getElementById("trfVerifyBtn").disabled = false;
+      document.getElementById("trfPlaceholder").style.display = "none";
+    }
+
+    async function verifyTRF() {
+      const input = document.getElementById("trfFileInput");
+      if (!input.files || !input.files[0]) return;
+      const btn = document.getElementById("trfVerifyBtn");
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+      const fd = new FormData();
+      fd.append("file", input.files[0]);
+      try {
+        const res = await fetch(`${BASE}/pgta/verify-trf`, { method: "POST", body: fd });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        const ext = data.extracted_data || {};
+        const div = document.getElementById("trfExtractedData");
+        div.innerHTML = `<strong><i class="fas fa-check-circle"></i> Extracted:</strong> ` +
+          Object.entries(ext).map(([k, v]) => `<span style="margin-left:8px;"><b>${k.replace(/_/g,' ')}:</b> ${v}</span>`).join("");
+        div.style.display = "";
+        // Pre-fill patient form fields
+        if (ext.patient_name) document.getElementById("f_patient_name").value = ext.patient_name;
+        if (ext.biopsy_date) document.getElementById("f_biopsy_date").value = ext.biopsy_date;
+        if (ext.clinician) document.getElementById("f_referring_clinician").value = ext.clinician;
+        if (ext.sample_id) document.getElementById("f_sample_number").value = ext.sample_id;
+        btn.innerHTML = '<i class="fas fa-check"></i> Verify';
+        btn.disabled = false;
+        showToast("TRF verified — fields pre-filled", "success");
+        schedulePreview();
+      } catch (err) {
+        btn.innerHTML = '<i class="fas fa-check"></i> Verify';
+        btn.disabled = false;
+        showToast("TRF verification failed: " + err.message, "error");
+      }
     }
 
     // ═══════════════════════════════════════════════

@@ -22,7 +22,7 @@ from pgta_template import PGTAReportTemplate
 from fastapi.staticfiles import StaticFiles
 from pgta_docx_generator import PGTADocxGenerator
 try:
-    from supabase_client import supabase, upload_pdf, save_report
+    from supabase_client import supabase, upload_pdf, save_report, upload_pgta_file
 except ImportError:
     supabase = None
     upload_pdf = None
@@ -533,7 +533,12 @@ async def pgta_generate_report(request: Request):
                 show_logo=show_logo,
                 show_grid=show_grid
             )
-            results["pdf"] = {"file": file_name_pdf, "url": f"/reports-pgta/{file_name_pdf}"}
+            pdf_url = f"/reports-pgta/{file_name_pdf}"
+            try:
+                pdf_url = upload_pgta_file(filepath_pdf, file_name_pdf)
+            except Exception as up_err:
+                print(f"Supabase PDF upload skipped: {up_err}")
+            results["pdf"] = {"file": file_name_pdf, "url": pdf_url}
 
         # 2. Generate DOCX
         if gen_docx:
@@ -547,7 +552,12 @@ async def pgta_generate_report(request: Request):
                 show_logo=show_logo,
                 show_grid=show_grid
             )
-            results["docx"] = {"file": file_name_docx, "url": f"/reports-pgta/{file_name_docx}"}
+            docx_url = f"/reports-pgta/{file_name_docx}"
+            try:
+                docx_url = upload_pgta_file(filepath_docx, file_name_docx)
+            except Exception as up_err:
+                print(f"Supabase DOCX upload skipped: {up_err}")
+            results["docx"] = {"file": file_name_docx, "url": docx_url}
 
         return {"status": "success", "results": results}
     except Exception as e:

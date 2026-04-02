@@ -37,6 +37,27 @@ def upload_pdf(file_path, file_name):
     return url
 
 
+CONTENT_TYPES = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+def upload_pgta_file(file_path, file_name):
+    """Upload a PGT-A report file (PDF or DOCX) to the PGTA/ folder in the reports bucket."""
+    client = _get_client()
+    ext = os.path.splitext(file_name)[1].lower()
+    content_type = CONTENT_TYPES.get(ext, "application/octet-stream")
+    storage_path = f"PGTA/{file_name}"
+    with open(file_path, "rb") as f:
+        client.storage.from_("reports").upload(
+            storage_path,
+            f,
+            {"upsert": "true", "content-type": content_type}
+        )
+    url = client.storage.from_("reports").get_public_url(storage_path)
+    return url
+
+
 def save_report(user_id, file_url, report_type):
     data = {
         "user_id": user_id,

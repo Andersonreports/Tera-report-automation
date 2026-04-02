@@ -3700,9 +3700,21 @@
         progressFill.style.width = "100%"; progressText.textContent = "Complete!";
         box.className = "result-box success"; box.style.display = "block";
         let links = "";
-        if (data.results?.pdf) links += `<a class="download-link" href="${BASE}${data.results.pdf.url}" target="_blank" download> Download PDF</a> `;
-        if (data.results?.docx) links += `<a class="download-link" href="${BASE}${data.results.docx.url}" target="_blank" download style="background:#2b579a;"> Download DOCX</a>`;
-        box.innerHTML = ` <strong>Report generated!</strong>${outputDir ? `<br><small>Saved to: ${esc(outputDir)}</small>` : ""}<br>${links}`;
+        if (data.results?.pdf) links += `<a class="download-link" href="${data.results.pdf.url}" target="_blank" download> Download PDF</a> `;
+        if (data.results?.docx) links += `<a class="download-link" href="${data.results.docx.url}" target="_blank" download style="background:#2b579a;"> Download DOCX</a>`;
+        const savedMsg = _dirHandles["manualOutputDir"] ? `<br><small>Saved to: ${document.getElementById("manualOutputDir").value}</small>` : "";
+        box.innerHTML = ` <strong>Report generated!</strong>${savedMsg}<br>${links}`;
+        // Auto-save to chosen local folder
+        const saveToDir = async (url, filename) => {
+          try {
+            const resp = await fetch(url); const blob = await resp.blob();
+            await saveFileToDir("manualOutputDir", blob, filename);
+          } catch(e) { console.warn("Auto-save to folder failed:", e); }
+        };
+        if (_dirHandles["manualOutputDir"]) {
+          if (data.results?.pdf) saveToDir(data.results.pdf.url, data.results.pdf.file);
+          if (data.results?.docx) saveToDir(data.results.docx.url, data.results.docx.file);
+        }
         showToast("Report generated!", "success");
       } catch (err) {
         progressFill.style.width = "100%"; progressFill.style.background = "#ef4444"; progressText.textContent = "Failed";
@@ -3718,19 +3730,46 @@
     // ═══════════════════════════════════════════════
     // OUTPUT FOLDER PICKER
     // ═══════════════════════════════════════════════
+    // Stores directory handles keyed by inputId so we can write files there
+    const _dirHandles = {};
+
     async function selectOutputFolder(inputId) {
-      try {
-        const res = await fetch(`${BASE}/pgta/select-folder`);
-        const data = await res.json();
-        if (data.folder) {
-          document.getElementById(inputId).value = data.folder;
-        } else if (data.error) {
-          showToast("Folder picker unavailable — type the path manually", "info");
-        }
-        // if folder is empty string, user cancelled — do nothing
-      } catch (err) {
-        showToast("Folder picker failed: " + err.message, "error");
+      if (!window.showDirectoryPicker) {
+        showToast("Folder picker not supported in this browser. Use Chrome or Edge.", "info");
+        return;
       }
+      try {
+        const dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+        _dirHandles[inputId] = dirHandle;
+        document.getElementById(inputId).value = dirHandle.name;
+        showToast(`Folder selected: ${dirHandle.name}`, "success");
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          showToast("Could not select folder: " + err.message, "error");
+        }
+      }
+    }
+
+    // Save a blob to the chosen directory handle (if available), else browser-download it
+    async function saveFileToDir(inputId, blob, filename) {
+      const dirHandle = _dirHandles[inputId];
+      if (dirHandle) {
+        try {
+          const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          return true;
+        } catch (err) {
+          console.warn("Could not write to selected folder:", err);
+        }
+      }
+      // Fallback: browser download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+      return false;
     }
 
     // ═══════════════════════════════════════════════
@@ -3742,23 +3781,44 @@
       if (s1) s1.textContent = msg;
       if (s2) s2.textContent = msg;
     }
+
     function saveDraft() {
-      localStorage.setItem("pgta_draft", JSON.stringify({ patientData: getPatientData(), summaryRows: state.summaryRows, embryoForms: state.embryoForms, embryoCount: state.embryoCount, cnvImages: state.cnvImages }));
+      const draftData = { patientData: getPatientData(), summaryRows: state.summaryRows, embryoForms: state.embryoForms, embryoCount: state.embryoCount, cnvImages: state.cnvImages, _type: "pgta_manual_draft" };
+      // Also keep in localStorage as backup
+      try { localStorage.setItem("pgta_draft", JSON.stringify(draftData)); } catch(e) {}
+      // Download as .json file
+      const patientName = (draftData.patientData.patient_name || "draft").replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
+      const filename = `pgta_draft_${patientName}_${todayStr()}.json`;
+      const blob = new Blob([JSON.stringify(draftData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
       _setDraftStatus(`Saved ${new Date().toLocaleTimeString()}`);
-      showToast("Draft saved", "success");
+      showToast(`Draft downloaded: ${filename}`, "success");
     }
+
     function loadDraft() {
-      const raw = localStorage.getItem("pgta_draft"); if (!raw) { showToast("No draft found", "info"); return; }
-      try {
-        const d = JSON.parse(raw);
-        Object.entries(d.patientData || {}).forEach(([k, v]) => { const el = document.getElementById(`f_${k}`); if (el) el.value = v || ""; });
-        state.summaryRows = d.summaryRows || []; state.embryoForms = d.embryoForms || [];
-        state.cnvImages = d.cnvImages || {}; state.embryoCount = d.embryoCount || 1;
-        document.getElementById("embryoCount").value = state.embryoCount;
-        document.getElementById("embryoCountHint").textContent = `${state.embryoCount} embryo${state.embryoCount > 1 ? "s" : ""}`;
-        renderSummaryTable(); renderEmbryoForms();
-        _setDraftStatus("Loaded"); showToast("Draft loaded", "success"); schedulePreview();
-      } catch (err) { showToast("Load failed: " + err.message, "error"); }
+      // Open file picker so user can choose any saved draft .json file
+      const input = document.createElement("input");
+      input.type = "file"; input.accept = ".json";
+      input.onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const d = JSON.parse(ev.target.result);
+            Object.entries(d.patientData || {}).forEach(([k, v]) => { const el = document.getElementById(`f_${k}`); if (el) el.value = v || ""; });
+            state.summaryRows = d.summaryRows || []; state.embryoForms = d.embryoForms || [];
+            state.cnvImages = d.cnvImages || {}; state.embryoCount = d.embryoCount || 1;
+            document.getElementById("embryoCount").value = state.embryoCount;
+            document.getElementById("embryoCountHint").textContent = `${state.embryoCount} embryo${state.embryoCount > 1 ? "s" : ""}`;
+            renderSummaryTable(); renderEmbryoForms();
+            _setDraftStatus(`Loaded: ${file.name}`); showToast(`Draft loaded: ${file.name}`, "success"); schedulePreview();
+          } catch (err) { showToast("Load failed: " + err.message, "error"); }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
     }
     function clearForm() {
       if (!confirm("Clear all form data?")) return;
@@ -3844,6 +3904,43 @@
         btn.disabled = false;
         showToast("TRF verification failed: " + err.message, "error");
       }
+    }
+
+    // ═══════════════════════════════════════════════
+    // BULK DRAFT
+    // ═══════════════════════════════════════════════
+    function saveBulkDraft() {
+      if (!state.bulkPatients || !state.bulkPatients.length) { showToast("No bulk data to save", "info"); return; }
+      const draftData = { patients: state.bulkPatients, _type: "pgta_bulk_draft" };
+      const filename = `pgta_bulk_draft_${todayStr()}.json`;
+      const blob = new Blob([JSON.stringify(draftData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Bulk draft downloaded: ${filename}`, "success");
+    }
+
+    function loadBulkDraft() {
+      const input = document.createElement("input");
+      input.type = "file"; input.accept = ".json";
+      input.onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const d = JSON.parse(ev.target.result);
+            if (!d.patients || !Array.isArray(d.patients)) throw new Error("Not a valid bulk draft file");
+            state.bulkPatients = d.patients;
+            renderBulkPatients();
+            document.getElementById("bulkPatientSection").classList.remove("hidden");
+            const dz = document.getElementById("dropZone");
+            if (dz) dz.innerHTML = `Loaded from draft: <strong>${file.name}</strong> — ${d.patients.length} patient(s)`;
+            showToast(`Bulk draft loaded: ${file.name}`, "success");
+          } catch (err) { showToast("Load failed: " + err.message, "error"); }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
     }
 
     // ═══════════════════════════════════════════════

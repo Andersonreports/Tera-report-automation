@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+import shutil
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -51,8 +52,10 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 os.makedirs(REPORT_DIR, exist_ok=True)
 os.makedirs(PGTA_REPORT_DIR, exist_ok=True)
 
-PGTA_CNV_DIR = os.path.join(BASE_DIR, "uploads", "pgta_cnv")
+PGTA_CNV_DIR   = os.path.join(BASE_DIR, "uploads", "pgta_cnv")
+PGTA_DRAFT_DIR = os.path.join(BASE_DIR, "drafts", "PGTA")
 os.makedirs(PGTA_CNV_DIR, exist_ok=True)
+os.makedirs(PGTA_DRAFT_DIR, exist_ok=True)
 
 app.mount("/reports", StaticFiles(directory=REPORT_DIR), name="reports")
 app.mount("/reports-pgta", StaticFiles(directory=PGTA_REPORT_DIR), name="reports-pgta")
@@ -386,6 +389,53 @@ def load_draft(draft_type: str):
 
 
 # ================================================================
+# PGT-A FILE-BASED DRAFT ENDPOINTS
+# ================================================================
+
+@app.post("/pgta/draft/save")
+async def pgta_save_draft_file(request: Request):
+    """Save a single patient's draft data as a JSON file in backend/drafts/PGTA/."""
+    try:
+        body = await request.json()
+        patient = body.get("patient", {})
+        patient_name = re.sub(r'[^a-zA-Z0-9 ]', '', str(patient.get("patient_name", "draft"))).replace(" ", "_").strip() or "draft"
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"pgta_bulk_draft_{patient_name}_{ts}.json"
+        filepath = os.path.join(PGTA_DRAFT_DIR, filename)
+        import json
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump({"patients": [patient], "_type": "pgta_bulk_draft", "_savedAt": datetime.now().isoformat()}, f, indent=2)
+        return {"status": "saved", "filename": filename}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+@app.get("/pgta/draft/list")
+def pgta_list_draft_files():
+    """List all draft JSON files saved in backend/drafts/PGTA/."""
+    try:
+        files = sorted(
+            [f for f in os.listdir(PGTA_DRAFT_DIR) if f.endswith(".json")],
+            reverse=True
+        )
+        return {"files": files}
+    except Exception as e:
+        return {"files": [], "error": str(e)}
+
+@app.delete("/pgta/draft/delete/{filename}")
+def pgta_delete_draft_file(filename: str):
+    """Delete a draft file from backend/drafts/PGTA/."""
+    try:
+        safe_name = os.path.basename(filename)
+        filepath = os.path.join(PGTA_DRAFT_DIR, safe_name)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return {"status": "deleted"}
+        return {"status": "not_found"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+# ================================================================
 # PGT-A REPORT ENDPOINTS
 # ================================================================
 
@@ -508,56 +558,55 @@ async def pgta_generate_report(request: Request):
         
         base_filename = f"PGTA_{sample_num}_{patient_name}_{timestamp}_{logo_tag}"
         
-        # Determine output directory
-        target_dir = PGTA_REPORT_DIR
-        if custom_output_dir and os.path.isdir(custom_output_dir):
-            target_dir = custom_output_dir
-        elif custom_output_dir:
+        # Resolve custom output dir — must be absolute to be usable
+        extra_output_dir = None
+        if custom_output_dir:
+            cand = custom_output_dir if os.path.isabs(custom_output_dir) else os.path.join(BASE_DIR, custom_output_dir)
             try:
-                os.makedirs(custom_output_dir, exist_ok=True)
-                target_dir = custom_output_dir
-            except:
-                pass # Use default if invalid path
+                os.makedirs(cand, exist_ok=True)
+                extra_output_dir = cand
+            except Exception:
+                pass
 
         results = {}
 
-        # 1. Generate PDF
+        # 1. Generate PDF — always into PGTA_REPORT_DIR so /reports-pgta/ URL is valid
         if gen_pdf:
             file_name_pdf = f"{base_filename}.pdf"
-            filepath_pdf = os.path.join(target_dir, file_name_pdf)
+            filepath_pdf = os.path.join(PGTA_REPORT_DIR, file_name_pdf)
             tmpl = PGTAReportTemplate()
-            tmpl.generate_pdf(
-                filepath_pdf,
-                patient_info,
-                embryos,
-                show_logo=show_logo,
-                show_grid=show_grid
-            )
-            pdf_url = f"/reports-pgta/{file_name_pdf}"
+            tmpl.generate_pdf(filepath_pdf, patient_info, embryos, show_logo=show_logo, show_grid=show_grid)
+            if extra_output_dir:
+                try:
+                    shutil.copy2(filepath_pdf, os.path.join(extra_output_dir, file_name_pdf))
+                except Exception as cp_err:
+                    print(f"Copy to output dir skipped: {cp_err}")
+            local_pdf_url = f"/reports-pgta/{file_name_pdf}"
+            pdf_url = local_pdf_url
             try:
                 pdf_url = upload_pgta_file(filepath_pdf, file_name_pdf)
             except Exception as up_err:
                 print(f"Supabase PDF upload skipped: {up_err}")
-            results["pdf"] = {"file": file_name_pdf, "url": pdf_url}
+            results["pdf"] = {"file": file_name_pdf, "url": pdf_url, "local_url": local_pdf_url}
 
-        # 2. Generate DOCX
+        # 2. Generate DOCX — same pattern
         if gen_docx:
             file_name_docx = f"{base_filename}.docx"
-            filepath_docx = os.path.join(target_dir, file_name_docx)
+            filepath_docx = os.path.join(PGTA_REPORT_DIR, file_name_docx)
             docx_gen = PGTADocxGenerator(assets_dir="assets/pgta")
-            docx_gen.generate_docx(
-                filepath_docx,
-                patient_info,
-                embryos,
-                show_logo=show_logo,
-                show_grid=show_grid
-            )
-            docx_url = f"/reports-pgta/{file_name_docx}"
+            docx_gen.generate_docx(filepath_docx, patient_info, embryos, show_logo=show_logo, show_grid=show_grid)
+            if extra_output_dir:
+                try:
+                    shutil.copy2(filepath_docx, os.path.join(extra_output_dir, file_name_docx))
+                except Exception as cp_err:
+                    print(f"Copy to output dir skipped: {cp_err}")
+            local_docx_url = f"/reports-pgta/{file_name_docx}"
+            docx_url = local_docx_url
             try:
                 docx_url = upload_pgta_file(filepath_docx, file_name_docx)
             except Exception as up_err:
                 print(f"Supabase DOCX upload skipped: {up_err}")
-            results["docx"] = {"file": file_name_docx, "url": docx_url}
+            results["docx"] = {"file": file_name_docx, "url": docx_url, "local_url": local_docx_url}
 
         return {"status": "success", "results": results}
     except Exception as e:

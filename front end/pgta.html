@@ -3704,16 +3704,16 @@
         if (data.results?.docx) links += `<a class="download-link" href="${data.results.docx.url}" target="_blank" download style="background:#2b579a;"> Download DOCX</a>`;
         const savedMsg = _dirHandles["manualOutputDir"] ? `<br><small>Saved to: ${document.getElementById("manualOutputDir").value}</small>` : "";
         box.innerHTML = ` <strong>Report generated!</strong>${savedMsg}<br>${links}`;
-        // Auto-save to chosen local folder
-        const saveToDir = async (url, filename) => {
+        // Auto-save to chosen local folder using local_url (same-origin, always valid)
+        const saveToDir = async (localUrl, filename) => {
           try {
-            const resp = await fetch(url); const blob = await resp.blob();
+            const resp = await fetch(`${BASE}${localUrl}`); const blob = await resp.blob();
             await saveFileToDir("manualOutputDir", blob, filename);
           } catch(e) { console.warn("Auto-save to folder failed:", e); }
         };
         if (_dirHandles["manualOutputDir"]) {
-          if (data.results?.pdf) saveToDir(data.results.pdf.url, data.results.pdf.file);
-          if (data.results?.docx) saveToDir(data.results.docx.url, data.results.docx.file);
+          if (data.results?.pdf) saveToDir(data.results.pdf.local_url, data.results.pdf.file);
+          if (data.results?.docx) saveToDir(data.results.docx.local_url, data.results.docx.file);
         }
         showToast("Report generated!", "success");
       } catch (err) {
@@ -3911,7 +3911,7 @@
     // ═══════════════════════════════════════════════
     // BULK DRAFT
     // ═══════════════════════════════════════════════
-    function saveBulkDraft() {
+    async function saveBulkDraft() {
       if (!state.bulkPatients || !state.bulkPatients.length) { showToast("No bulk data to save", "info"); return; }
       // Save only the checked patients; if none are checked, save all
       const checkedIndices = getSelectedBulkIndices();
@@ -3919,28 +3919,36 @@
         ? checkedIndices.map(i => state.bulkPatients[i])
         : state.bulkPatients;
       const ts = Date.now();
-      const draftData = {
-        patients: JSON.parse(JSON.stringify(patientsToSave)), // deep copy to avoid reference issues
-        _type: "pgta_bulk_draft",
-        _savedAt: new Date().toISOString(),
-        _patientName: patientsToSave[0]?.patient_name || "",
-        _count: patientsToSave.length
-      };
-      // Save to localStorage with unique key
+
+      // Save each patient as a separate file in backend/drafts/PGTA/
+      let savedCount = 0, errorCount = 0;
+      for (const patient of patientsToSave) {
+        try {
+          const res = await fetch(`${BASE}/pgta/draft/save`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ patient })
+          });
+          const data = await res.json();
+          if (data.status === "saved") savedCount++;
+          else errorCount++;
+        } catch(e) { errorCount++; }
+      }
+
+      // Also save to localStorage as backup
       try {
+        const draftData = { patients: JSON.parse(JSON.stringify(patientsToSave)), _type: "pgta_bulk_draft", _savedAt: new Date().toISOString() };
         const key = `pgta_bulk_draft_${ts}`;
         localStorage.setItem(key, JSON.stringify(draftData));
         const allKeys = Object.keys(localStorage).filter(k => k.startsWith("pgta_bulk_draft_")).sort();
         while (allKeys.length > 30) { localStorage.removeItem(allKeys.shift()); }
       } catch(e) {}
-      // Download with timestamp in filename so each save is a distinct file
-      const firstName = (patientsToSave[0]?.patient_name || "bulk").replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
-      const filename = `pgta_bulk_draft_${firstName}_${todayStr()}_${ts}.json`;
-      const blob = new Blob([JSON.stringify(draftData, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
-      URL.revokeObjectURL(url);
-      showToast(`Bulk draft saved: ${patientsToSave.length} patient(s) — ${filename}`, "success");
+
+      if (errorCount === 0) {
+        showToast(`${savedCount} draft(s) saved to backend/drafts/PGTA/`, "success");
+      } else {
+        showToast(`${savedCount} saved, ${errorCount} failed`, errorCount === patientsToSave.length ? "error" : "info");
+      }
     }
 
     function loadBulkDraft() {
@@ -4438,16 +4446,19 @@
           });
           const data = await res.json(); if (data.error) throw new Error(data.error);
           // Save generated files to locally-picked output folder (via File System Access API handle)
+          // Use local_url (same-origin, always valid) for fetching instead of Supabase URL
           const folderHandle = _dirHandles["bulkOutputDir"];
           if (folderHandle) {
-            const saveLocal = async (url, filename) => {
+            const saveLocal = async (localUrl, filename) => {
               try {
-                const resp = await fetch(url); const blob = await resp.blob();
+                const resp = await fetch(`${BASE}${localUrl}`); const blob = await resp.blob();
                 await saveFileToDir("bulkOutputDir", blob, filename);
               } catch(e) { console.warn("Local save failed for", filename, e); }
             };
-            if (data.results?.pdf)  saveLocal(data.results.pdf.url,  data.results.pdf.file);
-            if (data.results?.docx) saveLocal(data.results.docx.url, data.results.docx.file);
+            const saves = [];
+            if (data.results?.pdf)  saves.push(saveLocal(data.results.pdf.local_url,  data.results.pdf.file));
+            if (data.results?.docx) saves.push(saveLocal(data.results.docx.local_url, data.results.docx.file));
+            await Promise.all(saves);
           }
           if (statusEl) { statusEl.textContent = "Done ✓"; statusEl.className = "patient-status done"; }
           done++;

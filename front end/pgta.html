@@ -2835,8 +2835,8 @@
             </div>
           </div>
 
-          <!-- Step 3+4: Three-column editor (hidden until file loaded) -->
-          <div class="hidden" id="bulkPatientSection" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+          <!-- Step 3+4: Three-column editor (always visible; populated after Excel load) -->
+          <div id="bulkPatientSection" style="flex:1;display:flex;flex-direction:column;min-height:0;">
 
             <!-- 3-column bulk layout -->
             <div class="bulk-3col">
@@ -3808,6 +3808,11 @@
         const allKeys = Object.keys(localStorage).filter(k => k.startsWith("pgta_draft_")).sort();
         while (allKeys.length > 30) { localStorage.removeItem(allKeys.shift()); }
       } catch(e) {}
+      // Also save to Supabase drafts table (fire-and-forget)
+      fetch(`${BASE}/save-draft/pgta_manual`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draftData)
+      }).catch(e => console.warn("Supabase manual draft save failed:", e));
       // Also download as a JSON backup file — timestamp makes each save unique
       const filename = `pgta_draft_${patientName}_${todayStr()}_${Date.now()}.json`;
       const blob = new Blob([JSON.stringify(draftData, null, 2)], { type: "application/json" });
@@ -3925,7 +3930,7 @@
         _patientName: patientsToSave[0]?.patient_name || "",
         _count: patientsToSave.length
       };
-      // Save to localStorage — synchronous, no server calls
+      // Save to localStorage
       try {
         const key = `pgta_bulk_draft_${ts}`;
         localStorage.setItem(key, JSON.stringify(draftData));
@@ -3934,6 +3939,11 @@
       } catch(e) {
         showToast("Storage full — cannot save draft", "error"); return;
       }
+      // Also save to Supabase drafts table (fire-and-forget)
+      fetch(`${BASE}/save-draft/pgta_bulk`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draftData)
+      }).catch(e => console.warn("Supabase bulk draft save failed:", e));
       showToast(`Draft saved: ${patientsToSave.length} patient(s)`, "success");
     }
 
@@ -4451,6 +4461,17 @@
             if (data.results?.docx) saves.push(saveLocal(data.results.docx.local_url, data.results.docx.file));
             await Promise.all(saves);
           }
+          // Save generated report metadata to localStorage
+          try {
+            const rKey = `pgta_generated_${Date.now()}_${n}`;
+            localStorage.setItem(rKey, JSON.stringify({
+              patient_name: p.patient_name, sample_number: p.sample_number,
+              pdf_url: data.results?.pdf?.url || null, docx_url: data.results?.docx?.url || null,
+              generated_at: new Date().toISOString()
+            }));
+            const gKeys = Object.keys(localStorage).filter(k => k.startsWith("pgta_generated_")).sort();
+            while (gKeys.length > 100) localStorage.removeItem(gKeys.shift());
+          } catch(e) {}
           if (statusEl) { statusEl.textContent = "Done ✓"; statusEl.className = "patient-status done"; }
           done++;
         } catch (err) {

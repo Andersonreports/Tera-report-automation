@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Request
+from fastapi import FastAPI, UploadFile, File, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
@@ -534,8 +534,16 @@ async def pgta_verify_trf(file: UploadFile = File(...)):
         return {"error": str(e)}
 
 
+def _upload_in_background(filepath: str, filename: str):
+    """Upload a file to Supabase storage in a background task (non-blocking)."""
+    try:
+        if upload_pgta_file:
+            upload_pgta_file(filepath, filename)
+    except Exception as e:
+        print(f"Background Supabase upload failed for {filename}: {e}")
+
 @app.post("/pgta/generate")
-async def pgta_generate_report(request: Request):
+async def pgta_generate_report(request: Request, background_tasks: BackgroundTasks):
     """Generate final PGT-A reports (PDF/DOCX) and handle output preferences."""
     try:
         data = await request.json()
@@ -582,12 +590,10 @@ async def pgta_generate_report(request: Request):
                 except Exception as cp_err:
                     print(f"Copy to output dir skipped: {cp_err}")
             local_pdf_url = f"/reports-pgta/{file_name_pdf}"
-            pdf_url = local_pdf_url
-            try:
-                pdf_url = upload_pgta_file(filepath_pdf, file_name_pdf)
-            except Exception as up_err:
-                print(f"Supabase PDF upload skipped: {up_err}")
-            results["pdf"] = {"file": file_name_pdf, "url": pdf_url, "local_url": local_pdf_url}
+            # Upload to Supabase in background — response returns immediately with local URL
+            if upload_pgta_file:
+                background_tasks.add_task(_upload_in_background, filepath_pdf, file_name_pdf)
+            results["pdf"] = {"file": file_name_pdf, "url": local_pdf_url, "local_url": local_pdf_url}
 
         # 2. Generate DOCX — same pattern
         if gen_docx:
@@ -601,12 +607,9 @@ async def pgta_generate_report(request: Request):
                 except Exception as cp_err:
                     print(f"Copy to output dir skipped: {cp_err}")
             local_docx_url = f"/reports-pgta/{file_name_docx}"
-            docx_url = local_docx_url
-            try:
-                docx_url = upload_pgta_file(filepath_docx, file_name_docx)
-            except Exception as up_err:
-                print(f"Supabase DOCX upload skipped: {up_err}")
-            results["docx"] = {"file": file_name_docx, "url": docx_url, "local_url": local_docx_url}
+            if upload_pgta_file:
+                background_tasks.add_task(_upload_in_background, filepath_docx, file_name_docx)
+            results["docx"] = {"file": file_name_docx, "url": local_docx_url, "local_url": local_docx_url}
 
         return {"status": "success", "results": results}
     except Exception as e:

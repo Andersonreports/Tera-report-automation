@@ -618,12 +618,31 @@ async def pgta_generate_report(request: Request, background_tasks: BackgroundTas
         gen_pdf = "pdf" in formats
         gen_docx = "docx" in formats
 
-        sample_num = re.sub(r'[^a-zA-Z0-9]', '', str(patient_info.get("sample_number", "report")))
-        patient_name = re.sub(r'[^a-zA-Z0-9 ]', '', str(patient_info.get("patient_name", "Unknown"))).replace(" ", "_").strip()
+        def _name_parts(raw):
+            """Return cleaned list of name words, stripped of special chars."""
+            cleaned = re.sub(r'[^a-zA-Z0-9 ]', '', str(raw or '')).strip()
+            return [p for p in cleaned.split() if p]
+
+        p_parts = _name_parts(patient_info.get("patient_name", ""))
+        s_parts = _name_parts(patient_info.get("spouse_name", ""))
+
+        p_first     = p_parts[0].upper() if p_parts else "UNKNOWN"
+        p_last_init = p_parts[-1][0].upper() if len(p_parts) > 1 else (p_parts[0][0].upper() if p_parts else "X")
+
+        # Spouse may be "w/o" or blank — omit initials if meaningless
+        s_raw = str(patient_info.get("spouse_name", "") or "").strip().upper()
+        include_spouse = s_parts and s_raw not in ("WO", "W/O", "NA", "N/A", "")
+        if include_spouse:
+            s_first     = s_parts[0].upper()
+            s_last_init = s_parts[-1][0].upper() if len(s_parts) > 1 else s_parts[0][0].upper()
+            name_segment = f"{p_first}_{s_first}_{p_last_init}_{s_last_init}"
+        else:
+            name_segment = f"{p_first}_{p_last_init}"
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         logo_tag = "withlogo" if show_logo else "withoutlogo"
-        
-        base_filename = f"PGTA_{sample_num}_{patient_name}_{timestamp}_{logo_tag}"
+
+        base_filename = f"PGTA_{name_segment}_{timestamp}_{logo_tag}"
         
         # Resolve custom output dir — must be absolute to be usable
         extra_output_dir = None

@@ -1910,6 +1910,104 @@
       font-style: italic;
     }
 
+    /* ── Compare: Individual File Upload ── */
+    .cmp-upload-row {
+      display: flex;
+      gap: 16px;
+      align-items: stretch;
+      margin-bottom: 4px;
+    }
+    .cmp-upload-box {
+      flex: 1;
+      background: #f8fafc;
+      border: 2px dashed var(--panel-border);
+      border-radius: 10px;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    .cmp-upload-box.has-file {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+    .cmp-upload-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    .btn-upload-cmp {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.2s;
+    }
+    .btn-upload-cmp:hover { opacity: 0.85; }
+    .cmp-fname {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #065f46;
+      font-weight: 600;
+      word-break: break-all;
+      max-width: 100%;
+    }
+    .cmp-vs-badge {
+      align-self: center;
+      flex-shrink: 0;
+      background: var(--primary);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* difflib HTML diff table */
+    .diff-wrapper {
+      overflow-x: auto;
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      font-size: 11px;
+      background: #fff;
+    }
+    .diff-wrapper table.diff {
+      border-collapse: collapse;
+      width: 100%;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+    }
+    .diff-wrapper table.diff td { padding: 2px 6px; vertical-align: top; white-space: pre-wrap; word-break: break-all; }
+    .diff-wrapper .diff_header { background: #e8edf2; color: #374151; text-align: right; }
+    .diff-wrapper .diff_next { display: none; }
+    .diff-wrapper .diff_add { background: #d1fae5; }
+    .diff-wrapper .diff_chg { background: #fef9c3; }
+    .diff-wrapper .diff_sub { background: #fee2e2; }
+    .cmp-summary-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .cmp-summary-badge.match { background: #ecfdf5; color: #065f46; }
+    .cmp-summary-badge.diff  { background: #fef2f2; color: #991b1b; }
+
     /* ── User Guide Styles ── */
     .guide-wrap {
       padding: 20px;
@@ -2945,36 +3043,76 @@
         <div id="tab-compare" class="tab-content" style="padding:20px;">
           <div class="compare-mode-row">
             <span class="radio-h">Select Comparison Mode</span>
-            <label class="radio-item"><input type="radio" name="cmpMode" value="bulk" checked> Directory Mode
-              (Bulk)</label>
-            <label class="radio-item"><input type="radio" name="cmpMode" value="individual"> Individual File
-              Mode</label>
+            <label class="radio-item"><input type="radio" name="cmpMode" value="bulk" checked onchange="toggleCmpMode()"> Directory Mode (Bulk)</label>
+            <label class="radio-item"><input type="radio" name="cmpMode" value="individual" onchange="toggleCmpMode()"> Individual File Mode</label>
           </div>
 
-          <div class="dir-select-group">
-            <h4>1. Select Report Directories</h4>
-            <div class="dir-row">
-              <label>Manual:</label>
-              <input type="text" id="manualDirDisplay" placeholder="No directory selected" readonly>
-              <button class="btn-dir" onclick="selectDir('manual')">Select Manual Folder</button>
+          <!-- ── Bulk / Directory Mode ── -->
+          <div id="bulkModeSection">
+            <div class="dir-select-group">
+              <h4>1. Select Report Directories</h4>
+              <div class="dir-row">
+                <label>Manual:</label>
+                <input type="text" id="manualDirDisplay" placeholder="No directory selected" readonly>
+                <button class="btn-dir" onclick="selectDir('manual')">Select Manual Folder</button>
+              </div>
+              <div class="dir-row">
+                <label>Auto:</label>
+                <input type="text" id="autoDirDisplay" placeholder="No directory selected" readonly>
+                <button class="btn-dir" onclick="selectDir('auto')">Select Automated Folder</button>
+              </div>
             </div>
-            <div class="dir-row">
-              <label>Auto:</label>
-              <input type="text" id="autoDirDisplay" placeholder="No directory selected" readonly>
-              <button class="btn-dir" onclick="selectDir('auto')">Select Automated Folder</button>
+            <div class="cmp-actions">
+              <button class="btn-run-cmp" onclick="runBulkComparison()"><i class="fas fa-play"></i> Run Comparison</button>
+              <button class="btn-view-dash" onclick="viewDashboard()"><i class="fas fa-chart-bar"></i> View HTML Dashboard</button>
+            </div>
+            <h4 style="font-size:12px;margin-bottom:8px;color:var(--text-muted);">2. Comparison Results</h4>
+            <div class="cmp-results-area" id="cmpResultsArea">
+              <div class="cmp-placeholder">Results will appear here after running comparison...</div>
             </div>
           </div>
 
-          <div class="cmp-actions">
-            <button class="btn-run-cmp" onclick="runBulkComparison()"> Run
-              Comparison</button>
-            <button class="btn-view-dash" onclick="viewDashboard()"> View HTML
-              Dashboard</button>
-          </div>
+          <!-- ── Individual File Mode ── -->
+          <div id="individualModeSection" style="display:none;">
+            <div class="cmp-upload-row">
+              <!-- Manual file -->
+              <div class="cmp-upload-box" id="cmpDropManual">
+                <input type="file" id="cmpFileManual" accept=".pdf,.docx" style="display:none" onchange="cmpFileSelected('manual',this)">
+                <i class="fas fa-file-alt" style="font-size:32px;color:var(--primary);margin-bottom:10px;"></i>
+                <div class="cmp-upload-label">Manual Report</div>
+                <button class="btn-upload-cmp" onclick="document.getElementById('cmpFileManual').click()">
+                  <i class="fas fa-upload"></i> Choose File
+                </button>
+                <div id="cmpManualName" class="cmp-fname" style="display:none;"></div>
+              </div>
 
-          <h4 style="font-size:12px;margin-bottom:8px;color:var(--text-muted);">2. Comparison Results</h4>
-          <div class="cmp-results-area" id="cmpResultsArea">
-            <div class="cmp-placeholder">Results will appear here after running comparison...</div>
+              <div class="cmp-vs-badge">VS</div>
+
+              <!-- Automated file -->
+              <div class="cmp-upload-box" id="cmpDropAuto">
+                <input type="file" id="cmpFileAuto" accept=".pdf,.docx" style="display:none" onchange="cmpFileSelected('auto',this)">
+                <i class="fas fa-cogs" style="font-size:32px;color:var(--primary);margin-bottom:10px;"></i>
+                <div class="cmp-upload-label">Automated Report</div>
+                <button class="btn-upload-cmp" onclick="document.getElementById('cmpFileAuto').click()">
+                  <i class="fas fa-upload"></i> Choose File
+                </button>
+                <div id="cmpAutoName" class="cmp-fname" style="display:none;"></div>
+              </div>
+            </div>
+
+            <div class="cmp-actions" style="margin-top:16px;flex-wrap:wrap;">
+              <button id="cmpBtn" class="btn-run-cmp" onclick="runComparison()" disabled>
+                <i class="fas fa-balance-scale"></i> Compare Reports
+              </button>
+              <button class="btn-dir" onclick="clearComparison()" style="background:#f1f5f9;">
+                <i class="fas fa-times"></i> Clear
+              </button>
+              <button id="cmpDownloadBtn" class="btn-view-dash" onclick="downloadComparison()" style="display:none;">
+                <i class="fas fa-download"></i> Download HTML
+              </button>
+            </div>
+
+            <div id="cmpResults" style="margin-top:16px;"></div>
           </div>
         </div><!-- /tab-compare -->
 
@@ -4532,6 +4670,13 @@
     // REPORT COMPARISON
     // ═══════════════════════════════════════════════
     let cmpFiles = { manual: null, auto: null };
+    let _lastCmpData = null; // stored for HTML download
+
+    function toggleCmpMode() {
+      const mode = document.querySelector('input[name="cmpMode"]:checked').value;
+      document.getElementById("bulkModeSection").style.display       = mode === "bulk"       ? "" : "none";
+      document.getElementById("individualModeSection").style.display = mode === "individual" ? "" : "none";
+    }
 
     function cmpFileSelected(type, input) {
       const file = input.files[0]; if (!file) return;
@@ -4540,10 +4685,17 @@
       const dropEl = document.getElementById(type === "manual" ? "cmpDropManual" : "cmpDropAuto");
       nameEl.style.display = "block"; nameEl.textContent = file.name;
       dropEl.classList.add("has-file");
+      // Enable compare button when both files loaded; auto-run comparison
+      const btn = document.getElementById("cmpBtn");
+      if (cmpFiles.manual && cmpFiles.auto) {
+        if (btn) btn.disabled = false;
+        runComparison();
+      }
     }
 
     function clearComparison() {
       cmpFiles = { manual: null, auto: null };
+      _lastCmpData = null;
       ["cmpManualName", "cmpAutoName"].forEach(id => {
         const el = document.getElementById(id); if (el) { el.style.display = "none"; el.textContent = ""; }
       });
@@ -4553,14 +4705,22 @@
       document.getElementById("cmpFileManual").value = "";
       document.getElementById("cmpFileAuto").value = "";
       document.getElementById("cmpResults").innerHTML = "";
+      const btn = document.getElementById("cmpBtn");
+      if (btn) btn.disabled = true;
+      const dlBtn = document.getElementById("cmpDownloadBtn");
+      if (dlBtn) dlBtn.style.display = "none";
     }
 
     async function runComparison() {
-      if (!cmpFiles.manual || !cmpFiles.auto) { showToast("Please select both PDF files", "info"); return; }
+      if (!cmpFiles.manual || !cmpFiles.auto) { showToast("Please select both files", "info"); return; }
       const btn = document.getElementById("cmpBtn");
       btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Comparing...`;
       const resultEl = document.getElementById("cmpResults");
-      resultEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);"><p style="margin-top:8px;">Extracting and comparing report data...</p></div>`;
+      resultEl.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted);">
+        <span class="spinner" style="border-color:#1F497D;border-top-color:#4F81BD;width:20px;height:20px;display:inline-block;margin-bottom:8px;"></span>
+        <p style="margin-top:8px;font-size:12px;">Extracting and comparing report data...</p></div>`;
+      const dlBtn = document.getElementById("cmpDownloadBtn");
+      if (dlBtn) dlBtn.style.display = "none";
       try {
         const fd = new FormData();
         fd.append("manual", cmpFiles.manual);
@@ -4568,48 +4728,97 @@
         const res = await fetch(`${BASE}/pgta/compare`, { method: "POST", body: fd });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
+        _lastCmpData = data;
         renderComparisonResult(data);
+        if (dlBtn) dlBtn.style.display = "";
       } catch (err) {
-        resultEl.innerHTML = `<div class="result-box error" style="display:block;"> Comparison error: ${err.message}</div>`;
+        resultEl.innerHTML = `<div class="result-box error" style="display:block;"><i class="fas fa-exclamation-circle"></i> Comparison error: ${esc(err.message)}</div>`;
       } finally {
-        btn.disabled = false; btn.innerHTML = ` Compare Reports`;
+        btn.disabled = false; btn.innerHTML = `<i class="fas fa-balance-scale"></i> Compare Reports`;
       }
     }
 
     function renderComparisonResult(data) {
       const el = document.getElementById("cmpResults");
-      const isMatch = !data.discrepancies || data.discrepancies.length === 0;
+      const isMatch = data.match || data.total_changes === 0;
       const badge = isMatch
-        ? `<span style="background:#ecfdf5;color:#065f46;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;">Match</span>`
-        : `<span style="background:#fef2f2;color:#991b1b;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;">${data.discrepancies.length} Issue${data.discrepancies.length > 1 ? "s" : ""}</span>`;
+        ? `<span class="cmp-summary-badge match"><i class="fas fa-check-circle"></i> Reports Match</span>`
+        : `<span class="cmp-summary-badge diff"><i class="fas fa-exclamation-triangle"></i> ${data.total_changes} Difference${data.total_changes !== 1 ? "s" : ""} Found</span>`;
 
-      let html = `<div class="compare-result-card">
-    <div class="compare-result-header">
-      <strong>${data.patient || "Unknown Patient"}</strong>
-      ${badge}
-    </div>
-    <div style="padding:12px 14px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-        <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;padding:10px;">
-          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Manual Report</div>
-          <div style="font-size:11px;word-break:break-all;">${data.manual_file || "-"}</div>
-        </div>
-        <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;padding:10px;">
-          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Automated Report</div>
-          <div style="font-size:11px;word-break:break-all;">${data.auto_file || "-"}</div>
-        </div>
-      </div>`;
+      const filesRow = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+          <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;padding:10px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Manual Report</div>
+            <div style="font-size:11px;word-break:break-all;">${esc(data.manual_file || "-")}</div>
+          </div>
+          <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;padding:10px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Automated Report</div>
+            <div style="font-size:11px;word-break:break-all;">${esc(data.auto_file || "-")}</div>
+          </div>
+        </div>`;
 
-      if (isMatch) {
-        html += `<div class="compare-match"> All extracted fields match perfectly between both reports.</div>`;
-      } else {
-        html += `<div style="font-size:11px;font-weight:700;color:#991b1b;margin-bottom:6px;">Discrepancies found:</div>`;
-        data.discrepancies.forEach(d => {
-          html += `<div class="compare-discrepancy">${d}</div>`;
-        });
-      }
-      html += `</div></div>`;
-      el.innerHTML = html;
+      const diffBlock = data.html_diff
+        ? `<div class="diff-wrapper">${data.html_diff}</div>`
+        : `<div class="compare-match"><i class="fas fa-check-circle"></i> All content matches — no differences found.</div>`;
+
+      el.innerHTML = `
+        <div class="compare-result-card">
+          <div class="compare-result-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <strong style="font-size:13px;">Comparison Result</strong>${badge}
+          </div>
+          <div style="padding:12px 14px;">${filesRow}${diffBlock}</div>
+        </div>`;
+    }
+
+    function downloadComparison() {
+      if (!_lastCmpData) { showToast("No comparison to download", "info"); return; }
+      const d = _lastCmpData;
+      const timestamp = new Date().toLocaleString();
+      const statusText = d.match ? "MATCH" : `${d.total_changes} DIFFERENCE(S)`;
+      const html = `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<title>PGTA Report Comparison — ${esc(d.manual_file)} vs ${esc(d.auto_file)}</title>
+<style>
+  body { font-family: Segoe UI, Arial, sans-serif; margin: 0; padding: 20px; background: #f8fafc; color: #1e293b; }
+  h1 { font-size: 18px; color: #1F497D; margin-bottom: 4px; }
+  .meta { font-size: 12px; color: #64748b; margin-bottom: 20px; }
+  .badge-match { background:#ecfdf5;color:#065f46;padding:4px 14px;border-radius:99px;font-weight:700;font-size:12px; }
+  .badge-diff  { background:#fef2f2;color:#991b1b;padding:4px 14px;border-radius:99px;font-weight:700;font-size:12px; }
+  table.diff { border-collapse: collapse; width: 100%; font-family: 'Courier New', monospace; font-size: 11px; }
+  table.diff td { padding: 3px 8px; vertical-align: top; white-space: pre-wrap; word-break: break-all; }
+  .diff_header { background: #e8edf2; text-align: right; }
+  .diff_next { display: none; }
+  .diff_add { background: #d1fae5; }
+  .diff_chg { background: #fef9c3; }
+  .diff_sub { background: #fee2e2; }
+  .legend { display:flex; gap:16px; margin-bottom:14px; font-size:12px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .swatch { width:14px; height:14px; border-radius:3px; display:inline-block; }
+</style>
+</head><body>
+<h1>PGTA Report Comparison</h1>
+<div class="meta">
+  <strong>Manual:</strong> ${esc(d.manual_file)} &nbsp;|&nbsp;
+  <strong>Automated:</strong> ${esc(d.auto_file)} &nbsp;|&nbsp;
+  <strong>Generated:</strong> ${timestamp}
+</div>
+<p><span class="${d.match ? 'badge-match' : 'badge-diff'}">${statusText}</span></p>
+<div class="legend">
+  <span><span class="swatch" style="background:#d1fae5;"></span> Added in Automated</span>
+  <span><span class="swatch" style="background:#fee2e2;"></span> Removed from Manual</span>
+  <span><span class="swatch" style="background:#fef9c3;"></span> Changed</span>
+</div>
+${d.html_diff || "<p>No differences found.</p>"}
+</body></html>`;
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pgta_comparison_${Date.now()}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Comparison exported as HTML", "success");
     }
   </script>
 

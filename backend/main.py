@@ -436,6 +436,65 @@ def pgta_delete_draft_file(filename: str):
 
 
 # ================================================================
+# PGT-A REPORT COMPARISON ENDPOINT
+# ================================================================
+
+@app.post("/pgta/compare")
+async def pgta_compare_reports(manual: UploadFile = File(...), automated: UploadFile = File(...)):
+    """Compare two PGTA report files (PDF or DOCX) and return an HTML diff."""
+    import difflib
+
+    def extract_lines(file_bytes: bytes, filename: str):
+        fname = filename.lower()
+        if fname.endswith(".pdf"):
+            try:
+                lines = []
+                with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+                    for page in pdf.pages:
+                        text = page.extract_text()
+                        if text:
+                            lines.extend(text.splitlines())
+                return [l.strip() for l in lines if l.strip()]
+            except Exception as e:
+                return [f"[PDF extraction error: {e}]"]
+        elif fname.endswith(".docx"):
+            try:
+                from docx import Document
+                doc = Document(io.BytesIO(file_bytes))
+                return [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+            except Exception as e:
+                return [f"[DOCX extraction error: {e}]"]
+        return ["[Unsupported file format — please use PDF or DOCX]"]
+
+    manual_bytes  = await manual.read()
+    auto_bytes    = await automated.read()
+
+    manual_lines  = extract_lines(manual_bytes,  manual.filename)
+    auto_lines    = extract_lines(auto_bytes,     automated.filename)
+
+    # Build an HTML diff table via the stdlib
+    d = difflib.HtmlDiff(wrapcolumn=80)
+    html_table = d.make_table(
+        manual_lines, auto_lines,
+        fromdesc=f"Manual — {manual.filename}",
+        todesc=f"Automated — {automated.filename}",
+        context=True, numlines=3
+    )
+
+    # Count change blocks
+    matcher = difflib.SequenceMatcher(None, manual_lines, auto_lines)
+    changes = [(tag, i1, i2, j1, j2) for tag, i1, i2, j1, j2 in matcher.get_opcodes() if tag != "equal"]
+
+    return {
+        "manual_file":  manual.filename,
+        "auto_file":    automated.filename,
+        "html_diff":    html_table,
+        "total_changes": len(changes),
+        "match":        len(changes) == 0,
+    }
+
+
+# ================================================================
 # PGT-A REPORT ENDPOINTS
 # ================================================================
 

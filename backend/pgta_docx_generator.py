@@ -6,6 +6,7 @@ Generates Word documents matching the PDF template with 1:1 precision.
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+import pgta_classify as clf
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
@@ -194,9 +195,9 @@ class PGTADocxGenerator:
         # 3. Headers/Footers
         self._setup_page_header_footer(doc, show_logo=show_logo)
         
-        # 4. Methodology Page
+        # 4. Methodology Page (pass embryos so PGDIS note is conditional)
         doc.add_page_break()
-        self._add_methodology_page(doc)
+        self._add_methodology_page(doc, embryos_data)
         
         # 5. Embryo Result Pages
         for idx, embryo in enumerate(embryos_data):
@@ -261,11 +262,15 @@ class PGTADocxGenerator:
         
         doc.add_paragraph() # Spacer
         
-        # PNDT Disclaimer
+        # PNDT Disclaimer — bold + italic (PNDT Act 1994)
         disclaimer = doc.add_paragraph()
         disclaimer.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        self._set_paragraph_font(disclaimer, font_name="Calibri", font_size=9.5, italic=True)
-        disclaimer.add_run("This test does not reveal sex of the fetus & confers to PNDT act, 1994")
+        run_d = disclaimer.add_run(
+            "This test does not reveal sex of the fetus & confers to PNDT act, 1994"
+        )
+        run_d.bold   = True
+        run_d.italic = True
+        run_d.font.size = Pt(9.5)
         
         doc.add_paragraph() # Spacer
         
@@ -303,25 +308,30 @@ class PGTADocxGenerator:
             row = res_table.rows[i]
             row.cells[0].text = str(i)
             row.cells[1].text = self._clean(emb.get('embryo_id'))
-            
-            res_sum = self._clean(emb.get('result_summary'))
-            interp = self._clean(emb.get('interpretation'))
-            mt = self._clean(emb.get('mtcopy'), 'NA')
-            if interp.upper() != "EUPLOID": mt = "NA"
-            
-            row.cells[2].text = res_sum
+
+            raw = self._clean(emb.get('result_summary') or emb.get('result_description') or '')
+            info = clf.classify_embryo(raw)
+
+            # Result → mapped display text; Interpretation → always "NA"
+            res_display   = info["summary_text"]
+            interp_display= "NA"
+            cell_color    = info["is_abnormal"] and "#FF0000" or "#000000"
+
+            # MTcopy: "NA" unless explicitly provided
+            raw_mt = self._clean(emb.get('mtcopy', ''))
+            mt = raw_mt if raw_mt and raw_mt.upper() not in ('NA', 'N/A', '') else "NA"
+
+            row.cells[2].text = res_display
             row.cells[3].text = mt
-            row.cells[4].text = interp
-            
-            interp_color = self._get_result_color_hex(res_sum, interp)
-            
+            row.cells[4].text = interp_display
+
             for c_idx, cell in enumerate(row.cells):
                 self._set_cell_background(cell, "F1F1F7")
                 cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                 p = cell.paragraphs[0]
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                # Color only Interpretation and Result according to logic
-                color = interp_color if c_idx == 4 else None
+                # Color Result and Interpretation columns
+                color = cell_color if c_idx in (2, 4) else None
                 self._set_paragraph_font(p, font_size=9, color=color)
         
         # Results Summary Comment (optional, appears below table)
@@ -394,13 +404,18 @@ class PGTADocxGenerator:
                     cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
                     cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-    def _add_methodology_page(self, doc):
+    def _add_methodology_page(self, doc, embryos_data=None):
         """Methods, Limitations, and References with natural flow but orphan protection"""
-        # Content sections
+        # PGDIS 2019 counselling note only when a mosaic embryo exists
+        mosaicism_clinical_item = (None, self.MOSAICISM_CLINICAL, None) if clf.any_mosaic(embryos_data or []) else None
+
         sections = [
             ("Methodology", self.METHODOLOGY_TEXT, None),
             ("Conditions for reporting mosaicism", self.MOSAICISM_TEXT, self.MOSAICISM_BULLETS),
-            (None, self.MOSAICISM_CLINICAL, None),
+        ]
+        if mosaicism_clinical_item:
+            sections.append(mosaicism_clinical_item)
+        sections += [
             ("Limitations", None, self.LIMITATIONS),
             ("References", None, [f"{i}. {r}" for i, r in enumerate(self.REFERENCES, 1)])
         ]
@@ -447,7 +462,19 @@ class PGTADocxGenerator:
         self._populate_patient_table(banner, patient_data, is_embryo=True)
 
         doc.add_paragraph()
-        
+
+        # PNDT disclaimer on every embryo page — bold + italic (PNDT Act 1994)
+        p_pndt = doc.add_paragraph()
+        p_pndt.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run_pndt = p_pndt.add_run(
+            "This test does not reveal sex of the fetus & confers to PNDT act, 1994"
+        )
+        run_pndt.bold   = True
+        run_pndt.italic = True
+        run_pndt.font.size = Pt(9.5)
+
+        doc.add_paragraph()
+
         # 2. Embryo ID - Use embryo_id_detail for detail pages, fallback to embryo_id
         eid = self._clean(embryo_data.get('embryo_id_detail')) or self._clean(embryo_data.get('embryo_id'))
         p_eid = doc.add_paragraph()
@@ -455,20 +482,39 @@ class PGTADocxGenerator:
         p_eid.add_run(f"EMBRYO: {eid}")
         
         # 3. Summary [Total: 490pt]
-        res = self._clean(embryo_data.get('result_summary'))
-        interp = self._clean(embryo_data.get('interpretation'))
-        auto = self._clean(embryo_data.get('autosomes'))
-        sex = self._clean(embryo_data.get('sex_chromosomes'))
-        mt = self._clean(embryo_data.get('mtcopy'), 'NA')
-        if interp.upper() != "EUPLOID": mt = "NA"
-        
-        interp_color = self._get_result_color_hex(res, interp)
+        raw_result = self._clean(embryo_data.get('result_summary') or embryo_data.get('result_description') or '')
+        info = clf.classify_embryo(raw_result)
+
+        # Result: mapped full sentence
+        res = info["result_text"]
+
+        # Autosomes: "Normal" if euploid, else auto-derive
+        existing_auto = self._clean(embryo_data.get('autosomes', ''))
+        chr_statuses = embryo_data.get('chromosome_statuses') or {}
+        if not chr_statuses:
+            chr_statuses = clf.derive_chromosome_statuses(raw_result)
+            chr_statuses = clf.validate_statuses(chr_statuses, raw_result)
+        auto = clf.derive_autosomes(raw_result, chr_statuses, existing_auto)
+
+        # Sex chromosomes: sanitise, never XX/XY
+        existing_sex = self._clean(embryo_data.get('sex_chromosomes', ''))
+        sex = clf.sanitize_sex_chromosomes(existing_sex, raw_result, info["classification"])
+
+        # Interpretation: always "NA"
+        interp = "NA"
+
+        # MTcopy: "NA" unless explicitly provided
+        raw_mt = self._clean(embryo_data.get('mtcopy', ''))
+        mt = raw_mt if raw_mt and raw_mt.upper() not in ('NA', 'N/A', '') else "NA"
+
+        cell_color   = "#FF0000" if info["is_abnormal"] else "#000000"
+        sex_color    = cell_color if sex.upper() not in ('NORMAL', '') else "#000000"
         details = [
             ("Result:", res, "#000000"),
-            ("Autosomes:", auto, self._get_status_color_docx(auto)),
-            ("Sex Chromosomes:", sex, "#0000FF" if "MOSAIC" in sex.upper() else ("#FF0000" if "ABNORMAL" in sex.upper() else "#000000")),
-            ("Interpretation:", interp, interp_color),
-            ("MTcopy:", mt, "#000000")
+            ("Autosomes:", auto, cell_color),
+            ("Sex Chromosomes:", sex, sex_color),
+            ("Interpretation:", interp, cell_color),
+            ("MTcopy:", mt, "#000000"),
         ]
         
         d_table = doc.add_table(rows=len(details), cols=1)
@@ -509,7 +555,10 @@ class PGTADocxGenerator:
                 self._set_paragraph_font(comment_p, font_size=11)
         
         if not is_inconclusive:
-            chr_statuses = embryo_data.get('chromosome_statuses', {})
+            chr_statuses = embryo_data.get('chromosome_statuses') or {}
+            if not chr_statuses:
+                chr_statuses = clf.derive_chromosome_statuses(raw_result)
+                chr_statuses = clf.validate_statuses(chr_statuses, raw_result)
             mosaic_map = embryo_data.get('mosaic_percentages', {})
             
             autosomes = str(embryo_data.get('autosomes', '')).upper()
@@ -586,65 +635,28 @@ class PGTADocxGenerator:
             p2 = cell.add_paragraph(title); p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
             self._set_paragraph_font(p2, font_size=11)
 
-    def _get_result_color_hex(self, res, interp):
-        """Standard Results Color Map - Euploid=black, Aneuploid=red, Mosaic=blue"""
-        i = str(interp).upper()
-        # Euploid = Black (check first for explicit euploid)
-        if "EUPLOID" in i and "ANEUPLOID" not in i:
-            return "#000000"
-        if any(k in i for k in ["ANEUPLOID", "ABNORMAL"]): return "#FF0000"
-        if any(k in i for k in ["MOSAIC", "MOSAICISM"]): return "#0000FF"
-        return "#000000"
+    def _get_result_color_hex(self, res, interp=None):
+        """Return red if embryo is abnormal/mosaic, black if normal."""
+        combined = " ".join(filter(None, [str(res or ""), str(interp or "")]))
+        return "#FF0000" if clf.classify_embryo(combined)["is_abnormal"] else "#000000"
 
     def _get_status_color_docx(self, status):
-        """CNV Status Color Map for Autosomes
-        Blue (mosaic) = Has % sign (e.g., +15(~30%), -20(~51%), dup(9)...(~32%))
-        Red (non-mosaic) = del/dup/-/+ without %, or CNV status L/G/SL/SG
-        Black = Normal/Euploid
-        """
-        s = str(status).upper()
-        original = str(status)
-        
-        # Check for Normal/Euploid first
-        if 'NORMAL' in s or 'EUPLOID' in s or not original.strip():
+        """CNV status table color: red for L/G/SL/SG, orange for mosaic, grey for NR, black for N."""
+        s = str(status).upper().strip()
+        if not s or s == 'N':
             return "#000000"
-        
-        # Mosaic = has % sign
-        if '%' in original:
-            return "#0000FF"
-        
-        # Non-mosaic abnormalities (no % sign)
-        if any(x in s for x in ['DEL(', 'DUP(', 'STATUS L', 'STATUS G', 'STATUS SL', 'STATUS SG', ' SL', ' SG', ' L,', ' G,', ' L ', ' G ']):
+        if s in ('NR', 'FAILED', 'NO RESULT'):
+            return "#808080"
+        if s in ('ML', 'MG', 'SML', 'SMG', 'M', 'SML/SMG', 'SMG/SML'):
+            return "#FF8C00"
+        if s in ('L', 'G', 'SL', 'SG', 'SL/SG', 'SG/SL'):
             return "#FF0000"
-        if s.endswith(' L') or s.endswith(' G'):
-            return "#FF0000"
-        # Check for +/- patterns (e.g., -16, +7, -22)
-        import re
-        if re.search(r'^[+-]\d+', original) or re.search(r',[+-]?\d+$', original):
-            return "#FF0000"
-        if 'CNV STATUS' in s:
-            return "#FF0000"
-        
-        # Check for simple abbreviations at word boundaries
-        words = s.split()
-        for word in words:
-            if word in ['MULTIPLE', 'CHROMOSOMAL', 'ABNORMALITIES']: # Handled elsewhere usually but catching edge cases
-                if "MULTIPLE CHROMOSOMAL ABNORMALITIES" in s:
-                    return "#FF0000"
-            for abbrev in ['L', 'G', 'SL', 'SG', 'SL/SG', 'SG/SL']:
-                # Need to be careful with exact matches or substrings like SL/SG
-                if abbrev in s.split() or abbrev in s.split(','):
-                    return "#FF0000"
-            for abbrev in ['MG', 'ML', 'SMG', 'SML', 'M', 'SML/SMG', 'SMG/SML']:
-                if abbrev in s.split() or abbrev in s.split(','):
-                    return "#0000FF"
-                    
-        # Explicit checks for the new combinations
-        if any(x in s for x in ["SL/SG", "SG/SL", "MULTIPLE CHROMOSOMAL ABNORMALITIES"]):
-            return "#FF0000"
-        if any(x in s for x in ["SML/SMG", "SMG/SML"]):
-            return "#0000FF"
-            
+        # Numeric mosaic percentage
+        try:
+            if float(s.replace('%', '')) > 0:
+                return "#FF8C00"
+        except Exception:
+            pass
         return "#000000"
 
     def _apply_grid_to_table(self, table):

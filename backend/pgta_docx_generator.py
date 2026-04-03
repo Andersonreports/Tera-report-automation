@@ -198,15 +198,31 @@ class PGTADocxGenerator:
         # 4. Methodology Page (pass embryos so PGDIS note is conditional)
         doc.add_page_break()
         self._add_methodology_page(doc, embryos_data)
-        
-        # 5. Embryo Result Pages
-        for idx, embryo in enumerate(embryos_data):
-            self._add_embryo_page(doc, patient_data, embryo)
-            if idx < len(embryos_data) - 1:
-                # Page break within _add_embryo_page handles start of new page
-                pass
-        
-        # 6. Save
+
+        # 5. Check if ALL embryos are "Low DNA concentration" — mirrors PDF logic exactly
+        all_low_dna = bool(embryos_data)
+        for embryo in embryos_data:
+            interp = str(embryo.get('interpretation', '')).upper()
+            res    = str(embryo.get('result_summary', '')).upper()
+            if "LOW DNA" not in interp and "LOW DNA" not in res:
+                all_low_dna = False
+                break
+
+        if all_low_dna:
+            # All Low DNA: append signature right after methodology, no embryo pages
+            doc.add_paragraph()
+            self._add_signature_section(doc)
+        else:
+            doc.add_page_break()
+            # 6. Individual embryo pages — skip Low DNA embryos, add signature after each
+            for embryo in embryos_data:
+                interp = str(embryo.get('interpretation', '')).upper()
+                res    = str(embryo.get('result_summary', '')).upper()
+                if "LOW DNA" in interp or "LOW DNA" in res:
+                    continue
+                self._add_embryo_page(doc, patient_data, embryo)
+
+        # 7. Save
         doc.save(output_path)
         return output_path
 
@@ -450,7 +466,14 @@ class PGTADocxGenerator:
     def _add_embryo_page(self, doc, patient_data, embryo_data):
         """Individual Embryo Result Page with exact PDF metrics"""
         doc.add_page_break()
-        
+
+        # Title repeated on every embryo page — mirrors PDF _build_embryo_page
+        p_title = doc.add_paragraph()
+        p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        self._set_paragraph_font(p_title, font_name="Calibri", font_size=14, bold=False)
+        p_title.add_run("Preimplantation Genetic Testing for Aneuploidies (PGT-A)")
+        doc.add_paragraph()
+
         # 1. Banner [Total: 490pt] - Match exact cover page positioning
         banner = doc.add_table(rows=2, cols=6)
         self._apply_grid_to_table(banner)
@@ -609,8 +632,20 @@ class PGTADocxGenerator:
                     if c_idx == 0: p.alignment = WD_ALIGN_PARAGRAPH.LEFT
                     self._set_paragraph_font(p, font_size=8, bold=True)
 
+            # CNV legend — mirrors PDF exactly
+            legend_p = doc.add_paragraph()
+            legend_run = legend_p.add_run(
+                "N \u2013 Normal, G-Gain, L-Loss, SG-Segmental Gain, SL-Segmental Loss, "
+                "M-Mosaic, MG- Mosaic Gain, ML-Mosaic Loss, SMG-Segmental Mosaic Gain, "
+                "SML-Segmental Mosaic Loss"
+            )
+            legend_run.italic = True
+            legend_run.font.size = Pt(7)
+
         doc.add_paragraph()
         self._add_signature_section(doc)
+        # Page break after each embryo+signature block — mirrors PDF PageBreak()
+        doc.add_page_break()
 
     def _add_signature_section(self, doc):
         """Pixel-Perfect 3-Column Signature Section"""
@@ -624,9 +659,9 @@ class PGTADocxGenerator:
             p.add_run().add_picture(self.signs_image, width=Pt(300))
         
         sigs = [
-            ("Dr. Meena G", "Associate Consultant"),
-            ("Dr. Manju R", "Medical Geneticist"),
-            ("Dr. Shivani P", "Managing Director")
+            ("Anand Babu. K, Ph.D",        "Molecular Biologist"),
+            ("Sachin D Honguntikar, Ph.D",  "Molecular Geneticist"),
+            ("Dr Suriyakumar G",            "Director"),
         ]
         for i, (name, title) in enumerate(sigs):
             cell = table.rows[1].cells[i]

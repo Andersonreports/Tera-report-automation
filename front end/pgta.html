@@ -2828,10 +2828,10 @@
                   <thead>
                     <tr>
                       <th style="width:40px;">S.No</th>
-                      <th style="width:90px;">Embryo ID</th>
-                      <th>Result (Summary)</th>
-                      <th style="width:130px;">Interpretation</th>
+                      <th style="width:95px;">Sample</th>
+                      <th>Result</th>
                       <th style="width:80px;">MTcopy</th>
+                      <th style="width:80px;">Interpretation</th>
                     </tr>
                   </thead>
                   <tbody id="summaryTbody"></tbody>
@@ -3404,7 +3404,7 @@
       state.embryoCount = n;
       while (state.summaryRows.length < n) {
         const i = state.summaryRows.length;
-        state.summaryRows.push({ embryo_id: `PS${i + 1}`, result_summary: RESULT_OPTIONS[0], interpretation: "Euploid", mtcopy: "" });
+        state.summaryRows.push({ embryo_id: `PS${i + 1}`, result_summary: RESULT_OPTIONS[0], interpretation: "NA", mtcopy: "NA" });
       }
       state.summaryRows = state.summaryRows.slice(0, n);
       while (state.embryoForms.length < n) state.embryoForms.push(defaultEmbryo(state.embryoForms.length));
@@ -3419,7 +3419,7 @@
       for (let c = 1; c <= 22; c++) { s[String(c)] = "N"; m[String(c)] = ""; }
       return {
         embryo_id: `PS${i + 1}`, embryo_id_detail: "", result_summary: RESULT_OPTIONS[0],
-        result_description: RESULT_OPTIONS[0], interpretation: "Euploid", mtcopy: "",
+        result_description: RESULT_OPTIONS[0], interpretation: "NA", mtcopy: "NA",
         autosomes: "Normal", sex_chromosomes: "Normal", cnv_image_path: "",
         chromosome_statuses: s, mosaic_percentages: m, inconclusive_comment: ""
       };
@@ -3433,27 +3433,26 @@
       tbody.innerHTML = "";
       state.summaryRows.forEach((row, idx) => {
         const tr = document.createElement("tr");
+        const resultColor = getResultColor(row.result_summary);
+        const interpretColor = row.result_summary === "Normal chromosome complement" ? "#000" : "#dc2626";
         tr.innerHTML = `
       <td>${idx + 1}</td>
       <td><input type="text" value="${esc(row.embryo_id)}" oninput="updateSummaryId(${idx},this.value)" style="width:80px;"></td>
-      <td><select onchange="updateSummaryResult(${idx},this.value)">
+      <td><select onchange="updateSummaryResult(${idx},this.value)" style="color:${resultColor};font-weight:600;">
         ${RESULT_OPTIONS.map(o => `<option${o === row.result_summary ? " selected" : ""}>${esc(o)}</option>`).join("")}
       </select></td>
-      <td><select id="interp-sel-${idx}" onchange="updateSummaryInterp(${idx},this.value)">
-        ${INTERP_OPTIONS.map(o => `<option${o === row.interpretation ? " selected" : ""}>${esc(o)}</option>`).join("")}
-      </select></td>
-      <td><input type="text" value="${esc(row.mtcopy)}" oninput="updateSummaryMtcopy(${idx},this.value)" style="width:70px;" placeholder="NA"></td>
+      <td><input type="text" value="${esc(row.mtcopy || 'NA')}" oninput="updateSummaryMtcopy(${idx},this.value)" style="width:70px;" placeholder="NA"></td>
+      <td><span style="color:${interpretColor};font-weight:600;">NA</span></td>
     `;
         tbody.appendChild(tr);
-        colorizeInterpSelect(document.getElementById(`interp-sel-${idx}`), row.interpretation);
       });
     }
 
-    function colorizeInterpSelect(sel, val) {
-      if (!sel) return;
-      const c = { Euploid: "#000", Aneuploid: "#dc2626", NA: "#000", "Chaotic embryo": "#dc2626", "Low level mosaic": "#2563eb", "High level mosaic": "#2563eb", "Complex mosaic": "#2563eb", Mosaic: "#2563eb", Inconclusive: "#000", "Low DNA concentration": "#000" };
-      sel.style.color = c[val] || "#000"; sel.style.fontWeight = "600";
+    function getResultColor(result) {
+      if (result === "Normal chromosome complement") return "#000";
+      return "#dc2626";
     }
+
 
     function updateSummaryId(idx, val) {
       state.summaryRows[idx].embryo_id = val;
@@ -3464,18 +3463,16 @@
     }
     function updateSummaryResult(idx, val) {
       state.summaryRows[idx].result_summary = val;
-      if (state.embryoForms[idx]) { state.embryoForms[idx].result_summary = val; state.embryoForms[idx].result_description = val; }
+      state.summaryRows[idx].interpretation = "NA";
+      if (state.embryoForms[idx]) {
+        state.embryoForms[idx].result_summary = val;
+        state.embryoForms[idx].result_description = val;
+        state.embryoForms[idx].interpretation = "NA";
+      }
       const sel = document.querySelector(`#embryo-result-desc-${idx}`);
       if (sel) sel.value = val;
-      autoSetInterpretation(idx); schedulePreview();
-    }
-    function updateSummaryInterp(idx, val) {
-      state.summaryRows[idx].interpretation = val;
-      if (state.embryoForms[idx]) state.embryoForms[idx].interpretation = val;
-      colorizeInterpSelect(document.getElementById(`interp-sel-${idx}`), val);
-      autoSetMtcopy(idx); updateEmbryoBadge(idx, val);
-      const box = document.getElementById(`inconclusive-box-${idx}`);
-      if (box) box.style.display = val === "Inconclusive" ? "" : "none";
+      autoSetMtcopy(idx);
+      renderSummaryTable();
       schedulePreview();
     }
     function updateSummaryMtcopy(idx, val) {
@@ -3485,31 +3482,21 @@
     }
 
     function autoSetInterpretation(idx) {
-      const ef = state.embryoForms[idx]; if (!ef) return;
-      const auto = (ef.autosomes || "").trim().toLowerCase();
-      const sex = (ef.sex_chromosomes || "").trim().toLowerCase();
-      const desc = (ef.result_description || "").toLowerCase();
-      let interp = state.summaryRows[idx].interpretation;
-      if (auto === "normal" && sex === "normal") interp = "Euploid";
-      else if (desc.includes("inconclusive")) interp = "Inconclusive";
-      else if (desc.includes("mosaic")) interp = "Mosaic";
-      else if (desc.includes("abnormal")) interp = "Aneuploid";
-      state.summaryRows[idx].interpretation = interp;
-      ef.interpretation = interp;
-      const sel = document.getElementById(`interp-sel-${idx}`);
-      if (sel) { sel.value = interp; colorizeInterpSelect(sel, interp); }
-      autoSetMtcopy(idx); updateEmbryoBadge(idx, interp);
-      const box = document.getElementById(`inconclusive-box-${idx}`);
-      if (box) box.style.display = interp === "Inconclusive" ? "" : "none";
+      // PGTA Rules: Interpretation ALWAYS displays as "NA"
+      if (state.summaryRows[idx]) state.summaryRows[idx].interpretation = "NA";
+      if (state.embryoForms[idx]) state.embryoForms[idx].interpretation = "NA";
     }
 
     function autoSetMtcopy(idx) {
-      const sr = state.summaryRows[idx]; const ef = state.embryoForms[idx];
-      if (!sr || !ef) return;
-      if ((sr.interpretation || "").toLowerCase() !== "euploid") {
-        sr.mtcopy = "NA"; ef.mtcopy = "NA";
-        const rows = document.querySelectorAll("#summaryTbody tr");
-        if (rows[idx]) { const inp = rows[idx].querySelector("td:last-child input"); if (inp) inp.value = "NA"; }
+      const sr = state.summaryRows[idx];
+      if (!sr) return;
+      if (!sr.mtcopy || sr.mtcopy.trim().toLowerCase() === 'na') {
+        sr.mtcopy = "NA";
+      }
+      if (state.embryoForms[idx]) {
+        if (!state.embryoForms[idx].mtcopy || state.embryoForms[idx].mtcopy.trim().toLowerCase() === 'na') {
+          state.embryoForms[idx].mtcopy = "NA";
+        }
       }
     }
 
@@ -3525,12 +3512,13 @@
     function createEmbryoBlock(idx, ef) {
       const div = document.createElement("div");
       div.className = "embryo-block"; div.id = `embryo-block-${idx}`;
-      const bgBadge = ef.interpretation === "Aneuploid" ? "#fca5a5" : ef.interpretation === "Mosaic" ? "#bfdbfe" : "#d1fae5";
+      const resultDisplay = ef.result_summary || ef.result_description || "No result";
+      const bgBadge = resultDisplay === "Normal chromosome complement" ? "#d1fae5" : "#fca5a5";
       div.innerHTML = `
     <div class="embryo-header" id="embryo-header-${idx}" onclick="toggleEmbryo(${idx})">
       <div class="embryo-title">
         Embryo <span class="eid-display">${esc(ef.embryo_id || `PS${idx + 1}`)}</span>
-        <span class="interp-badge" id="badge-${idx}" style="background:${bgBadge};color:#333;">${esc(ef.interpretation)}</span>
+        <span class="interp-badge" id="badge-${idx}" style="background:${bgBadge};color:#333;">${esc(resultDisplay)}</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         ${idx > 0 ? `<button class="copy-btn" onclick="copyFromPrev(event,${idx})"> Copy from Embryo ${idx}</button>` : ""}
@@ -3548,7 +3536,7 @@
       const sexOpts = SEX_OPTIONS.map(o => `<option value="${esc(o)}"${ef.sex_chromosomes === o ? " selected" : ""}>${esc(o)}</option>`).join("");
       const cnvName = state.cnvImages[idx] ? state.cnvImages[idx].name : "No file selected";
       const cnvThumb = state.cnvImages[idx] ? `<img class="cnv-preview-img" src="${state.cnvImages[idx].url}" alt="CNV">` : "";
-      const showInc = ef.interpretation === "Inconclusive" ? "" : "display:none;";
+      const showInc = (ef.result_description || "").toLowerCase().includes("inconclusive") ? "" : "display:none;";
       return `
     <div class="embryo-row">
       <div class="embryo-field"><label>Embryo ID (Summary Table)</label>
@@ -3611,11 +3599,11 @@
       if (chev) chev.style.transform = open ? "" : "rotate(180deg)";
     }
 
-    function updateEmbryoBadge(idx, interp) {
+    function updateEmbryoBadge(idx, result) {
       const b = document.getElementById(`badge-${idx}`); if (!b) return;
-      b.textContent = interp;
-      const c = { Aneuploid: "#fca5a5", "Chaotic embryo": "#fca5a5", Mosaic: "#bfdbfe", "Low level mosaic": "#bfdbfe", "High level mosaic": "#bfdbfe", "Complex mosaic": "#bfdbfe", Euploid: "#d1fae5" };
-      b.style.background = c[interp] || "#f3f4f6";
+      b.textContent = result;
+      const bgColor = result === "Normal chromosome complement" ? "#d1fae5" : "#fca5a5";
+      b.style.background = bgColor;
     }
 
     function onEmbryoChange(idx, field, value) {
@@ -3627,7 +3615,14 @@
         const rows = document.querySelectorAll("#summaryTbody tr");
         if (rows[idx]) { const inp = rows[idx].querySelector("td:nth-child(2) input"); if (inp) inp.value = value; }
       }
-      if (field === "result_description") { state.summaryRows[idx].result_summary = value; state.embryoForms[idx].result_summary = value; }
+      if (field === "result_description") {
+        state.summaryRows[idx].result_summary = value;
+        state.summaryRows[idx].interpretation = "NA";
+        state.embryoForms[idx].result_summary = value;
+        state.embryoForms[idx].interpretation = "NA";
+        updateEmbryoBadge(idx, value);
+        renderSummaryTable();
+      }
       if (["autosomes", "sex_chromosomes", "result_description"].includes(field)) autoSetInterpretation(idx);
       schedulePreview();
     }
@@ -3645,13 +3640,14 @@
       const prev = JSON.parse(JSON.stringify(state.embryoForms[idx - 1]));
       const curId = state.embryoForms[idx].embryo_id;
       prev.embryo_id = curId; prev.embryo_id_detail = curId;
+      prev.interpretation = "NA";
       state.embryoForms[idx] = prev;
       state.summaryRows[idx].result_summary = prev.result_summary;
-      state.summaryRows[idx].interpretation = prev.interpretation;
+      state.summaryRows[idx].interpretation = "NA";
       state.summaryRows[idx].mtcopy = prev.mtcopy;
       const body = document.getElementById(`embryo-body-${idx}`);
       if (body) body.innerHTML = renderEmbryoBodyHTML(idx, state.embryoForms[idx]);
-      renderSummaryTable(); updateEmbryoBadge(idx, prev.interpretation);
+      renderSummaryTable(); updateEmbryoBadge(idx, prev.result_summary);
       showToast(`Copied from Embryo ${idx}`, "info"); schedulePreview();
     }
 
@@ -4186,8 +4182,8 @@
       Object.entries(d.patientData || {}).forEach(([k, v]) => {
         const el = document.getElementById(`f_${k}`); if (el) el.value = v || "";
       });
-      state.summaryRows = d.summaryRows || [];
-      state.embryoForms = d.embryoForms || [];
+      state.summaryRows = (d.summaryRows || []).map(row => ({...row, interpretation: "NA"}));
+      state.embryoForms = (d.embryoForms || []).map(ef => ({...ef, interpretation: "NA"}));
       state.cnvImages   = d.cnvImages   || {};
       state.embryoCount = d.embryoCount || 1;
       document.getElementById("embryoCount").value = state.embryoCount;
@@ -4199,7 +4195,10 @@
 
     function _applyBulkDraft(d) {
       if (!d.patients || !Array.isArray(d.patients)) throw new Error("Not a valid bulk draft");
-      state.bulkPatients = d.patients;
+      state.bulkPatients = d.patients.map(p => ({
+        ...p,
+        embryos: (p.embryos || []).map(e => ({...e, interpretation: "NA"}))
+      }));
       renderBulkPatients();
       document.getElementById("bulkPatientSection").classList.remove("hidden");
       // Update label only — dropZone div's onclick stays intact so user can always click to upload Excel
@@ -4257,7 +4256,10 @@
       try {
         const res = await fetch(`${BASE}/pgta/parse-excel`, { method: "POST", body: fd });
         const data = await res.json(); if (data.error) throw new Error(data.error);
-        state.bulkPatients = data.patients || [];
+        state.bulkPatients = (data.patients || []).map(p => ({
+          ...p,
+          embryos: (p.embryos || []).map(e => ({...e, interpretation: "NA"}))
+        }));
         renderBulkPatients();
         document.getElementById("bulkPatientSection").classList.remove("hidden");
         if (lbl) lbl.innerHTML = `<strong>${esc(file.name)}</strong> &mdash; ${state.bulkPatients.length} patient(s) &nbsp;<small style="color:var(--text-muted);text-decoration:underline;">(click to change)</small>`;

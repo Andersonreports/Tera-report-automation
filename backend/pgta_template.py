@@ -602,9 +602,19 @@ class PGTAReportTemplate:
             raw_mt = self._clean(embryo.get('mtcopy'), '')
             mtcopy = raw_mt if raw_mt and raw_mt.upper() not in ('NA', 'N/A', '') else "NA"
 
+            # Extract short embryo ID: if format is "PATIENTNAME-ID_REST", extract just "ID"
+            full_id = self._clean(embryo.get('embryo_id'))
+            short_id = full_id
+            if '-' in full_id:
+                parts = full_id.split('-')
+                if len(parts) >= 2:
+                    # Get the part after the hyphen, then extract before underscore or use whole part
+                    id_part = parts[1]
+                    short_id = id_part.split('_')[0] if '_' in id_part else id_part
+
             data.append([
                 self._wrap_text(str(idx), align='CENTER'),
-                self._wrap_text(self._clean(embryo.get('embryo_id')), align='CENTER'),
+                self._wrap_text(short_id, align='CENTER'),
                 self._wrap_text(self._wrap_colored(res_display, cell_color, bold=False), align='CENTER'),
                 self._wrap_text(mtcopy, align='CENTER'),
                 self._wrap_text(self._wrap_colored(interp_display, cell_color, bold=False), align='CENTER'),
@@ -779,8 +789,14 @@ class PGTAReportTemplate:
         sex_color   = cell_color if sex_text.upper() not in ('NORMAL', '') else colors.black
         interp_color= cell_color
 
-        # Embryo ID
+        # Embryo ID: Extract short ID if format is "PATIENTNAME-ID_REST"
         detail_embryo_id = self._clean(embryo_data.get('embryo_id_detail')) or self._clean(embryo_data.get('embryo_id'))
+        if '-' in detail_embryo_id:
+            parts = detail_embryo_id.split('-')
+            if len(parts) >= 2:
+                id_part = parts[1]
+                detail_embryo_id = id_part.split('_')[0] if '_' in id_part else id_part
+
         embryo_id_style = ParagraphStyle(
             name='EmbryoIDStyle',
             parent=self.styles['Normal'],

@@ -4396,24 +4396,31 @@
           limit: 200, sortBy: { column: "name", order: "asc" }
         });
         if (error) throw error;
-        // Folders are items without a mime type (or with metadata.mimetype undefined/null)
-        const folders = (data || []).filter(item =>
-          !item.metadata || !item.metadata.mimetype || item.name === ".emptyFolderPlaceholder" ? false : !item.metadata.mimetype
-        ).concat(
-          // Supabase returns folders as items where name has no extension and metadata is sparse
-          (data || []).filter(item => item.metadata && !item.metadata.mimetype && !item.name.includes("."))
+
+        // In Supabase Storage v2, folders (prefixes) have id === null.
+        // Files have a UUID id. We also skip the internal placeholder item.
+        const items = data || [];
+        const folders = items.filter(f =>
+          f.name !== ".emptyFolderPlaceholder" &&
+          (f.id === null || f.id === undefined || f.id === "" || !f.metadata)
         );
-        // Deduplicate
-        const seen = new Set(); const uniqueFolders = [];
-        for (const f of (data || [])) {
-          if (!f.name.includes(".") && !seen.has(f.name)) { seen.add(f.name); uniqueFolders.push(f); }
-        }
-        if (uniqueFolders.length === 0) {
-          list.innerHTML = '<div class="cloud-status-msg warn"><i class="fas fa-info-circle"></i>&nbsp; No folders found in Report-inputs/pgta/</div>';
+
+        // Fallback: if no id===null items found, treat anything without a file
+        // extension as a folder (handles older Supabase versions or edge cases).
+        const visibleFolders = folders.length > 0
+          ? folders
+          : items.filter(f => f.name !== ".emptyFolderPlaceholder" && !f.name.includes("."));
+
+        if (visibleFolders.length === 0) {
+          list.innerHTML = `<div class="cloud-status-msg warn">
+            <i class="fas fa-info-circle"></i>&nbsp; No batch folders found in <code>Report-inputs/pgta/</code>.
+            <br><small style="display:block;margin-top:6px;">Upload a folder with an Excel file and CNV images to get started.</small>
+          </div>`;
           return;
         }
+
         list.innerHTML = "";
-        uniqueFolders.forEach(folder => {
+        visibleFolders.forEach(folder => {
           const div = document.createElement("div");
           div.className = "cloud-folder-item";
           div.innerHTML = `<i class="fas fa-folder"></i><span style="flex:1;">${esc(folder.name)}</span><i class="fas fa-chevron-right" style="color:#ccc;font-size:10px;"></i>`;

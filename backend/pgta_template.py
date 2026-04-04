@@ -199,9 +199,9 @@ class PGTAReportTemplate:
             textColor=colors.HexColor(self.COLORS['blue_title']),
             alignment=TA_CENTER,
             spaceAfter=12,
-            fontName=self._get_font('Calibri-Bold', 'Helvetica-Bold')
+            fontName=self._get_font('GillSansMT-Bold', 'Helvetica-Bold')
         ))
-        
+
         # Section header
         self.styles.add(ParagraphStyle(
             name='PGTASectionHeader',
@@ -435,7 +435,7 @@ class PGTAReportTemplate:
         
         # PNDT Disclaimer in a grey box
         disclaimer = Paragraph(
-            "<b><i>This test does not reveal sex of the fetus &amp; confers to PNDT act, 1994</i></b>",
+            "<b>This test does not reveal sex of the fetus & confers to PNDT act, 1994</b>",
             self.styles['PGTADisclaimer']
         )
         # Use a single-cell table for the background color (Clean white with line as requested)
@@ -743,7 +743,7 @@ class PGTAReportTemplate:
         
         # PNDT Disclaimer in a grey box (Exact grey from source)
         disclaimer = Paragraph(
-            "<b><i>This test does not reveal sex of the fetus &amp; confers to PNDT act, 1994</i></b>",
+            "<b>This test does not reveal sex of the fetus & confers to PNDT act, 1994</b>",
             self.styles['PGTADisclaimer']
         )
         disclaimer_table = Table([[disclaimer]], colWidths=[490], hAlign='CENTER')

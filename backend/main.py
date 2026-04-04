@@ -13,6 +13,7 @@ import io
 import uuid
 import math
 import re
+import base64
 import difflib
 from datetime import datetime
 
@@ -63,6 +64,34 @@ app.mount("/reports-pgta", StaticFiles(directory=PGTA_REPORT_DIR), name="reports
 # Serve root-level static assets (logo, icons, images)
 if os.path.exists(ROOT_DIR):
     app.mount("/static", StaticFiles(directory=ROOT_DIR), name="static")
+
+
+def _resolve_cnv_images(embryos: list) -> tuple:
+    """
+    Convert any base64-encoded CNV images (cnv_image_b64) to temp files and
+    populate cnv_image_path so pgta_template.py can find them via os.path.exists().
+    Returns (embryos, list_of_temp_paths_to_cleanup).
+    """
+    temp_paths = []
+    for emb in embryos:
+        b64 = (emb.get("cnv_image_b64") or "").strip()
+        if not b64:
+            continue  # already has a path, or no image
+        try:
+            # Strip data-URL prefix if present (data:image/png;base64,...)
+            if "," in b64:
+                b64 = b64.split(",", 1)[1]
+            img_bytes = base64.b64decode(b64)
+            tmp_name  = f"cnv_{uuid.uuid4().hex}.png"
+            tmp_path  = os.path.join(TEMP_DIR, tmp_name)
+            with open(tmp_path, "wb") as f:
+                f.write(img_bytes)
+            emb["cnv_image_path"] = tmp_path
+            temp_paths.append(tmp_path)
+        except Exception as exc:
+            print(f"[cnv_resolve] Failed to decode base64 image for embryo "
+                  f"'{emb.get('embryo_id','?')}': {exc}")
+    return embryos, temp_paths
 
 @app.get("/")
 def root():
@@ -552,14 +581,21 @@ async def pgta_preview_report(request: Request):
         file_id = str(uuid.uuid4()) + ".pdf"
         filepath = os.path.join(TEMP_DIR, file_id)
 
+        embryos = data.get("embryos_data", [])
+        embryos, tmp_paths = _resolve_cnv_images(embryos)
+
         tmpl = PGTAReportTemplate()
         tmpl.generate_pdf(
             filepath,
             data.get("patient_data", {}),
-            data.get("embryos_data", []),
+            embryos,
             show_logo=data.get("show_logo", True),
             show_grid=data.get("show_grid", False)
         )
+        # Clean up temp image files (non-blocking — ignore errors)
+        for p in tmp_paths:
+            try: os.remove(p)
+            except Exception: pass
         return {"preview_url": f"/pgta/preview-file/{file_id}"}
     except Exception as e:
         import traceback
@@ -617,6 +653,9 @@ async def pgta_generate_report(request: Request, background_tasks: BackgroundTas
         
         gen_pdf = "pdf" in formats
         gen_docx = "docx" in formats
+
+        # Resolve any base64 CNV images → temp files before generating
+        embryos, tmp_cnv_paths = _resolve_cnv_images(embryos)
 
         def _name_parts(raw):
             """Return cleaned list of name words, stripped of special chars."""
@@ -688,6 +727,11 @@ async def pgta_generate_report(request: Request, background_tasks: BackgroundTas
             if upload_pgta_file:
                 background_tasks.add_task(_upload_in_background, filepath_docx, file_name_docx)
             results["docx"] = {"file": file_name_docx, "url": local_docx_url, "local_url": local_docx_url}
+
+        # Clean up temp CNV image files after generation
+        for p in tmp_cnv_paths:
+            try: os.remove(p)
+            except Exception: pass
 
         return {"status": "success", "results": results}
     except Exception as e:

@@ -4397,16 +4397,15 @@
       const list = document.getElementById("cloudBrowserList");
       list.innerHTML = '<div class="cloud-status-msg"><i class="fas fa-spinner fa-spin"></i>&nbsp; Loading folders…</div>';
       try {
-        const { data, error } = await sb.storage.from("Report-inputs").list("pgta", {
-          limit: 200, sortBy: { column: "name", order: "asc" }
-        });
-        if (error) throw error;
+        // Use backend endpoint (service-role key) — avoids anon RLS restrictions on listing
+        const res = await fetch("/pgta/storage/list?path=pgta");
+        if (!res.ok) throw new Error(`Server error ${res.status}: ${await res.text()}`);
+        const { items: rawItems } = await res.json();
+        console.log("[CloudBrowser] pgta/ items:", rawItems);
 
-        const items = (data || []).filter(f => f.name !== ".emptyFolderPlaceholder");
-        console.log("[CloudBrowser] pgta/ items:", items);
+        const items = (rawItems || []).filter(f => f.name !== ".emptyFolderPlaceholder");
 
-        // Supabase v2: virtual folders have id===null; files have a UUID id.
-        // Fallback: items with no dot in the name (no file extension) are treated as folders.
+        // Folders have id===null; files have a UUID id or a metadata.mimetype
         const isFolder = f => f.id === null || f.id == null || !f.metadata || !f.metadata.mimetype;
         let visibleFolders = items.filter(isFolder);
         if (visibleFolders.length === 0) {
@@ -4469,10 +4468,11 @@
       if (btn)    btn.disabled = true;
       list.innerHTML = '<div class="cloud-status-msg"><i class="fas fa-spinner fa-spin"></i>&nbsp; Loading files…</div>';
       try {
-        const { data, error } = await sb.storage.from("Report-inputs").list(`pgta/${folderName}`, {
-          limit: 500, sortBy: { column: "name", order: "asc" }
-        });
-        if (error) throw error;
+        // Use backend endpoint (service-role key) — avoids anon RLS restrictions on listing
+        const _listRes = await fetch(`/pgta/storage/list?path=${encodeURIComponent("pgta/" + folderName)}`);
+        if (!_listRes.ok) throw new Error(`Server error ${_listRes.status}: ${await _listRes.text()}`);
+        const { items: data } = await _listRes.json();
+        const error = null;
         _cloudFolderFiles = (data || []).filter(f => f.name !== ".emptyFolderPlaceholder");
         const xlsxFiles = _cloudFolderFiles.filter(f => /\.xlsx?$/i.test(f.name));
         const imgFiles  = _cloudFolderFiles.filter(f => /\.(png|jpe?g)$/i.test(f.name));
@@ -4531,9 +4531,11 @@
       const spin = `<span class="spinner" style="border-color:#1F497D;border-top-color:#4F81BD;width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:6px;border-width:2px;border-style:solid;border-radius:50%;animation:spin 0.7s linear infinite;"></span>`;
       if (lbl) lbl.innerHTML = `${spin}Downloading <strong>${esc(_cloudSelectedFolder)}</strong>…`;
       try {
-        // 1. Download & parse Excel
-        const { data: xlsxBlob, error: xlsxErr } = await sb.storage.from("Report-inputs").download(`pgta/${_cloudSelectedFolder}/${xlsxFile.name}`);
-        if (xlsxErr) throw xlsxErr;
+        // 1. Download & parse Excel — use public URL (bucket is PUBLIC, no RLS needed)
+        const xlsxPublicUrl = sb.storage.from("Report-inputs").getPublicUrl(`pgta/${_cloudSelectedFolder}/${xlsxFile.name}`).data.publicUrl;
+        const xlsxFetchRes = await fetch(xlsxPublicUrl);
+        if (!xlsxFetchRes.ok) throw new Error(`Failed to download Excel: HTTP ${xlsxFetchRes.status}`);
+        const xlsxBlob = await xlsxFetchRes.blob();
         const xlsxFileObj = new File([xlsxBlob], xlsxFile.name, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         await handleBulkFile(xlsxFileObj);
         // 2. Auto-map CNV images
@@ -4566,8 +4568,10 @@
           );
           if (matchKey) {
             matched++;
+            // Use public URL for image download — avoids anon RLS restrictions
+            const imgPublicUrl = sb.storage.from("Report-inputs").getPublicUrl(imageMap[matchKey]).data.publicUrl;
             downloadTasks.push(
-              sb.storage.from("Report-inputs").download(imageMap[matchKey]).then(({ data: blob }) => {
+              fetch(imgPublicUrl).then(r => r.ok ? r.blob() : Promise.reject(new Error(`HTTP ${r.status}`))).then(blob => {
                 if (!blob) return;
                 return new Promise(resolve => {
                   const reader = new FileReader();

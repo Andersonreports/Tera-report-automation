@@ -925,3 +925,33 @@ async def pgta_compare_reports(manual: UploadFile = File(...), automated: Upload
         traceback.print_exc()
         return {"error": str(e)}
 
+
+@app.get("/pgta/storage/list")
+async def pgta_storage_list(path: str = "pgta"):
+    """
+    List items in the Report-inputs Supabase bucket at the given path.
+    Uses the service-role key so it bypasses anon RLS restrictions.
+    """
+    if supabase is None:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=503, detail="Supabase client not configured")
+    try:
+        result = supabase.storage.from_("Report-inputs").list(
+            path,
+            {"limit": 500, "sortBy": {"column": "name", "order": "asc"}}
+        )
+        items = []
+        for item in (result or []):
+            if isinstance(item, dict):
+                items.append({"name": item.get("name"), "id": item.get("id"), "metadata": item.get("metadata")})
+            else:
+                items.append({
+                    "name": getattr(item, "name", None),
+                    "id": getattr(item, "id", None),
+                    "metadata": getattr(item, "metadata", None),
+                })
+        return {"items": items, "path": path}
+    except Exception as exc:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(exc))
+

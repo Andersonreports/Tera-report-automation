@@ -1124,8 +1124,8 @@ class PGTAReportTemplate:
         if not text: return text
         if color == colors.black:
             return f"<b>{text}</b>" if bold else str(text)
-        hex_color = color.hexval()[2:] # Remove 0x
-        if len(hex_color) > 6: hex_color = hex_color[2:] # Handle alpha
+        hex_color = color.hexval()[2:] # Remove 0x prefix → RRGGBB or RRGGBBAA
+        if len(hex_color) > 6: hex_color = hex_color[:6] # Truncate alpha suffix if present
         
         if bold:
             return f'<b><font color="#{hex_color}">{text}</font></b>'

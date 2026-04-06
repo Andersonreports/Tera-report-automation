@@ -4389,7 +4389,7 @@
       const btn    = document.getElementById("cloudConfirmBtn");
       if (footer) footer.style.display = "none";
       if (btn)    btn.disabled = true;
-      document.getElementById("cloudBreadcrumb").textContent = "Report-inputs / pgta /";
+      document.getElementById("cloudBreadcrumb").textContent = "Report-inputs /";
       document.getElementById("cloudBrowserModal").style.display = "flex";
       _cloudLoadFolders();
     }
@@ -4402,11 +4402,11 @@
       const list = document.getElementById("cloudBrowserList");
       list.innerHTML = '<div class="cloud-status-msg"><i class="fas fa-spinner fa-spin"></i>&nbsp; Loading folders…</div>';
       try {
-        // Use backend endpoint (service-role key) — avoids anon RLS restrictions on listing
-        const res = await fetch("/pgta/storage/list?path=pgta");
+        // Use backend endpoint (service-role key) — list bucket root (batch folders are at root level)
+        const res = await fetch("/pgta/storage/list?path=");
         if (!res.ok) throw new Error(`Server error ${res.status}: ${await res.text()}`);
         const { items: rawItems } = await res.json();
-        console.log("[CloudBrowser] pgta/ items:", rawItems);
+        console.log("[CloudBrowser] root items:", rawItems);
 
         const items = (rawItems || []).filter(f => f.name !== ".emptyFolderPlaceholder");
 
@@ -4421,9 +4421,9 @@
 
         if (visibleFolders.length === 0) {
           list.innerHTML = `<div class="cloud-status-msg warn" style="text-align:left;">
-            <i class="fas fa-info-circle"></i>&nbsp; No batch folders found under <code>Report-inputs/pgta/</code>.
+            <i class="fas fa-info-circle"></i>&nbsp; No batch run folders found in <code>Report-inputs</code>.
             <br><small style="display:block;margin-top:6px;color:#555;">
-              Make sure your files are inside a <em>subfolder</em> of pgta/ (e.g. <code>pgta/Batch_Jan2026/patients.xlsx</code>).
+              Create a folder (e.g. <code>pgta_run_48/</code>) and upload your Excel + patient subfolders inside it.
             </small>
           </div>`;
         } else {
@@ -4467,7 +4467,7 @@
       _cloudFolderFiles    = [];
       _cloudSelectedExcel  = null;
       _cloudSubfolders     = [];
-      document.getElementById("cloudBreadcrumb").textContent = `Report-inputs / pgta / ${folderName}`;
+      document.getElementById("cloudBreadcrumb").textContent = `Report-inputs / ${folderName}`;
       const list   = document.getElementById("cloudBrowserList");
       const footer = document.getElementById("cloudBrowserFooter");
       const btn    = document.getElementById("cloudConfirmBtn");
@@ -4475,7 +4475,7 @@
       if (btn)    btn.disabled = true;
       list.innerHTML = '<div class="cloud-status-msg"><i class="fas fa-spinner fa-spin"></i>&nbsp; Loading files…</div>';
       try {
-        const _listRes = await fetch(`/pgta/storage/list?path=${encodeURIComponent("pgta/" + folderName)}`);
+        const _listRes = await fetch(`/pgta/storage/list?path=${encodeURIComponent(folderName)}`);
         if (!_listRes.ok) throw new Error(`Server error ${_listRes.status}: ${await _listRes.text()}`);
         const { items: rawData } = await _listRes.json();
 
@@ -4565,7 +4565,7 @@
       if (lbl) lbl.innerHTML = `${spin}Downloading <strong>${esc(xlsxFile.name)}</strong>…`;
       try {
         // 1. Download & parse Excel via public URL (bucket is PUBLIC — no auth needed for reads)
-        const xlsxPublicUrl = sb.storage.from("Report-inputs").getPublicUrl(`pgta/${_cloudSelectedFolder}/${xlsxFile.name}`).data.publicUrl;
+        const xlsxPublicUrl = sb.storage.from("Report-inputs").getPublicUrl(`${_cloudSelectedFolder}/${xlsxFile.name}`).data.publicUrl;
         const xlsxFetchRes = await fetch(xlsxPublicUrl);
         if (!xlsxFetchRes.ok) throw new Error(`Failed to download Excel: HTTP ${xlsxFetchRes.status}`);
         const xlsxBlob   = await xlsxFetchRes.blob();
@@ -4590,8 +4590,11 @@
       const sfMap = {};
       subfolders.forEach(sf => { sfMap[sf.name.toLowerCase()] = sf.name; });
 
-      // Normalize a name for fuzzy matching: lowercase, strip spaces/dashes/underscores
-      const norm = s => (s || "").toLowerCase().replace(/[\s_\-]/g, "");
+      // Normalize a name for fuzzy matching: lowercase, strip digits prefix, strip trailing -C/-c, strip separators
+      const norm = s => (s || "").toLowerCase()
+        .replace(/^\d+[\-_]/, "")   // strip leading "1-" or "10_" number prefix
+        .replace(/[\-_]c$/i, "")    // strip trailing "-C" or "_C" suffix
+        .replace(/[\s_\-]/g, "");   // strip all separators
 
       let totalMapped = 0;
 
@@ -4610,7 +4613,7 @@
 
         // List files inside this patient subfolder
         try {
-          const res = await fetch(`/pgta/storage/list?path=${encodeURIComponent(`pgta/${batchFolder}/${sfName}`)}`);
+          const res = await fetch(`/pgta/storage/list?path=${encodeURIComponent(`${batchFolder}/${sfName}`)}`);
           if (!res.ok) continue;
           const { items } = await res.json();
           const imgFiles = (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name));
@@ -4618,7 +4621,7 @@
 
           // Build image lookup: lowercase name → storage path
           const imgMap = {};
-          imgFiles.forEach(f => { imgMap[f.name.toLowerCase()] = `pgta/${batchFolder}/${sfName}/${f.name}`; });
+          imgFiles.forEach(f => { imgMap[f.name.toLowerCase()] = `${batchFolder}/${sfName}/${f.name}`; });
 
           // Match each embryo to an image by embryo ID
           for (const [ei, emb] of (patient.embryos || []).entries()) {
@@ -5265,7 +5268,7 @@ ${d.html_diff || "<p>No differences found.</p>"}
         <h3><i class="fas fa-cloud"></i> Cloud Storage — Report-inputs</h3>
         <button class="cloud-modal-close" onclick="closeCloudBrowser()">&#x2715;</button>
       </div>
-      <div class="cloud-modal-breadcrumb" id="cloudBreadcrumb">Report-inputs / pgta /</div>
+      <div class="cloud-modal-breadcrumb" id="cloudBreadcrumb">Report-inputs /</div>
       <div class="cloud-modal-body" id="cloudBrowserList">
         <div class="cloud-status-msg">Loading…</div>
       </div>

@@ -4373,6 +4373,11 @@
     let _cloudFolderFiles    = [];
 
     function openCloudBrowser() {
+      // Fallback: if Supabase client not ready, open local file picker instead
+      if (!sb) {
+        document.getElementById("bulkFileInput").click();
+        return;
+      }
       _cloudSelectedFolder = null;
       _cloudFolderFiles    = [];
       const footer = document.getElementById("cloudBrowserFooter");
@@ -4397,39 +4402,58 @@
         });
         if (error) throw error;
 
-        // In Supabase Storage v2, folders (prefixes) have id === null.
-        // Files have a UUID id. We also skip the internal placeholder item.
-        const items = data || [];
-        const folders = items.filter(f =>
-          f.name !== ".emptyFolderPlaceholder" &&
-          (f.id === null || f.id === undefined || f.id === "" || !f.metadata)
-        );
+        const items = (data || []).filter(f => f.name !== ".emptyFolderPlaceholder");
+        console.log("[CloudBrowser] pgta/ items:", items);
 
-        // Fallback: if no id===null items found, treat anything without a file
-        // extension as a folder (handles older Supabase versions or edge cases).
-        const visibleFolders = folders.length > 0
-          ? folders
-          : items.filter(f => f.name !== ".emptyFolderPlaceholder" && !f.name.includes("."));
-
+        // Supabase v2: virtual folders have id===null; files have a UUID id.
+        // Fallback: items with no dot in the name (no file extension) are treated as folders.
+        const isFolder = f => f.id === null || f.id == null || !f.metadata || !f.metadata.mimetype;
+        let visibleFolders = items.filter(isFolder);
         if (visibleFolders.length === 0) {
-          list.innerHTML = `<div class="cloud-status-msg warn">
-            <i class="fas fa-info-circle"></i>&nbsp; No batch folders found in <code>Report-inputs/pgta/</code>.
-            <br><small style="display:block;margin-top:6px;">Upload a folder with an Excel file and CNV images to get started.</small>
-          </div>`;
-          return;
+          visibleFolders = items.filter(f => !f.name.includes("."));
         }
 
         list.innerHTML = "";
-        visibleFolders.forEach(folder => {
-          const div = document.createElement("div");
-          div.className = "cloud-folder-item";
-          div.innerHTML = `<i class="fas fa-folder"></i><span style="flex:1;">${esc(folder.name)}</span><i class="fas fa-chevron-right" style="color:#ccc;font-size:10px;"></i>`;
-          div.onclick = () => _cloudOpenFolder(folder.name, div);
-          list.appendChild(div);
-        });
+
+        if (visibleFolders.length === 0) {
+          list.innerHTML = `<div class="cloud-status-msg warn" style="text-align:left;">
+            <i class="fas fa-info-circle"></i>&nbsp; No batch folders found under <code>Report-inputs/pgta/</code>.
+            <br><small style="display:block;margin-top:6px;color:#555;">
+              Make sure your files are inside a <em>subfolder</em> of pgta/ (e.g. <code>pgta/Batch_Jan2026/patients.xlsx</code>).
+            </small>
+          </div>`;
+        } else {
+          visibleFolders.forEach(folder => {
+            const div = document.createElement("div");
+            div.className = "cloud-folder-item";
+            div.innerHTML = `<i class="fas fa-folder"></i><span style="flex:1;">${esc(folder.name)}</span><i class="fas fa-chevron-right" style="color:#ccc;font-size:10px;"></i>`;
+            div.onclick = () => _cloudOpenFolder(folder.name, div);
+            list.appendChild(div);
+          });
+        }
+
+        // Always show local-file fallback at the bottom
+        _appendLocalFallback(list);
       } catch (err) {
-        list.innerHTML = `<div class="cloud-status-msg error"><i class="fas fa-exclamation-triangle"></i>&nbsp; ${esc(err.message)}</div>`;
+        console.error("[CloudBrowser] list error:", err);
+        list.innerHTML = `<div class="cloud-status-msg error">
+          <i class="fas fa-exclamation-triangle"></i>&nbsp; <strong>Could not load folders:</strong> ${esc(err.message || String(err))}
+          <br><small style="display:block;margin-top:4px;">Check bucket policies or your network connection.</small>
+        </div>`;
+        _appendLocalFallback(list);
       }
+    }
+
+    function _appendLocalFallback(container) {
+      const sep = document.createElement("div");
+      sep.style.cssText = "margin:12px 0 6px;border-top:1px solid #e5e7eb;padding-top:10px;text-align:center;font-size:11px;color:var(--text-muted);";
+      sep.textContent = "— or —";
+      container.appendChild(sep);
+      const btn = document.createElement("button");
+      btn.style.cssText = "display:block;margin:0 auto;padding:6px 18px;background:var(--primary);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;";
+      btn.innerHTML = '<i class="fas fa-folder-open"></i>&nbsp; Use local Excel file';
+      btn.onclick = () => { closeCloudBrowser(); document.getElementById("bulkFileInput").click(); };
+      container.appendChild(btn);
     }
 
     async function _cloudOpenFolder(folderName, el) {

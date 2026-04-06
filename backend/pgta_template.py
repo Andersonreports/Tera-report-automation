@@ -26,6 +26,11 @@ from pgta_assets import HEADER_LOGO_B64, FOOTER_BANNER_B64, SIGN_ANAND_B64, SIGN
 import pgta_classify as clf
 
 
+def registered_or(name, registered, fallback):
+    """Return name if it's in registered list, else return fallback."""
+    return name if name in registered else fallback
+
+
 class PGTAReportTemplate:
     """Template engine for PGT-A reports"""
     
@@ -129,54 +134,73 @@ class PGTAReportTemplate:
         self._create_custom_styles()
     
     def _register_fonts(self):
-        """Register custom fonts if they exist in assets/fonts"""
+        """Register custom fonts if they exist in assets/fonts.
+        Uses a case-insensitive file scan so font files work regardless
+        of whether they were uploaded with uppercase or mixed-case names.
+        """
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
         from reportlab.pdfbase.pdfmetrics import registerFontFamily
-        
+
         fonts_dir = os.path.join(self.ASSETS_DIR, "fonts")
         if not os.path.exists(fonts_dir):
             return
-            
-        # Actual filenames from user upload
+
+        # Build case-insensitive lookup: lower(filename) → actual filename
+        available = {}
+        for fname in os.listdir(fonts_dir):
+            available[fname.lower()] = fname
+
+        def _find(candidates):
+            """Return full path for first matching candidate (case-insensitive)."""
+            for c in candidates:
+                key = c.lower()
+                if key in available:
+                    return os.path.join(fonts_dir, available[key])
+            return None
+
+        # Each entry: (logical_name, [possible_filenames...])
         font_configs = [
-            # Segoe UI
-            {'name': 'SegoeUI', 'file': 'SEGOEUI.TTF'},
-            {'name': 'SegoeUI-Bold', 'file': 'SEGOEUIB.TTF'},
-            {'name': 'SegoeUI-Italic', 'file': 'SEGOEUII.TTF'},
-            {'name': 'SegoeUI-BoldItalic', 'file': 'SEGOEUIZ.TTF'},
-            {'name': 'SegoeUI-Semibold', 'file': 'SEGUISB.TTF'},
-            {'name': 'SegoeUI-SemiboldItalic', 'file': 'SEGUISBI.TTF'},
-            # Gill Sans MT
-            {'name': 'GillSansMT', 'file': 'GIL_____.TTF'},
-            {'name': 'GillSansMT-Bold', 'file': 'GILB____.TTF'},
-            {'name': 'GillSansMT-Italic', 'file': 'GILI____.TTF'},
-            {'name': 'GillSansMT-BoldItalic', 'file': 'GILBI___.TTF'},
-            # Calibri
-            {'name': 'Calibri', 'file': 'CALIBRI.TTF'},
-            {'name': 'Calibri-Bold', 'file': 'CALIBRIB.TTF'},
-            {'name': 'Calibri-Italic', 'file': 'CALIBRII.TTF'},
-            {'name': 'Calibri-BoldItalic', 'file': 'CALIBRIZ.TTF'},
+            ('SegoeUI',               ['SegoeUI.ttf', 'SEGOEUI.TTF']),
+            ('SegoeUI-Bold',          ['SegoeUI-Bold.ttf', 'SEGOEUIB.TTF']),
+            ('SegoeUI-Italic',        ['SegoeUI-Italic.ttf', 'SEGOEUII.TTF']),
+            ('SegoeUI-BoldItalic',    ['SegoeUI-BoldItalic.ttf', 'SEGOEUIZ.TTF']),
+            ('GillSansMT',            ['GillSansMT.ttf', 'GillSans.ttf', 'GIL_____.TTF']),
+            ('GillSansMT-Bold',       ['GillSansMT-Bold.ttf', 'GillSansMTBold.ttf', 'GILB____.TTF']),
+            ('GillSansMT-Italic',     ['GillSansMT-Italic.ttf', 'GILI____.TTF']),
+            ('GillSansMT-BoldItalic', ['GillSansMT-BoldItalic.ttf', 'GILBI___.TTF']),
+            ('Calibri',               ['Calibri.ttf', 'CALIBRI.TTF']),
+            ('Calibri-Bold',          ['Calibri-Bold.ttf', 'CALIBRIB.TTF']),
+            ('Calibri-Italic',        ['Calibri-Italic.ttf', 'CALIBRII.TTF']),
+            ('Calibri-BoldItalic',    ['Calibri-BoldItalic.ttf', 'CALIBRIZ.TTF']),
         ]
-        
+
         registered = []
-        for cfg in font_configs:
-            font_path = os.path.join(fonts_dir, cfg['file'])
-            if os.path.exists(font_path):
+        for name, candidates in font_configs:
+            font_path = _find(candidates)
+            if font_path:
                 try:
-                    pdfmetrics.registerFont(TTFont(cfg['name'], font_path))
-                    registered.append(cfg['name'])
-                    print(f"Registered font: {cfg['name']}")
+                    pdfmetrics.registerFont(TTFont(name, font_path))
+                    registered.append(name)
+                    print(f"Registered font: {name} <- {os.path.basename(font_path)}")
                 except Exception as e:
-                    print(f"Error registering font {cfg['name']}: {e}")
-        
-        # Register font families if components exist
+                    print(f"Error registering font {name}: {e}")
+
+        # Register font families (only for variants that are available)
         if 'SegoeUI' in registered and 'SegoeUI-Bold' in registered:
-            registerFontFamily('SegoeUI', normal='SegoeUI', bold='SegoeUI-Bold', italic='SegoeUI-Italic', boldItalic='SegoeUI-BoldItalic')
-        if 'GillSansMT' in registered and 'GillSansMT-Bold' in registered:
-            registerFontFamily('GillSansMT', normal='GillSansMT', bold='GillSansMT-Bold', italic='GillSansMT-Italic', boldItalic='GillSansMT-BoldItalic')
+            registerFontFamily('SegoeUI', normal='SegoeUI', bold='SegoeUI-Bold',
+                               italic=registered_or('SegoeUI-Italic', registered, 'SegoeUI'),
+                               boldItalic=registered_or('SegoeUI-BoldItalic', registered, 'SegoeUI-Bold'))
+        if 'GillSansMT-Bold' in registered:
+            # Regular Gill Sans may not be in the fonts dir; use Bold as fallback normal
+            _gill_normal = 'GillSansMT' if 'GillSansMT' in registered else 'GillSansMT-Bold'
+            registerFontFamily('GillSansMT', normal=_gill_normal, bold='GillSansMT-Bold',
+                               italic=registered_or('GillSansMT-Italic', registered, _gill_normal),
+                               boldItalic=registered_or('GillSansMT-BoldItalic', registered, 'GillSansMT-Bold'))
         if 'Calibri' in registered and 'Calibri-Bold' in registered:
-            registerFontFamily('Calibri', normal='Calibri', bold='Calibri-Bold', italic='Calibri-Italic', boldItalic='Calibri-BoldItalic')
+            registerFontFamily('Calibri', normal='Calibri', bold='Calibri-Bold',
+                               italic=registered_or('Calibri-Italic', registered, 'Calibri'),
+                               boldItalic=registered_or('Calibri-BoldItalic', registered, 'Calibri-Bold'))
     
     def _get_font(self, name, fallback):
         """Helper to get best available font"""

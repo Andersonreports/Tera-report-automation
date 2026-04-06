@@ -1535,6 +1535,9 @@
     .cloud-file-item i { font-size: 13px; flex-shrink: 0; }
     .cloud-file-item i.fa-file-excel { color: #16a34a; }
     .cloud-file-item i.fa-image { color: #2563eb; }
+    .selectable-excel { cursor: pointer !important; color: var(--text) !important; }
+    .selectable-excel:hover { background: #f0f4f8; }
+    .selectable-excel.active { background: #dcfce7; border: 1px solid #16a34a; color: #15803d !important; font-weight: 600; }
     .cloud-badge {
       font-size: 9px; font-weight: 700; padding: 1px 5px;
       border-radius: 4px; margin-left: auto;
@@ -4371,6 +4374,8 @@
     // ═══════════════════════════════════════════════
     let _cloudSelectedFolder = null;
     let _cloudFolderFiles    = [];
+    let _cloudSelectedExcel  = null;   // the Excel file object the user clicked
+    let _cloudSubfolders     = [];     // patient image subfolders inside the batch folder
 
     function openCloudBrowser() {
       // Fallback: if Supabase client not ready, open local file picker instead
@@ -4460,6 +4465,8 @@
       if (el) el.classList.add("active");
       _cloudSelectedFolder = folderName;
       _cloudFolderFiles    = [];
+      _cloudSelectedExcel  = null;
+      _cloudSubfolders     = [];
       document.getElementById("cloudBreadcrumb").textContent = `Report-inputs / pgta / ${folderName}`;
       const list   = document.getElementById("cloudBrowserList");
       const footer = document.getElementById("cloudBrowserFooter");
@@ -4468,132 +4475,182 @@
       if (btn)    btn.disabled = true;
       list.innerHTML = '<div class="cloud-status-msg"><i class="fas fa-spinner fa-spin"></i>&nbsp; Loading files…</div>';
       try {
-        // Use backend endpoint (service-role key) — avoids anon RLS restrictions on listing
         const _listRes = await fetch(`/pgta/storage/list?path=${encodeURIComponent("pgta/" + folderName)}`);
         if (!_listRes.ok) throw new Error(`Server error ${_listRes.status}: ${await _listRes.text()}`);
-        const { items: data } = await _listRes.json();
-        const error = null;
-        _cloudFolderFiles = (data || []).filter(f => f.name !== ".emptyFolderPlaceholder");
-        const xlsxFiles = _cloudFolderFiles.filter(f => /\.xlsx?$/i.test(f.name));
-        const imgFiles  = _cloudFolderFiles.filter(f => /\.(png|jpe?g)$/i.test(f.name));
+        const { items: rawData } = await _listRes.json();
+
+        _cloudFolderFiles = (rawData || []).filter(f => f.name !== ".emptyFolderPlaceholder");
+        const xlsxFiles  = _cloudFolderFiles.filter(f => /\.xlsx?$/i.test(f.name));
+        const isFolder   = f => f.id === null || f.id == null || !f.metadata || !f.metadata.mimetype;
+        _cloudSubfolders = _cloudFolderFiles.filter(f => isFolder(f) && !/\.xlsx?$/i.test(f.name));
+
         list.innerHTML = "";
-        // Back button
+
+        // ── Back button ──────────────────────────────────────
         const back = document.createElement("div");
         back.className = "cloud-back-btn";
         back.innerHTML = '<i class="fas fa-arrow-left"></i> Back to folders';
         back.onclick = openCloudBrowser;
         list.appendChild(back);
+
         if (_cloudFolderFiles.length === 0) {
-          const empty = document.createElement("div");
-          empty.className = "cloud-status-msg warn";
-          empty.innerHTML = '<i class="fas fa-folder-open"></i>&nbsp; Folder is empty';
-          list.appendChild(empty);
+          list.innerHTML += '<div class="cloud-status-msg warn"><i class="fas fa-folder-open"></i>&nbsp; Folder is empty</div>';
           return;
         }
-        // Excel files first, then images, then others
-        const sorted = [...xlsxFiles,
-          ...imgFiles,
-          ..._cloudFolderFiles.filter(f => !xlsxFiles.includes(f) && !imgFiles.includes(f))];
-        sorted.forEach(file => {
-          const div = document.createElement("div");
-          div.className = "cloud-file-item";
-          const isXlsx = /\.xlsx?$/i.test(file.name);
-          const isImg  = /\.(png|jpe?g)$/i.test(file.name);
-          const icon   = isXlsx ? "fa-file-excel" : isImg ? "fa-image" : "fa-file";
-          const badge  = isXlsx ? `<span class="cloud-badge excel">EXCEL</span>` :
-                         isImg  ? `<span class="cloud-badge image">IMAGE</span>` : "";
-          div.innerHTML = `<i class="fas ${icon}"></i><span style="flex:1;overflow:hidden;text-overflow:ellipsis;">${esc(file.name)}</span>${badge}`;
-          list.appendChild(div);
-        });
-        if (xlsxFiles.length > 0) {
-          if (footer) footer.style.display = "flex";
-          if (btn)    btn.disabled = false;
-          const summary = document.getElementById("cloudFolderSummary");
-          if (summary) summary.textContent = `${xlsxFiles.length} Excel file${xlsxFiles.length>1?"s":""}, ${imgFiles.length} image${imgFiles.length!==1?"s":""}`;
-        } else {
+
+        if (xlsxFiles.length === 0) {
           const warn = document.createElement("div");
           warn.className = "cloud-status-msg warn";
           warn.style.marginTop = "8px";
-          warn.innerHTML = '<i class="fas fa-exclamation-triangle"></i>&nbsp; No Excel file found — cannot use this folder';
+          warn.innerHTML = '<i class="fas fa-exclamation-triangle"></i>&nbsp; No Excel file found in this folder';
           list.appendChild(warn);
+          return;
         }
+
+        // ── Excel selection header ────────────────────────────
+        const xlsxHdr = document.createElement("div");
+        xlsxHdr.style.cssText = "font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 4px;padding:0 2px;";
+        xlsxHdr.innerHTML = `<i class="fas fa-file-excel" style="color:#1d6f42;margin-right:4px;"></i>Select Excel file (${xlsxFiles.length} found):`;
+        list.appendChild(xlsxHdr);
+
+        xlsxFiles.forEach(file => {
+          const div = document.createElement("div");
+          div.className = "cloud-file-item selectable-excel";
+          div.style.cursor = "pointer";
+          div.innerHTML = `<i class="fas fa-file-excel" style="color:#1d6f42;"></i><span style="flex:1;overflow:hidden;text-overflow:ellipsis;">${esc(file.name)}</span><span class="cloud-badge excel">EXCEL</span>`;
+          div.onclick = () => _selectCloudExcel(file, div);
+          list.appendChild(div);
+        });
+
+        // ── Patient image subfolders (info only) ──────────────
+        if (_cloudSubfolders.length > 0) {
+          const sfHdr = document.createElement("div");
+          sfHdr.style.cssText = "font-size:11px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 4px;padding:0 2px;";
+          sfHdr.innerHTML = `<i class="fas fa-folder" style="color:#f59e0b;margin-right:4px;"></i>Patient image folders (${_cloudSubfolders.length}) — auto-loaded per patient:`;
+          list.appendChild(sfHdr);
+          _cloudSubfolders.forEach(sf => {
+            const div = document.createElement("div");
+            div.className = "cloud-folder-item";
+            div.style.cssText = "opacity:.75;cursor:default;pointer-events:none;";
+            div.innerHTML = `<i class="fas fa-folder" style="color:#f59e0b;"></i><span style="flex:1;">${esc(sf.name)}</span><span class="cloud-badge" style="background:#fef3c7;color:#92400e;">IMAGES</span>`;
+            list.appendChild(div);
+          });
+        }
+
+        if (footer) footer.style.display = "flex";
+        const summary = document.getElementById("cloudFolderSummary");
+        if (summary) summary.textContent = "Click an Excel file to select it";
+
       } catch (err) {
         list.innerHTML = `<div class="cloud-status-msg error">${esc(err.message)}</div>`;
       }
     }
 
+    function _selectCloudExcel(file, el) {
+      document.querySelectorAll(".selectable-excel").forEach(d => d.classList.remove("active"));
+      el.classList.add("active");
+      _cloudSelectedExcel = file;
+      const btn = document.getElementById("cloudConfirmBtn");
+      if (btn) btn.disabled = false;
+      const summary = document.getElementById("cloudFolderSummary");
+      if (summary) summary.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a;margin-right:4px;"></i>Selected: <strong>${esc(file.name)}</strong>`;
+    }
+
     async function confirmCloudFolder() {
-      if (!_cloudSelectedFolder) return;
+      if (!_cloudSelectedFolder || !_cloudSelectedExcel) return;
       closeCloudBrowser();
-      const xlsxFile = _cloudFolderFiles.find(f => /\.xlsx?$/i.test(f.name));
-      if (!xlsxFile) { showToast("No Excel file in folder", "error"); return; }
-      const lbl = document.getElementById("dropZoneLabel");
+      const xlsxFile = _cloudSelectedExcel;
+      const lbl  = document.getElementById("dropZoneLabel");
       const spin = `<span class="spinner" style="border-color:#1F497D;border-top-color:#4F81BD;width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:6px;border-width:2px;border-style:solid;border-radius:50%;animation:spin 0.7s linear infinite;"></span>`;
-      if (lbl) lbl.innerHTML = `${spin}Downloading <strong>${esc(_cloudSelectedFolder)}</strong>…`;
+      if (lbl) lbl.innerHTML = `${spin}Downloading <strong>${esc(xlsxFile.name)}</strong>…`;
       try {
-        // 1. Download & parse Excel — use public URL (bucket is PUBLIC, no RLS needed)
+        // 1. Download & parse Excel via public URL (bucket is PUBLIC — no auth needed for reads)
         const xlsxPublicUrl = sb.storage.from("Report-inputs").getPublicUrl(`pgta/${_cloudSelectedFolder}/${xlsxFile.name}`).data.publicUrl;
         const xlsxFetchRes = await fetch(xlsxPublicUrl);
         if (!xlsxFetchRes.ok) throw new Error(`Failed to download Excel: HTTP ${xlsxFetchRes.status}`);
-        const xlsxBlob = await xlsxFetchRes.blob();
+        const xlsxBlob   = await xlsxFetchRes.blob();
         const xlsxFileObj = new File([xlsxBlob], xlsxFile.name, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         await handleBulkFile(xlsxFileObj);
-        // 2. Auto-map CNV images
-        const imgFiles = _cloudFolderFiles.filter(f => /\.(png|jpe?g)$/i.test(f.name));
-        if (imgFiles.length > 0) {
-          await _autoMapCloudImages(_cloudSelectedFolder, imgFiles);
+
+        // 2. Auto-map CNV images from patient subfolders (each patient has their own subfolder)
+        if (_cloudSubfolders.length > 0 && state.bulkPatients.length > 0) {
+          if (lbl) lbl.innerHTML = `${spin}Loading patient images…`;
+          await _autoMapFromPatientSubfolders(_cloudSelectedFolder, _cloudSubfolders);
         }
-        // Update label
-        if (lbl) lbl.innerHTML = `<i class="fas fa-cloud" style="color:var(--primary);"></i>&nbsp;<strong>${esc(_cloudSelectedFolder)}</strong> &mdash; ${state.bulkPatients.length} patient(s) &nbsp;<small style="color:var(--text-muted);text-decoration:underline;">(click to change)</small>`;
+
+        if (lbl) lbl.innerHTML = `<i class="fas fa-cloud" style="color:var(--primary);"></i>&nbsp;<strong>${esc(_cloudSelectedFolder)} / ${esc(xlsxFile.name)}</strong> &mdash; ${state.bulkPatients.length} patient(s) &nbsp;<small style="color:var(--text-muted);text-decoration:underline;">(click to change)</small>`;
       } catch (err) {
         if (lbl) lbl.innerHTML = `<span style="color:#c00;"><i class="fas fa-exclamation-triangle"></i> Cloud error: ${esc(err.message)}</span>&nbsp;<small style="text-decoration:underline;">(click to retry)</small>`;
         showToast("Cloud download failed: " + err.message, "error");
       }
     }
 
-    async function _autoMapCloudImages(folderName, imgFiles) {
-      // Build lookup: lowercase filename → cloud storage path
-      const imageMap = {};
-      imgFiles.forEach(f => { imageMap[f.name.toLowerCase()] = `pgta/${folderName}/${f.name}`; });
+    async function _autoMapFromPatientSubfolders(batchFolder, subfolders) {
+      // Build case-insensitive subfolder name map
+      const sfMap = {};
+      subfolders.forEach(sf => { sfMap[sf.name.toLowerCase()] = sf.name; });
 
-      let matched = 0;
-      const downloadTasks = [];
+      // Normalize a name for fuzzy matching: lowercase, strip spaces/dashes/underscores
+      const norm = s => (s || "").toLowerCase().replace(/[\s_\-]/g, "");
 
-      state.bulkPatients.forEach((patient, pi) => {
-        (patient.embryos || []).forEach((emb, ei) => {
-          const embryoId = (emb.embryo_id || `PS${ei + 1}`).toLowerCase();
-          // Match: any image whose name contains "-{embryoId}_" or "-{embryoId}."
-          const matchKey = Object.keys(imageMap).find(k =>
-            k.includes(`-${embryoId}_`) || k.includes(`-${embryoId}.`)
-          );
-          if (matchKey) {
-            matched++;
-            // Use public URL for image download — avoids anon RLS restrictions
-            const imgPublicUrl = sb.storage.from("Report-inputs").getPublicUrl(imageMap[matchKey]).data.publicUrl;
-            downloadTasks.push(
-              fetch(imgPublicUrl).then(r => r.ok ? r.blob() : Promise.reject(new Error(`HTTP ${r.status}`))).then(blob => {
-                if (!blob) return;
-                return new Promise(resolve => {
-                  const reader = new FileReader();
-                  reader.onload = e => {
-                    state.bulkPatients[pi].embryos[ei].cnv_image_b64  = e.target.result; // data:image/png;base64,...
-                    state.bulkPatients[pi].embryos[ei].cnv_image_name = matchKey;
-                    resolve();
-                  };
-                  reader.readAsDataURL(blob);
-                });
-              }).catch(() => {/* silently skip failed image downloads */})
-            );
-          }
+      let totalMapped = 0;
+
+      for (const [pi, patient] of state.bulkPatients.entries()) {
+        const patientName = (patient.patient_name || "").trim();
+        if (!patientName) continue;
+        const patientNorm = norm(patientName);
+
+        // Find best matching subfolder for this patient
+        const matchedSfKey = Object.keys(sfMap).find(k => {
+          const kn = norm(k);
+          return kn === patientNorm || kn.includes(patientNorm) || patientNorm.includes(kn);
         });
-      });
+        if (!matchedSfKey) continue;
+        const sfName = sfMap[matchedSfKey];
 
-      await Promise.all(downloadTasks);
-      if (matched > 0) {
-        showToast(`Auto-mapped ${matched} CNV image${matched > 1 ? "s" : ""} from cloud ☁`, "success");
+        // List files inside this patient subfolder
+        try {
+          const res = await fetch(`/pgta/storage/list?path=${encodeURIComponent(`pgta/${batchFolder}/${sfName}`)}`);
+          if (!res.ok) continue;
+          const { items } = await res.json();
+          const imgFiles = (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name));
+          if (imgFiles.length === 0) continue;
+
+          // Build image lookup: lowercase name → storage path
+          const imgMap = {};
+          imgFiles.forEach(f => { imgMap[f.name.toLowerCase()] = `pgta/${batchFolder}/${sfName}/${f.name}`; });
+
+          // Match each embryo to an image by embryo ID
+          for (const [ei, emb] of (patient.embryos || []).entries()) {
+            const embryoId = (emb.embryo_id || `PS${ei + 1}`).toLowerCase();
+            const matchKey = Object.keys(imgMap).find(k =>
+              k.includes(`-${embryoId}_`) || k.includes(`-${embryoId}.`)
+            );
+            if (!matchKey) continue;
+
+            const publicUrl = sb.storage.from("Report-inputs").getPublicUrl(imgMap[matchKey]).data.publicUrl;
+            const blob = await fetch(publicUrl).then(r => r.ok ? r.blob() : null).catch(() => null);
+            if (!blob) continue;
+
+            await new Promise(resolve => {
+              const reader = new FileReader();
+              reader.onload = ev => {
+                state.bulkPatients[pi].embryos[ei].cnv_image_b64  = ev.target.result;
+                state.bulkPatients[pi].embryos[ei].cnv_image_name = matchKey;
+                totalMapped++;
+                resolve();
+              };
+              reader.readAsDataURL(blob);
+            });
+          }
+        } catch (_) { /* skip failed subfolders silently */ }
+      }
+
+      if (totalMapped > 0) {
+        showToast(`Auto-mapped ${totalMapped} CNV image${totalMapped > 1 ? "s" : ""} from cloud ☁`, "success");
         if (bulkSelectedIndex >= 0) renderBulkEditor(bulkSelectedIndex);
       } else {
-        showToast("No CNV images matched. You can upload manually per embryo.", "info");
+        showToast("No CNV images matched. Upload manually per embryo if needed.", "info");
       }
     }
 

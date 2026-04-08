@@ -1012,9 +1012,11 @@ async def pgta_storage_list(path: str = "pgta"):
     if supabase is None:
         from fastapi import HTTPException
         raise HTTPException(status_code=503, detail="Supabase client not configured")
+    # Clean path: remove leading/trailing slashes for Supabase storage list
+    clean_path = (path or "").strip("/")
     try:
         result = supabase.storage.from_("Report-inputs").list(
-            path,
+            clean_path,
             {"limit": 500, "sortBy": {"column": "name", "order": "asc"}}
         )
         items = []

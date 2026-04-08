@@ -95,7 +95,7 @@ def _resolve_cnv_images(embryos: list) -> tuple:
                   f"'{emb.get('embryo_id','?')}': {exc}")
     return embryos, temp_paths
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     p = os.path.join(FRONTEND_DIR, "login.html")
     if os.path.exists(p):

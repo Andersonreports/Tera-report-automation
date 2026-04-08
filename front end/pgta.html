@@ -4620,49 +4620,36 @@
 
       let totalMapped = 0;
 
-      // ── Detect layout ──────────────────────────────────────────────────────
-      // "Numbered" layout: every top-level subfolder name is a pure integer (1, 2, 3 …)
-      const isNumberedLayout = subfolders.length > 0 &&
-        subfolders.every(sf => /^\d+$/.test(sf.name.trim()));
-
-      // ── NUMBERED layout ────────────────────────────────────────────────────
-      // Folders: run_folder/1/, run_folder/2/ … each containing one CNV image.
-      // Global mapping: flatten all embryos across all patients in order, then
-      // assign subfolder[0] → embryo[0], subfolder[1] → embryo[1], etc.
-      if (isNumberedLayout) {
-        // Sort subfolders numerically
-        const sorted = [...subfolders].sort((a, b) => folderNum(a.name) - folderNum(b.name));
-
-        // Build flat list of all (patientIndex, embryoIndex) pairs
-        const flat = [];
-        for (const [pi, patient] of state.bulkPatients.entries()) {
-          for (const [ei] of (patient.embryos || []).entries()) {
-            flat.push({ pi, ei });
-          }
-        }
-
-        for (let i = 0; i < Math.min(sorted.length, flat.length); i++) {
-          const sf = sorted[i];
-          const { pi, ei } = flat[i];
+      // ── PRIMARY: Numbered layout ───────────────────────────────────────────
+      // Directly probe batchFolder/1/, batchFolder/2/ … for each embryo by its
+      // global 1-based index. This does NOT rely on _cloudSubfolders being
+      // correctly populated — it always probes all folders explicitly.
+      let embryoNum = 0;
+      for (const [pi, patient] of state.bulkPatients.entries()) {
+        for (const [ei] of (patient.embryos || []).entries()) {
+          embryoNum++;
+          const folderPath = `${batchFolder}/${embryoNum}`;
           try {
-            const res = await fetch(`/pgta/storage/list?path=${encodeURIComponent(`${batchFolder}/${sf.name}`)}`);
-            if (!res.ok) continue;
+            const res = await fetch(`/pgta/storage/list?path=${encodeURIComponent(folderPath)}`);
+            if (!res.ok) { console.warn(`CNV auto-map: list failed for ${folderPath} (${res.status})`); continue; }
             const { items } = await res.json();
             const imgFiles = (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name));
-            if (imgFiles.length === 0) continue;
-            const imgFile = imgFiles[0];
-            const b64 = await fetchB64(`${batchFolder}/${sf.name}/${imgFile.name}`);
-            if (!b64) continue;
+            if (imgFiles.length === 0) { console.warn(`CNV auto-map: no image in ${folderPath}`); continue; }
+            const b64 = await fetchB64(`${folderPath}/${imgFiles[0].name}`);
+            if (!b64) { console.warn(`CNV auto-map: fetchB64 failed for ${folderPath}/${imgFiles[0].name}`); continue; }
             state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
-            state.bulkPatients[pi].embryos[ei].cnv_image_name = imgFile.name;
+            state.bulkPatients[pi].embryos[ei].cnv_image_name = imgFiles[0].name;
             totalMapped++;
-          } catch (_) { /* skip silently */ }
+            console.log(`CNV auto-map: ✓ embryo ${embryoNum} → ${folderPath}/${imgFiles[0].name}`);
+          } catch (err) { console.warn(`CNV auto-map: error for embryo ${embryoNum}`, err); }
         }
+      }
 
-      // ── NAMED layout ───────────────────────────────────────────────────────
+      // ── FALLBACK: Named layout ─────────────────────────────────────────────
+      // Only attempted if numbered probing found nothing.
       // Folders: run_folder/PatientName/ each containing either direct images
       // or per-embryo subfolders (Embryo1/, Embryo2/ …).
-      } else {
+      if (totalMapped === 0) {
         const norm = s => (s || "").toLowerCase()
           .replace(/^\d+[\-_]/, "")   // strip leading number prefix
           .replace(/[\-_]c$/i, "")    // strip trailing -C suffix

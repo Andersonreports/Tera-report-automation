@@ -388,35 +388,63 @@ def any_mosaic(embryos_data):
 
 def auto_map_cnvs(embryos, image_filenames):
     """
-    Attempt to match embryos to CNV image filenames based on embryo_id.
-    Returns the count of mapped images.
+    Ultra-robust multi-pass matching for CNV images.
+    1. Precise delimited match (e.g. -PS1_, PS1.)
+    2. Alphanumeric normalization match (e.g. PS-1 -> PS1)
+    3. Patient + Embryo Index combo
+    4. Numeric order fallback
     """
+    if not embryos or not image_filenames:
+        return 0
+        
     mapped_count = 0
-    # Create a map for quick lookup
-    # Normalize filenames to lowercase for better matching
-    img_map = {f.lower(): f for f in image_filenames}
+    available_imgs = {f.lower(): f for f in image_filenames}
     
+    def alpha_norm(s):
+        return re.sub(r'[^a-z0-9]', '', str(s).lower())
+
+    # Pass 1 & 2: Structural and Normalization match
     for emb in embryos:
         eid = str(emb.get("embryo_id") or "").strip().lower()
-        if not eid:
-            continue
-            
-        # Strategy:
-        # 1. Look for exact "embryo_id" in filename with some delimiters
-        # 2. Look for any inclusion if specific fails
+        if not eid: continue
+        
+        target_norm = alpha_norm(eid)
         matched_filename = None
-        for low_name, orig_name in img_map.items():
-            # Match patterns like "-PS1_", "PS1.", "PS1 "
-            if f"-{eid}_" in low_name or f"-{eid}." in low_name or f" {eid} " in low_name or low_name.startswith(f"{eid}_"):
+        
+        # Pass 1: Delimited (Safe)
+        for low_name, orig_name in available_imgs.items():
+            # Check for delimiters or start/end
+            if re.search(rf"(^|[^a-z0-9]){re.escape(eid)}([^a-z0-9]|$)", low_name):
                 matched_filename = orig_name
                 break
-            # Fallback to simple inclusion if it's unique enough (risky but often needed)
-            if eid in low_name:
-                matched_filename = orig_name
-                break
-                
+        
+        # Pass 2: Fuzzy/Normalization (Risky)
+        if not matched_filename:
+            for low_name, orig_name in available_imgs.items():
+                if target_norm in alpha_norm(low_name):
+                    matched_filename = orig_name
+                    break
+        
         if matched_filename:
             emb["cnv_image_name"] = matched_filename
+            # Remove from available to prevent double mapping
+            available_imgs.pop(matched_filename.lower(), None)
+            mapped_count += 1
+
+    # Pass 3: Global Order Fallback (if count matches exactly)
+    # Only if we still have unmapped embryos and available images
+    unmapped = [e for e in embryos if not e.get("cnv_image_name")]
+    if unmapped and len(unmapped) == len(available_imgs):
+        # Sort both by numeric appearance in names
+        def extract_num(s):
+            m = re.search(r'\d+', s)
+            return int(m.group()) if m else 999
+            
+        unmapped_sorted = sorted(unmapped, key=lambda e: extract_num(e.get("embryo_id", "")))
+        imgs_sorted = sorted(available_imgs.values(), key=lambda f: extract_num(f))
+        
+        for i, emb in enumerate(unmapped_sorted):
+            emb["cnv_image_name"] = imgs_sorted[i]
             mapped_count += 1
             
     return mapped_count

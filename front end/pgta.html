@@ -3019,9 +3019,9 @@
           <!-- Compact: File Upload + Output Folder in one bar -->
           <div class="bulk-top-bar">
             <div class="bulk-top-file">
-              <div class="drop-zone-compact" id="dropZone" onclick="document.getElementById('bulkFileInput').click()">
-                <i class="fas fa-folder-open" style="color:var(--primary);font-size:14px;flex-shrink:0;"></i>
-                <span id="dropZoneLabel">Click to select <strong>Folder</strong> (Excel + CNVs) &nbsp;<small style="color:var(--text-muted);">(or drag &amp; drop)</small></span>
+              <div class="drop-zone-compact" id="dropZone" onclick="openCloudBrowser()">
+                <i class="fas fa-cloud" style="color:var(--primary);font-size:14px;flex-shrink:0;"></i>
+                <span id="dropZoneLabel">Click to browse cloud folders &nbsp;<small style="color:var(--text-muted);">(or drag &amp; drop local Excel)</small></span>
               </div>
               <input type="file" id="bulkFileInput" style="display:none;" webkitdirectory directory multiple>
             </div>
@@ -4650,10 +4650,8 @@
 
       let totalMapped = 0;
 
-      // ── PRIMARY: Numbered layout ───────────────────────────────────────────
-      // Directly probe batchFolder/1/, batchFolder/2/ … for each embryo by its
-      // global 1-based index. This does NOT rely on _cloudSubfolders being
-      // correctly populated — it always probes all folders explicitly.
+      // ── STRATEGY A: Numbered layout ─────────────────────────────────────────
+      // run_folder/1/, run_folder/2/ …
       let embryoNum = 0;
       for (const [pi, patient] of state.bulkPatients.entries()) {
         for (const [ei] of (patient.embryos || []).entries()) {
@@ -4661,30 +4659,27 @@
           const folderPath = `${batchFolder}/${embryoNum}`;
           try {
             const res = await fetch(`/pgta/storage/list?path=${encodeURIComponent(folderPath)}`);
-            if (!res.ok) { console.warn(`CNV auto-map: list failed for ${folderPath} (${res.status})`); continue; }
-            const { items } = await res.json();
-            const imgFiles = (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name));
-            if (imgFiles.length === 0) { console.warn(`CNV auto-map: no image in ${folderPath}`); continue; }
-            const b64 = await fetchB64(`${folderPath}/${imgFiles[0].name}`);
-            if (!b64) { console.warn(`CNV auto-map: fetchB64 failed for ${folderPath}/${imgFiles[0].name}`); continue; }
-            state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
-            state.bulkPatients[pi].embryos[ei].cnv_image_name = imgFiles[0].name;
-            totalMapped++;
-            console.log(`CNV auto-map: ✓ embryo ${embryoNum} → ${folderPath}/${imgFiles[0].name}`);
-          } catch (err) { console.warn(`CNV auto-map: error for embryo ${embryoNum}`, err); }
+            if (res.ok) {
+              const { items } = await res.json();
+              const imgFiles = (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name));
+              if (imgFiles.length > 0) {
+                const b64 = await fetchB64(`${folderPath}/${imgFiles[0].name}`);
+                if (b64) {
+                  state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
+                  state.bulkPatients[pi].embryos[ei].cnv_image_name = imgFiles[0].name;
+                  totalMapped++;
+                  continue;
+                }
+              }
+            }
+          } catch (err) {}
         }
       }
 
-      // ── FALLBACK: Named layout ─────────────────────────────────────────────
-      // Only attempted if numbered probing found nothing.
-      // Folders: run_folder/PatientName/ each containing either direct images
-      // or per-embryo subfolders (Embryo1/, Embryo2/ …).
+      // ── STRATEGY B: Named layout ───────────────────────────────────────────
+      // run_folder/PatientName/ each containing either direct images or subfolders
       if (totalMapped === 0) {
-        const norm = s => (s || "").toLowerCase()
-          .replace(/^\d+[\-_]/, "")   // strip leading number prefix
-          .replace(/[\-_]c$/i, "")    // strip trailing -C suffix
-          .replace(/[\s_\-]/g, "");   // strip separators
-
+        const norm = s => (s || "").toLowerCase().replace(/^\d+[\-_]/, "").replace(/[\-_]c$/i, "").replace(/[\s_\-]/g, "");
         const sfMap = {};
         subfolders.forEach(sf => { sfMap[sf.name.toLowerCase()] = sf.name; });
 
@@ -4696,62 +4691,89 @@
           });
           if (!matchedKey) continue;
           const sfName = sfMap[matchedKey];
-
           try {
             const res = await fetch(`/pgta/storage/list?path=${encodeURIComponent(`${batchFolder}/${sfName}`)}`);
             if (!res.ok) continue;
             const { items } = await res.json();
             const allItems = (items || []).filter(f => f.name !== ".emptyFolderPlaceholder");
 
-            // Case A: images directly in patient folder
+            // Direct images?
             const directImgs = allItems.filter(f => /\.(png|jpe?g)$/i.test(f.name));
             if (directImgs.length > 0) {
               const imgMap = {};
               directImgs.forEach(f => { imgMap[f.name.toLowerCase()] = `${batchFolder}/${sfName}/${f.name}`; });
               for (const [ei, emb] of (patient.embryos || []).entries()) {
                 const eid = (emb.embryo_id || `PS${ei + 1}`).toLowerCase();
-                const key = Object.keys(imgMap).find(k =>
-                  k.includes(`-${eid}_`) || k.includes(`-${eid}.`) || k.includes(eid)
-                );
-                if (!key) continue;
-                const b64 = await fetchB64(imgMap[key]);
-                if (!b64) continue;
-                state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
-                state.bulkPatients[pi].embryos[ei].cnv_image_name = key;
-                totalMapped++;
+                const key = Object.keys(imgMap).find(k => k.includes(`-${eid}_`) || k.includes(`-${eid}.`) || k.includes(eid));
+                if (key) {
+                  const b64 = await fetchB64(imgMap[key]);
+                  if (b64) {
+                    state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
+                    state.bulkPatients[pi].embryos[ei].cnv_image_name = key;
+                    totalMapped++;
+                  }
+                }
               }
-              continue;
-            }
-
-            // Case B: per-embryo subfolders inside patient folder
-            const embSfs = allItems.filter(f => isFolder(f))
-              .sort((a, b) => folderNum(a.name) - folderNum(b.name) || a.name.localeCompare(b.name));
-            for (const [ei, emb] of (patient.embryos || []).entries()) {
-              const eid = (emb.embryo_id || "").toLowerCase();
-              let esf = embSfs.find(sf => { const n = sf.name.toLowerCase(); return eid && (n.includes(eid) || eid.includes(n)); });
-              if (!esf) esf = embSfs.find(sf => folderNum(sf.name) === ei + 1);
-              if (!esf && ei < embSfs.length) esf = embSfs[ei];
-              if (!esf) continue;
-              try {
+            } else {
+              // Subfolders per embryo?
+              const embSfs = allItems.filter(f => isFolder(f)).sort((a,b) => folderNum(a.name) - folderNum(b.name));
+              for (const [ei, emb] of (patient.embryos || []).entries()) {
+                const eid = (emb.embryo_id || "").toLowerCase();
+                let esf = embSfs.find(sf => { const n = sf.name.toLowerCase(); return eid && (n.includes(eid) || eid.includes(n)); });
+                if (!esf && ei < embSfs.length) esf = embSfs[ei];
+                if (!esf) continue;
                 const er = await fetch(`/pgta/storage/list?path=${encodeURIComponent(`${batchFolder}/${sfName}/${esf.name}`)}`);
-                if (!er.ok) continue;
-                const { items: eItems } = await er.json();
-                const eImgs = (eItems || []).filter(f => /\.(png|jpe?g)$/i.test(f.name));
-                if (!eImgs.length) continue;
-                const b64 = await fetchB64(`${batchFolder}/${sfName}/${esf.name}/${eImgs[0].name}`);
-                if (!b64) continue;
-                state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
-                state.bulkPatients[pi].embryos[ei].cnv_image_name = eImgs[0].name;
-                totalMapped++;
-              } catch (_) { /* skip */ }
+                if (er.ok) {
+                  const { items: eItems } = await er.json();
+                  const eImg = (eItems || []).find(f => /\.(png|jpe?g)$/i.test(f.name));
+                  if (eImg) {
+                    const b64 = await fetchB64(`${batchFolder}/${sfName}/${esf.name}/${eImg.name}`);
+                    if (b64) {
+                      state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
+                      state.bulkPatients[pi].embryos[ei].cnv_image_name = eImg.name;
+                      totalMapped++;
+                    }
+                  }
+                }
+              }
             }
-          } catch (_) { /* skip */ }
+          } catch (err) {}
         }
+      }
+
+      // ── STRATEGY C: Flat same-folder mapping ───────────────────────────────
+      // Excel and Images all in the same folder
+      if (totalMapped === 0) {
+        try {
+          const res = await fetch(`/pgta/storage/list?path=${encodeURIComponent(batchFolder)}`);
+          if (res.ok) {
+            const { items } = await res.json();
+            const imgFiles = (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name));
+            if (imgFiles.length > 0) {
+              const imgMap = {};
+              imgFiles.forEach(f => { imgMap[f.name.toLowerCase()] = `${batchFolder}/${f.name}`; });
+              for (const [pi, patient] of state.bulkPatients.entries()) {
+                for (const [ei, emb] of (patient.embryos || []).entries()) {
+                  const eid = (emb.embryo_id || `PS${ei+1}`).toLowerCase();
+                  const key = Object.keys(imgMap).find(k => k.includes(`-${eid}_`) || k.includes(`-${eid}.`) || k.includes(eid));
+                  if (key) {
+                    const b64 = await fetchB64(imgMap[key]);
+                    if (b64) {
+                      state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
+                      state.bulkPatients[pi].embryos[ei].cnv_image_name = key;
+                      totalMapped++;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {}
       }
 
       if (totalMapped > 0) {
         showToast(`Auto-mapped ${totalMapped} CNV image${totalMapped > 1 ? "s" : ""} from cloud ☁`, "success");
-        if (bulkSelectedIndex >= 0) renderBulkEditor(bulkSelectedIndex);
+        renderBulkEditor(bulkSelectedIndex >= 0 ? bulkSelectedIndex : 0);
       } else {
         showToast("No CNV images matched. Upload manually per embryo if needed.", "info");
       }

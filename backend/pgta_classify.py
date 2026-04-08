@@ -384,3 +384,39 @@ def any_mosaic(embryos_data):
         if classify_embryo(raw)["is_mosaic"]:
             return True
     return False
+
+
+def auto_map_cnvs(embryos, image_filenames):
+    """
+    Attempt to match embryos to CNV image filenames based on embryo_id.
+    Returns the count of mapped images.
+    """
+    mapped_count = 0
+    # Create a map for quick lookup
+    # Normalize filenames to lowercase for better matching
+    img_map = {f.lower(): f for f in image_filenames}
+    
+    for emb in embryos:
+        eid = str(emb.get("embryo_id") or "").strip().lower()
+        if not eid:
+            continue
+            
+        # Strategy:
+        # 1. Look for exact "embryo_id" in filename with some delimiters
+        # 2. Look for any inclusion if specific fails
+        matched_filename = None
+        for low_name, orig_name in img_map.items():
+            # Match patterns like "-PS1_", "PS1.", "PS1 "
+            if f"-{eid}_" in low_name or f"-{eid}." in low_name or f" {eid} " in low_name or low_name.startswith(f"{eid}_"):
+                matched_filename = orig_name
+                break
+            # Fallback to simple inclusion if it's unique enough (risky but often needed)
+            if eid in low_name:
+                matched_filename = orig_name
+                break
+                
+        if matched_filename:
+            emb["cnv_image_name"] = matched_filename
+            mapped_count += 1
+            
+    return mapped_count

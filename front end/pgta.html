@@ -3019,11 +3019,11 @@
           <!-- Compact: File Upload + Output Folder in one bar -->
           <div class="bulk-top-bar">
             <div class="bulk-top-file">
-              <div class="drop-zone-compact" id="dropZone" onclick="openCloudBrowser()">
-                <i class="fas fa-cloud" style="color:var(--primary);font-size:14px;flex-shrink:0;"></i>
-                <span id="dropZoneLabel">Click to browse cloud folders &nbsp;<small style="color:var(--text-muted);">(or drag &amp; drop local Excel)</small></span>
+              <div class="drop-zone-compact" id="dropZone" onclick="document.getElementById('bulkFileInput').click()">
+                <i class="fas fa-folder-open" style="color:var(--primary);font-size:14px;flex-shrink:0;"></i>
+                <span id="dropZoneLabel">Click to select <strong>Folder</strong> (Excel + CNVs) &nbsp;<small style="color:var(--text-muted);">(or drag &amp; drop)</small></span>
               </div>
-              <input type="file" id="bulkFileInput" accept=".xlsx,.xls" style="display:none;">
+              <input type="file" id="bulkFileInput" style="display:none;" webkitdirectory directory multiple>
             </div>
             <div class="bulk-top-sep"></div>
             <div class="bulk-top-folder">
@@ -4342,19 +4342,35 @@
     // ═══════════════════════════════════════════════
     const dropZone = document.getElementById("dropZone");
     const bulkInput = document.getElementById("bulkFileInput");
-    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
-    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
-    dropZone.addEventListener("drop", e => { e.preventDefault(); dropZone.classList.remove("drag-over"); if (e.dataTransfer.files[0]) handleBulkFile(e.dataTransfer.files[0]); });
-    bulkInput.addEventListener("change", () => { if (bulkInput.files[0]) { handleBulkFile(bulkInput.files[0]); bulkInput.value = ""; } });
+    bulkInput.addEventListener("change", () => { if (bulkInput.files.length > 0) { handleBulkFiles(bulkInput.files); bulkInput.value = ""; } });
+    dropZone.addEventListener("drop", e => { e.preventDefault(); dropZone.classList.remove("drag-over"); if (e.dataTransfer.files.length > 0) handleBulkFiles(e.dataTransfer.files); });
 
-    async function handleBulkFile(file) {
-      // Update only the label span — never replace dropZone.innerHTML
-      // so the div's onclick (file picker) always stays intact
+    async function handleBulkFiles(files) {
+      if (files.length === 0) return;
+      
       const lbl = document.getElementById("dropZoneLabel");
-      if (lbl) lbl.innerHTML = `<span class="spinner" style="border-color:#1F497D;border-top-color:#4F81BD;width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:6px;border-width:2px;border-style:solid;border-radius:50%;animation:spin 0.7s linear infinite;"></span>Parsing <strong>${esc(file.name)}</strong>…`;
-      const fd = new FormData(); fd.append("file", file);
+      const excelFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.xlsx') || f.name.toLowerCase().endsWith('.xls'));
+      
+      if (excelFiles.length === 0) {
+        showToast("No Excel file found in selection", "error");
+        return;
+      }
+      
+      const excelFile = excelFiles[0];
+      const otherFiles = Array.from(files).filter(f => f !== excelFile);
+      const images = otherFiles.filter(f => /\.(png|jpe?g)$/i.test(f.name));
+
+      if (lbl) lbl.innerHTML = `<span class="spinner" style="border-color:#1F497D;border-top-color:#4F81BD;width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:6px;border-width:2px;border-style:solid;border-radius:50%;animation:spin 0.7s linear infinite;"></span>Processing <strong>${esc(excelFile.name)}</strong> + ${images.length} images…`;
+      
+      const fd = new FormData();
+      // Use common field name for all files so backend gets a list
+      // Wait, FastAPI List[UploadFile] = File(...) expects them all in 'files' or same key
+      for (const f of files) {
+        fd.append("files", f);
+      }
+      
       try {
-        const res = await fetch(`${BASE}/pgta/parse-excel`, { method: "POST", body: fd });
+        const res = await fetch(`${BASE}/pgta/parse-excel-bulk`, { method: "POST", body: fd });
         const data = await res.json(); if (data.error) throw new Error(data.error);
         state.bulkPatients = (data.patients || []).map(p => ({
           ...p,
@@ -4362,11 +4378,25 @@
         }));
         renderBulkPatients();
         document.getElementById("bulkPatientSection").classList.remove("hidden");
-        if (lbl) lbl.innerHTML = `<strong>${esc(file.name)}</strong> &mdash; ${state.bulkPatients.length} patient(s) &nbsp;<small style="color:var(--text-muted);text-decoration:underline;">(click to change)</small>`;
+        if (lbl) {
+            let msg = `<strong>${esc(excelFile.name)}</strong> &mdash; ${state.bulkPatients.length} patients`;
+            if (data.mapped_count > 0) msg += ` <small style="color:var(--success); font-weight:bold;">(+${data.mapped_count} CNVs)</small>`;
+            lbl.innerHTML = msg + ` &nbsp;<small style="color:var(--text-muted);text-decoration:underline;">(click to change)</small>`;
+        }
+        if (data.mapped_count > 0) {
+            showToast(`Loaded ${state.bulkPatients.length} patients and mapped ${data.mapped_count} CNV charts`, "success");
+        } else {
+            showToast(`Loaded ${state.bulkPatients.length} patients`, "success");
+        }
       } catch (err) {
         if (lbl) lbl.innerHTML = `<span style="color:#c00;">Error: ${esc(err.message)}</span> &nbsp;<small style="text-decoration:underline;">(click to retry)</small>`;
-        showToast("Parse failed: " + err.message, "error");
+        showToast("Processing failed: " + err.message, "error");
       }
+    }
+
+    // Keep handleBulkFile for backward compatibility if any other part calls it
+    async function handleBulkFile(file) {
+      handleBulkFiles([file]);
     }
 
     // ═══════════════════════════════════════════════

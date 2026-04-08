@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Request, BackgroundTasks
+from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
@@ -23,6 +24,7 @@ from tera_template import TERAReportGenerator
 from pgta_template import PGTAReportTemplate
 from fastapi.staticfiles import StaticFiles
 from pgta_docx_generator import PGTADocxGenerator
+from pgta_classify import auto_map_cnvs
 try:
     from supabase_client import supabase, upload_pdf, save_report, upload_pgta_file
 except ImportError:
@@ -740,11 +742,9 @@ async def pgta_generate_report(request: Request, background_tasks: BackgroundTas
         return {"error": str(e)}
 
 
-@app.post("/pgta/parse-excel")
-async def pgta_parse_excel(file: UploadFile = File(...)):
-    """Parse a PGT-A Excel file (Details + summary sheets) and return structured patient/embryo data."""
+async def _parse_pgta_excel_core(contents: bytes):
+    """Core logic to parse PGT-A Excel from bytes."""
     try:
-        contents = await file.read()
         xl = pd.ExcelFile(io.BytesIO(contents))
         sheets = xl.sheet_names
         sheet_names_lower = [s.lower().strip() for s in sheets]
@@ -888,6 +888,83 @@ async def pgta_parse_excel(file: UploadFile = File(...)):
                     patients[-1]["embryos"].append(embryo)
 
         return {"patients": patients, "sheet_names": sheets}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise e
+
+@app.post("/pgta/parse-excel")
+async def pgta_parse_excel(file: UploadFile = File(...)):
+    """Parse a PGT-A Excel file (Details + summary sheets) and return structured patient/embryo data."""
+    try:
+        contents = await file.read()
+        result = await _parse_pgta_excel_core(contents)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/pgta/parse-excel-bulk")
+async def pgta_parse_excel_bulk(files: List[UploadFile] = File(...)):
+    """
+    Parse multiple files: one Excel file + multiple CNV images.
+    Returns structured data with CNV mapping.
+    """
+    try:
+        excel_file = None
+        image_files = []
+        
+        for f in files:
+            ext = os.path.splitext(f.filename or "")[1].lower()
+            if ext in ('.xlsx', '.xls'):
+                excel_file = f
+            elif ext in ('.png', '.jpg', '.jpeg'):
+                image_files.append(f)
+                
+        if not excel_file:
+            return {"error": "No Excel file found in the uploaded folder."}
+            
+        # 1. Parse Excel
+        excel_contents = await excel_file.read()
+        data = await _parse_pgta_excel_core(excel_contents)
+        patients = data.get("patients", [])
+        
+        # 2. Map CNV images
+        img_filenames = [f.filename for f in image_files]
+        all_embryos = []
+        for p in patients:
+            all_embryos.extend(p.get("embryos", []))
+            
+        mapped_count = auto_map_cnvs(all_embryos, img_filenames)
+        
+        # 3. Save mapped images and set URLs
+        for f in image_files:
+            # We only save files that were actually mapped to save space
+            # Find if this file was mapped
+            is_mapped = any(e.get("cnv_image_name") == f.filename for e in all_embryos)
+            if is_mapped:
+                unique_name = str(uuid.uuid4()) + os.path.splitext(f.filename)[1].lower()
+                save_path = os.path.join(PGTA_CNV_DIR, unique_name)
+                # Reset file pointer if needed (though it should be fine here)
+                content = await f.read()
+                with open(save_path, "wb") as out:
+                    out.write(content)
+                
+                # Update all embryos that used this filename
+                for e in all_embryos:
+                    if e.get("cnv_image_name") == f.filename:
+                        e["cnv_image_path"] = save_path
+                        e["cnv_image_url"] = f"/pgta/cnv-image/{unique_name}"
+                        # We also set b64 for preview in frontend if needed, 
+                        # but URL is better for bulk handled in backend.
+                        # For consistency with current frontend:
+                        e["cnv_image_b64"] = f"data:image/png;base64,{base64.b64encode(content).decode()}"
+
+        return {
+            "patients": patients, 
+            "sheet_names": data.get("sheet_names", []),
+            "mapped_count": mapped_count,
+            "total_images": len(image_files)
+        }
     except Exception as e:
         import traceback
         traceback.print_exc()

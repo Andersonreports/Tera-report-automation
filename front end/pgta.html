@@ -4605,9 +4605,9 @@
         const xlsxFileObj = new File([xlsxBlob], xlsxFile.name, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         await handleBulkFile(xlsxFileObj);
 
-        // 2. Auto-map CNV images from subfolders
-        if (_cloudSubfolders.length > 0 && state.bulkPatients.length > 0) {
-          if (lbl) lbl.innerHTML = `${spin}Loading CNV images…`;
+        // 2. Auto-map CNV images
+        if (state.bulkPatients.length > 0) {
+          if (lbl) lbl.innerHTML = `${spin}Searching for CNV images…`;
           await _autoMapCnvImages(_cloudSelectedFolder, _cloudSubfolders);
         }
 

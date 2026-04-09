@@ -388,10 +388,10 @@ def any_mosaic(embryos_data):
 
 def auto_map_cnvs(embryos, image_filenames):
     """
-    Ultra-robust multi-pass matching for CNV images.
-    1. Precise delimited match (e.g. -PS1_, PS1.)
-    2. Alphanumeric normalization match (e.g. PS-1 -> PS1)
-    3. Patient + Embryo Index combo
+    Ultra-robust global multi-pass matching for CNV images.
+    1. Exact Name match (ID == Filename without ext)
+    2. Precise delimited match (e.g. -PS1_, PS1.)
+    3. Fuzzy match with numeric safeguard
     4. Numeric order fallback
     """
     if not embryos or not image_filenames:
@@ -399,49 +399,86 @@ def auto_map_cnvs(embryos, image_filenames):
         
     mapped_count = 0
     available_imgs = {f.lower(): f for f in image_filenames}
+    unmapped_embryos = list(embryos) # track embryos that still need mapping
     
     def alpha_norm(s):
         return re.sub(r'[^a-z0-9]', '', str(s).lower())
 
-    # Pass 1 & 2: Structural and Normalization match
-    for emb in embryos:
+    def extract_num(s):
+        m = re.search(r'\d+', str(s))
+        return int(m.group()) if m else None
+
+    # ── PASS 1: Exact Match (ID == Name without extension) ────────────────────
+    for emb in list(unmapped_embryos):
+        eid = str(emb.get("embryo_id") or "").strip().lower()
+        if not eid: continue
+        
+        matched_filename = None
+        for low_name, orig_name in available_imgs.items():
+            name_no_ext = os.path.splitext(low_name)[0]
+            if name_no_ext == eid:
+                matched_filename = orig_name
+                break
+        
+        if matched_filename:
+            emb["cnv_image_name"] = matched_filename
+            available_imgs.pop(matched_filename.lower(), None)
+            unmapped_embryos.remove(emb)
+            mapped_count += 1
+
+    # ── PASS 2: Delimited Match (Safe) ────────────────────────────────────────
+    for emb in list(unmapped_embryos):
+        eid = str(emb.get("embryo_id") or "").strip().lower()
+        if not eid: continue
+        
+        matched_filename = None
+        # Escape ID for regex
+        eid_esc = re.escape(eid)
+        for low_name, orig_name in available_imgs.items():
+            if re.search(rf"(^|[^a-z0-9]){eid_esc}([^a-z0-9]|$)", low_name):
+                matched_filename = orig_name
+                break
+        
+        if matched_filename:
+            emb["cnv_image_name"] = matched_filename
+            available_imgs.pop(matched_filename.lower(), None)
+            unmapped_embryos.remove(emb)
+            mapped_count += 1
+            
+    # ── PASS 3: Fuzzy / Normalization (with numeric safeguard) ────────────────
+    for emb in list(unmapped_embryos):
         eid = str(emb.get("embryo_id") or "").strip().lower()
         if not eid: continue
         
         target_norm = alpha_norm(eid)
+        target_num = extract_num(eid)
         matched_filename = None
         
-        # Pass 1: Delimited (Safe)
         for low_name, orig_name in available_imgs.items():
-            # Check for delimiters or start/end
-            if re.search(rf"(^|[^a-z0-9]){re.escape(eid)}([^a-z0-9]|$)", low_name):
+            if target_norm in alpha_norm(low_name):
+                # Refinement: If ID is numeric, the file's numeric part should match
+                if target_num is not None:
+                    file_num = extract_num(low_name)
+                    if file_num is not None and file_num != target_num:
+                        continue
                 matched_filename = orig_name
                 break
         
-        # Pass 2: Fuzzy/Normalization (Risky)
-        if not matched_filename:
-            for low_name, orig_name in available_imgs.items():
-                if target_norm in alpha_norm(low_name):
-                    matched_filename = orig_name
-                    break
-        
         if matched_filename:
             emb["cnv_image_name"] = matched_filename
-            # Remove from available to prevent double mapping
             available_imgs.pop(matched_filename.lower(), None)
+            unmapped_embryos.remove(emb)
             mapped_count += 1
 
-    # Pass 3: Global Order Fallback (if count matches exactly)
-    # Only if we still have unmapped embryos and available images
-    unmapped = [e for e in embryos if not e.get("cnv_image_name")]
-    if unmapped and len(unmapped) == len(available_imgs):
+    # ── PASS 4: Global Order Fallback (if count matches exactly) ──────────────
+    if unmapped_embryos and len(unmapped_embryos) == len(available_imgs):
         # Sort both by numeric appearance in names
-        def extract_num(s):
-            m = re.search(r'\d+', s)
+        def sort_key_num(s):
+            m = re.search(r'\d+', str(s))
             return int(m.group()) if m else 999
             
-        unmapped_sorted = sorted(unmapped, key=lambda e: extract_num(e.get("embryo_id", "")))
-        imgs_sorted = sorted(available_imgs.values(), key=lambda f: extract_num(f))
+        unmapped_sorted = sorted(unmapped_embryos, key=lambda e: sort_key_num(e.get("embryo_id", "")))
+        imgs_sorted = sorted(available_imgs.values(), key=lambda f: sort_key_num(f))
         
         for i, emb in enumerate(unmapped_sorted):
             emb["cnv_image_name"] = imgs_sorted[i]

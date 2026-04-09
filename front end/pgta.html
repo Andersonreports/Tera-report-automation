@@ -4845,14 +4845,16 @@
      *                                        root folder (avoids re-fetching; flat layout)
      */
     async function _autoMapCnvImages(batchFolder, subfolders, preloadedRootImages = []) {
-      console.log(`[CNV Mapping] 🚀 Starting for: ${batchFolder} | preloaded root images: ${preloadedRootImages.length}`);
+      const startTime = Date.now();
+      console.log(`[CNV Mapping] 🚀 Starting Engine | Folder: ${batchFolder} | Preloaded: ${preloadedRootImages.length}`);
+      
       const isFolder = f => f.id === null || f.id == null || !f.metadata || !f.metadata.mimetype;
 
       async function fetchB64(storagePath) {
-        console.log(`[CNV Mapping] Downloading: ${storagePath}`);
+        console.log(`[CNV Mapping] 📥 Downloading: ${storagePath}`);
         const publicUrl = sb.storage.from("Report-inputs").getPublicUrl(storagePath).data.publicUrl;
         const blob = await fetch(publicUrl).then(r => r.ok ? r.blob() : null).catch(() => null);
-        if (!blob) { console.error(`[CNV Mapping] ❌ Failed to fetch: ${storagePath}`); return null; }
+        if (!blob) { console.error(`[CNV Mapping] ❌ Failed to download: ${storagePath}`); return null; }
         return new Promise(resolve => {
           const reader = new FileReader();
           reader.onload = ev => resolve(ev.target.result);
@@ -4861,144 +4863,147 @@
         });
       }
 
-      const folderNum = name => parseInt((name.match(/\d+/) || [0])[0]) || 0;
       const alphaNorm = s => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const extractNum = s => {
+        const m = s.match(/\d+/);
+        return m ? parseInt(m[0]) : null;
+      };
 
       let totalMapped = 0;
       let allMappedFiles = new Set(); // track used files to prevent duplicates
 
-      // ── STRATEGY A: Numbered subfolders (run/1/, run/2/ ...) ──────────────
-      // Only attempt if there are no preloaded root images (flat layout takes priority)
-      if (preloadedRootImages.length === 0) {
-        let embryoNum = 0;
-        for (const [pi, patient] of state.bulkPatients.entries()) {
-          for (const [ei] of (patient.embryos || []).entries()) {
-            embryoNum++;
-            const folderPath = `${batchFolder}/${embryoNum}`;
-            try {
-              const res = await fetch(`/pgta/storage/list?path=${encodeURIComponent(folderPath)}`);
-              if (res.ok) {
-                const { items } = await res.json();
-                const imgs = (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name));
-                if (imgs.length > 0) {
-                  const b64 = await fetchB64(`${folderPath}/${imgs[0].name}`);
-                  if (b64) {
-                    state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
-                    state.bulkPatients[pi].embryos[ei].cnv_image_name = imgs[0].name;
-                    allMappedFiles.add(`${folderPath}/${imgs[0].name}`);
-                    totalMapped++;
-                    continue;
-                  }
-                }
-              }
-            } catch (err) {}
+      // 1. Gather all candidates
+      let allCandidates = []; // { name, path }
+      try {
+          if (preloadedRootImages.length > 0) {
+            preloadedRootImages.forEach(f =>
+              allCandidates.push({ name: f.name, path: `${batchFolder}/${f.name}` }));
+          } else {
+            const rootRes = await fetch(`/pgta/storage/list?path=${encodeURIComponent(batchFolder.replace(/\/+$/, ""))}`);
+            if (rootRes.ok) {
+                const { items } = await rootRes.json();
+                (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name)).forEach(f =>
+                  allCandidates.push({ name: f.name, path: `${batchFolder.replace(/\/+$/, "")}/${f.name}` }));
+            }
           }
-        }
-      } else {
-        console.log(`[CNV Mapping] ⚡ Flat layout detected — skipping numbered subfolder strategy.`);
-      }
-
-      // ── UNIVERSAL MULTI-PASS AGGREGATOR ────────────────────────────────────
-      // This part runs if Strategy A didn't cover everyone.
-      // We list all candidates across ALL relevant subfolders (or root if flat).
-      if (totalMapped < state.bulkPatients.reduce((acc, p) => acc + (p.embryos || []).length, 0)) {
-        console.log("[CNV Mapping] Strategy A incomplete, performing exhaustive multi-pass search...");
-        
-        let allCandidates = []; // { name, path }
-        try {
-            // 1a. Pre-loaded root images (flat layout — already fetched during browse, no extra request)
-            if (preloadedRootImages.length > 0) {
-              preloadedRootImages.forEach(f =>
-                allCandidates.push({ name: f.name, path: `${batchFolder}/${f.name}` }));
-              console.log(`[CNV Mapping] Using ${preloadedRootImages.length} pre-loaded root images`);
-            } else {
-              // 1b. Re-fetch root folder (subfolder layout — no preloaded images)
-              const rootRes = await fetch(`/pgta/storage/list?path=${encodeURIComponent(batchFolder.replace(/\/+$/, ""))}`);
-              if (rootRes.ok) {
-                  const { items } = await rootRes.json();
+          for (const sf of subfolders) {
+              const sfRes = await fetch(`/pgta/storage/list?path=${encodeURIComponent(`${batchFolder.replace(/\/+$/, "")}/${sf.name}`)}`);
+              if (sfRes.ok) {
+                  const { items } = await sfRes.json();
                   (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name)).forEach(f =>
-                    allCandidates.push({ name: f.name, path: `${batchFolder.replace(/\/+$/, "")}/${f.name}` }));
+                    allCandidates.push({ name: f.name, path: `${batchFolder.replace(/\/+$/, "")}/${sf.name}/${f.name}` }));
               }
-            }
-            // 2. Subfolder items (for named/numbered subfolder layouts)
-            for (const sf of subfolders) {
-                const sfRes = await fetch(`/pgta/storage/list?path=${encodeURIComponent(`${batchFolder.replace(/\/+$/, "")}/${sf.name}`)}`);
-                if (sfRes.ok) {
-                    const { items } = await sfRes.json();
-                    (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name)).forEach(f =>
-                      allCandidates.push({ name: f.name, path: `${batchFolder.replace(/\/+$/, "")}/${sf.name}/${f.name}` }));
-                }
-            }
-        } catch (err) { console.error("[CNV Mapping] Exhaustive listing failed:", err); }
-
-        console.log(`[CNV Mapping] Total candidate images found: ${allCandidates.length}`);
-
-        // PASS 1 & 2: Structural and Normalization match
-        for (const [pi, patient] of state.bulkPatients.entries()) {
-          for (const [ei, emb] of (patient.embryos || []).entries()) {
-            if (emb.cnv_image_b64) continue; // skip already mapped
-
-            const eid = (emb.embryo_id || "").trim();
-            if (!eid) continue;
-            const target = eid.toLowerCase();
-            const targetNorm = alphaNorm(target);
-
-            let matched = null;
-
-            // Pass 1: Delimited match
-            const re = new RegExp(`(^|[^a-z0-9])${target}([^a-z0-9]|$)`, "i");
-            matched = allCandidates.find(c => !allMappedFiles.has(c.path) && re.test(c.name));
-
-            // Pass 2: Fuzzy/Normalization
-            if (!matched) {
-              matched = allCandidates.find(c => !allMappedFiles.has(c.path) && alphaNorm(c.name).includes(targetNorm));
-            }
-
-            if (matched) {
-                console.log(`[CNV Mapping] ✅ Found match: ${eid} -> ${matched.name}`);
-                const b64 = await fetchB64(matched.path);
-                if (b64) {
-                    state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
-                    state.bulkPatients[pi].embryos[ei].cnv_image_name = matched.name;
-                    allMappedFiles.add(matched.path);
-                    totalMapped++;
-                }
-            }
           }
-        }
+      } catch (err) { console.error("[CNV Mapping] ❌ Exhaustive listing failed:", err); }
 
-        // LAST RESORT: Global Order Match (if unmapped count === available images count)
-        const unmapped = [];
-        state.bulkPatients.forEach((p, pi) => p.embryos.forEach((e, ei) => { if(!e.cnv_image_b64) unmapped.push({pi, ei, id: e.embryo_id}); }));
-        const available = allCandidates.filter(c => !allMappedFiles.has(c.path));
+      console.log(`[CNV Mapping] 🔍 Found ${allCandidates.length} potential images.`);
 
-        if (unmapped.length > 0 && unmapped.length === available.length) {
-            console.log("[CNV Mapping] ⚠️ Exact count match found. Performing order-based fallback.");
-            const extractNum = s => parseInt((s.match(/\d+/) || [999])[0]);
-            
-            unmapped.sort((a, b) => extractNum(a.id) - extractNum(b.id));
-            available.sort((a, b) => extractNum(a.name) - extractNum(b.name));
+      // Create a flat list of unmapped embryos to track progress
+      let unmappedEmbryos = [];
+      state.bulkPatients.forEach((p, pi) => {
+        (p.embryos || []).forEach((e, ei) => {
+          unmappedEmbryos.push({ pi, ei, id: (e.embryo_id || "").trim() });
+        });
+      });
 
-            for (let i = 0; i < unmapped.length; i++) {
-                const u = unmapped[i];
-                const a = available[i];
-                console.log(`[CNV Mapping] 🛡️ Fallback mapping: ${u.id} -> ${a.name}`);
-                const b64 = await fetchB64(a.path);
-                if (b64) {
-                  state.bulkPatients[u.pi].embryos[u.ei].cnv_image_b64  = b64;
-                  state.bulkPatients[u.pi].embryos[u.ei].cnv_image_name = a.name;
-                  allMappedFiles.add(a.path);
-                  totalMapped++;
-                }
-            }
+      // ── GLOBAL PASS 1: Exact Match (ID == Name without ext) ────────────────
+      console.log("[CNV Mapping] 🎯 Pass 1: Exact matches...");
+      for (const item of [...unmappedEmbryos]) {
+        const target = item.id.toLowerCase();
+        const matched = allCandidates.find(c => {
+          if (allMappedFiles.has(c.path)) return false;
+          const nameNoExt = c.name.replace(/\.[^.]+$/, "").toLowerCase();
+          return nameNoExt === target;
+        });
+
+        if (matched) {
+          const b64 = await fetchB64(matched.path);
+          if (b64) {
+            state.bulkPatients[item.pi].embryos[item.ei].cnv_image_b64  = b64;
+            state.bulkPatients[item.pi].embryos[item.ei].cnv_image_name = matched.name;
+            allMappedFiles.add(matched.path);
+            unmappedEmbryos = unmappedEmbryos.filter(x => x !== item);
+            totalMapped++;
+          }
         }
       }
 
+      // ── GLOBAL PASS 2: Delimited Match (ID surrounded by non-alnum) ────────
+      console.log("[CNV Mapping] 🎯 Pass 2: Delimited matches...");
+      for (const item of [...unmappedEmbryos]) {
+        const target = item.id.toLowerCase();
+        const re = new RegExp(`(^|[^a-z0-9])${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`, "i");
+        const matched = allCandidates.find(c => !allMappedFiles.has(c.path) && re.test(c.name));
+
+        if (matched) {
+          const b64 = await fetchB64(matched.path);
+          if (b64) {
+            state.bulkPatients[item.pi].embryos[item.ei].cnv_image_b64  = b64;
+            state.bulkPatients[item.pi].embryos[item.ei].cnv_image_name = matched.name;
+            allMappedFiles.add(matched.path);
+            unmappedEmbryos = unmappedEmbryos.filter(x => x !== item);
+            totalMapped++;
+          }
+        }
+      }
+
+      // ── GLOBAL PASS 3: Fuzzy / Normalization ───────────────────────────────
+      console.log("[CNV Mapping] 🎯 Pass 3: Fuzzy matches...");
+      for (const item of [...unmappedEmbryos]) {
+        const targetNorm = alphaNorm(item.id);
+        const targetNum  = extractNum(item.id);
+        
+        const matched = allCandidates.find(c => {
+          if (allMappedFiles.has(c.path)) return false;
+          const nameNorm = alphaNorm(c.name);
+          if (!nameNorm.includes(targetNorm)) return false;
+          
+          // Refinement: If ID is numeric, the file's numeric part should match
+          if (targetNum !== null) {
+            const fileNum = extractNum(c.name);
+            if (fileNum !== null && fileNum !== targetNum) return false;
+          }
+          return true;
+        });
+
+        if (matched) {
+          const b64 = await fetchB64(matched.path);
+          if (b64) {
+            state.bulkPatients[item.pi].embryos[item.ei].cnv_image_b64  = b64;
+            state.bulkPatients[item.pi].embryos[item.ei].cnv_image_name = matched.name;
+            allMappedFiles.add(matched.path);
+            unmappedEmbryos = unmappedEmbryos.filter(x => x !== item);
+            totalMapped++;
+          }
+        }
+      }
+
+      // ── LAST RESORT: Global Order Fallback ────────────────────────────────
+      const available = allCandidates.filter(c => !allMappedFiles.has(c.path));
+      if (unmappedEmbryos.length > 0 && unmappedEmbryos.length === available.length) {
+          console.log("[CNV Mapping] ⚠️ Exact count match. Performing order-based fallback.");
+          unmappedEmbryos.sort((a, b) => (extractNum(a.id) || 0) - (extractNum(b.id) || 0));
+          available.sort((a, b) => (extractNum(a.name) || 0) - (extractNum(b.name) || 0));
+
+          for (let i = 0; i < unmappedEmbryos.length; i++) {
+              const u = unmappedEmbryos[i];
+              const a = available[i];
+              const b64 = await fetchB64(a.path);
+              if (b64) {
+                state.bulkPatients[u.pi].embryos[u.ei].cnv_image_b64  = b64;
+                state.bulkPatients[u.pi].embryos[u.ei].cnv_image_name = a.name;
+                allMappedFiles.add(a.path);
+                totalMapped++;
+              }
+          }
+      }
+
+      console.log(`[CNV Mapping] ✅ Finished in ${Date.now() - startTime}ms. Mapped: ${totalMapped}`);
       if (totalMapped > 0) {
         showToast(`Auto-mapped ${totalMapped} CNV image${totalMapped > 1 ? "s" : ""} from cloud ☁`, "success");
         renderBulkEditor(bulkSelectedIndex >= 0 ? bulkSelectedIndex : 0);
       } else {
-        showToast("Auto-mapping failed. Check console (F12) for unmatched file list.", "warning");
+        showToast("Auto-mapping failed. Check Embryo IDs match filenames.", "warning");
       }
     }
 

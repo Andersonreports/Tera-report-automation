@@ -793,6 +793,31 @@
       background: var(--primary-hover);
     }
 
+    /* ── CNV Auto-Fetch Button (Bulk Tab top bar) ── */
+    .btn-cnv-auto-fetch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: #f59e0b;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .btn-cnv-auto-fetch:hover {
+      background: #d97706;
+    }
+    .btn-cnv-auto-fetch:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
     .cnv-file-name {
       font-size: 11px;
       color: var(--text-muted);
@@ -3025,6 +3050,17 @@
               </div>
               <input type="file" id="bulkFileInput" style="display:none;" webkitdirectory directory multiple>
             </div>
+            <!-- CNV Auto-Fetch button (visible after Excel is loaded) -->
+            <div class="bulk-top-sep"></div>
+            <div style="flex-shrink:0;display:flex;align-items:center;gap:6px;">
+              <button id="cnvAutoFetchBtn" class="btn-cnv-auto-fetch" onclick="triggerLocalCnvPicker()" title="Select CNV chart images from the same folder (auto-matched to embryos)">
+                <i class="fas fa-images"></i> Load CNV Charts
+              </button>
+              <!-- Status badge shown after mapping -->
+              <span id="cnvAutoFetchStatus" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;background:#dbeafe;color:#1d4ed8;display:none;"></span>
+              <!-- Hidden multi-file input for CNV images -->
+              <input type="file" id="cnvAutoInput" accept=".png,.jpg,.jpeg" multiple style="display:none;" onchange="autoFetchLocalCnvImages(this.files)">
+            </div>
             <div class="bulk-top-sep"></div>
             <div class="bulk-top-folder">
               <label> Output:</label>
@@ -4397,6 +4433,147 @@
     // Keep handleBulkFile for backward compatibility if any other part calls it
     async function handleBulkFile(file) {
       return await handleBulkFiles([file]);
+    }
+
+    // ═══════════════════════════════════════════════
+    // LOCAL CNV AUTO-FETCH (same folder as Excel)
+    // ═══════════════════════════════════════════════
+
+    /** Opens a multi-file picker so user can select CNV images from the same folder */
+    function triggerLocalCnvPicker() {
+      if (!state.bulkPatients || state.bulkPatients.length === 0) {
+        showToast('Please load an Excel file first before fetching CNV charts.', 'info');
+        return;
+      }
+      document.getElementById('cnvAutoInput').value = '';
+      document.getElementById('cnvAutoInput').click();
+    }
+
+    /**
+     * Auto-match selected image files to embryos using the same multi-pass algorithm
+     * as the backend pgta_classify.py → auto_map_cnvs():
+     *   Pass 1 – Delimited match:  exact embryo_id surrounded by non-alphanumeric chars
+     *   Pass 2 – Fuzzy/Norm match: alphanumeric-only embryo_id contained in filename
+     *   Pass 3 – Order fallback:   if unmapped count === available image count, map by numeric order
+     */
+    async function autoFetchLocalCnvImages(files) {
+      if (!files || files.length === 0) return;
+      if (!state.bulkPatients || state.bulkPatients.length === 0) {
+        showToast('No patient data loaded — upload an Excel first.', 'info');
+        return;
+      }
+
+      const btn = document.getElementById('cnvAutoFetchBtn');
+      const statusEl = document.getElementById('cnvAutoFetchStatus');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="border-color:#fff;border-top-color:#f59e0b;width:12px;height:12px;display:inline-block;border-width:2px;border-style:solid;border-radius:50%;animation:spin 0.7s linear infinite;"></span> Mapping…'; }
+      if (statusEl) statusEl.style.display = 'none';
+
+      /** Normalise: remove all non-alphanumeric chars and lowercase */
+      const alphaNorm = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const extractNum = s => parseInt((s.match(/\d+/) || [999])[0]);
+
+      // Collect all embryos globally (with patient + embryo index) and image files
+      const allEmbryos = [];
+      state.bulkPatients.forEach((p, pi) => {
+        (p.embryos || []).forEach((emb, ei) => {
+          allEmbryos.push({ pi, ei, emb, mapped: false });
+        });
+      });
+
+      // Build a FileReader helper: reads a File as DataURL
+      const readDataURL = file => new Promise(resolve => {
+        const r = new FileReader();
+        r.onload = e => resolve(e.target.result);
+        r.onerror = () => resolve(null);
+        r.readAsDataURL(file);
+      });
+
+      const imgFiles = Array.from(files).filter(f => /\.(png|jpe?g)$/i.test(f.name));
+      if (imgFiles.length === 0) {
+        showToast('No PNG/JPG images found in your selection.', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-images"></i> Load CNV Charts'; }
+        return;
+      }
+
+      // Track which image files have already been consumed
+      const usedFileIdxs = new Set();
+      let mappedCount = 0;
+
+      // ── Pass 1 & 2: Per-embryo filename matching ────────────────────────────
+      for (const entry of allEmbryos) {
+        const { emb } = entry;
+        const eid = (emb.embryo_id || '').trim();
+        if (!eid) continue;
+        const eidLow = eid.toLowerCase();
+        const eidNorm = alphaNorm(eid);
+
+        // Pass 1: delimited match (embryo_id surrounded by non-alnum or start/end)
+        const re = new RegExp('(^|[^a-z0-9])' + eidLow.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)', 'i');
+        let matchIdx = imgFiles.findIndex((f, idx) => !usedFileIdxs.has(idx) && re.test(f.name.toLowerCase()));
+
+        // Pass 2: fuzzy/norm – normalised embryo_id contained anywhere in filename
+        if (matchIdx === -1) {
+          matchIdx = imgFiles.findIndex((f, idx) => !usedFileIdxs.has(idx) && alphaNorm(f.name).includes(eidNorm));
+        }
+
+        if (matchIdx !== -1) {
+          const b64 = await readDataURL(imgFiles[matchIdx]);
+          if (b64) {
+            state.bulkPatients[entry.pi].embryos[entry.ei].cnv_image_b64  = b64;
+            state.bulkPatients[entry.pi].embryos[entry.ei].cnv_image_name = imgFiles[matchIdx].name;
+            state.bulkPatients[entry.pi].embryos[entry.ei].cnv_image_path = '';
+            entry.mapped = true;
+            usedFileIdxs.add(matchIdx);
+            mappedCount++;
+          }
+        }
+      }
+
+      // ── Pass 3: Global order fallback (count-exact match only) ──────────────
+      const unmapped = allEmbryos.filter(e => !e.mapped);
+      const available = imgFiles.map((f, idx) => ({ f, idx })).filter(({ idx }) => !usedFileIdxs.has(idx));
+
+      if (unmapped.length > 0 && unmapped.length === available.length) {
+        // Sort by numeric part in ID / filename
+        unmapped.sort((a, b) => extractNum(a.emb.embryo_id || '') - extractNum(b.emb.embryo_id || ''));
+        available.sort((a, b) => extractNum(a.f.name) - extractNum(b.f.name));
+
+        for (let k = 0; k < unmapped.length; k++) {
+          const entry = unmapped[k];
+          const { f, idx } = available[k];
+          const b64 = await readDataURL(f);
+          if (b64) {
+            state.bulkPatients[entry.pi].embryos[entry.ei].cnv_image_b64  = b64;
+            state.bulkPatients[entry.pi].embryos[entry.ei].cnv_image_name = f.name;
+            state.bulkPatients[entry.pi].embryos[entry.ei].cnv_image_path = '';
+            usedFileIdxs.add(idx);
+            mappedCount++;
+          }
+        }
+      }
+
+      // Re-render editor for currently selected patient
+      if (bulkSelectedIndex >= 0) renderBulkEditor(bulkSelectedIndex);
+
+      // Update status badge
+      if (statusEl) {
+        statusEl.style.display = '';
+        if (mappedCount > 0) {
+          statusEl.style.background = '#d1fae5'; statusEl.style.color = '#065f46';
+          statusEl.textContent = `✓ ${mappedCount} CNV matched`;
+        } else {
+          statusEl.style.background = '#fee2e2'; statusEl.style.color = '#991b1b';
+          statusEl.textContent = `✗ 0 matched`;
+        }
+      }
+
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-images"></i> Load CNV Charts'; }
+
+      if (mappedCount > 0) {
+        showToast(`Auto-mapped ${mappedCount} CNV chart${mappedCount > 1 ? 's' : ''} from local files`, 'success');
+      } else {
+        showToast(`No CNV charts matched. Check filenames contain embryo IDs (e.g. PS1.png).`, 'info');
+      }
     }
 
     // ═══════════════════════════════════════════════

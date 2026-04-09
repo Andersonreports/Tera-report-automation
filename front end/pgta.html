@@ -4583,6 +4583,7 @@
     let _cloudFolderFiles    = [];
     let _cloudSelectedExcel  = null;   // the Excel file object the user clicked
     let _cloudSubfolders     = [];     // patient image subfolders inside the batch folder
+    let _cloudDirectImages   = [];     // image files sitting directly alongside the Excel (flat layout)
 
     function openCloudBrowser() {
       // Fallback: if Supabase client not ready, open local file picker instead
@@ -4674,6 +4675,7 @@
       _cloudFolderFiles    = [];
       _cloudSelectedExcel  = null;
       _cloudSubfolders     = [];
+      _cloudDirectImages   = [];
       document.getElementById("cloudBreadcrumb").textContent = `Report-inputs / ${folderName}`;
       const list   = document.getElementById("cloudBrowserList");
       const footer = document.getElementById("cloudBrowserFooter");
@@ -4689,7 +4691,9 @@
         _cloudFolderFiles = (rawData || []).filter(f => f.name !== ".emptyFolderPlaceholder");
         const xlsxFiles  = _cloudFolderFiles.filter(f => /\.xlsx?$/i.test(f.name));
         const isFolder   = f => f.id === null || f.id == null || !f.metadata || !f.metadata.mimetype;
-        _cloudSubfolders = _cloudFolderFiles.filter(f => isFolder(f) && !/\.xlsx?$/i.test(f.name));
+        _cloudSubfolders   = _cloudFolderFiles.filter(f => isFolder(f) && !/\.xlsx?$/i.test(f.name));
+        // Images sitting directly in the same folder as the Excel (flat layout)
+        _cloudDirectImages = _cloudFolderFiles.filter(f => /\.(png|jpe?g)$/i.test(f.name) && !isFolder(f));
 
         list.innerHTML = "";
 
@@ -4747,9 +4751,35 @@
           });
         }
 
-        if (footer) footer.style.display = "flex";
-        const summary = document.getElementById("cloudFolderSummary");
-        if (summary) summary.textContent = "Click an Excel file to select it";
+        // ── Direct CNV images in same folder (flat layout) ────
+        if (_cloudDirectImages.length > 0) {
+          const imgHdr = document.createElement("div");
+          imgHdr.style.cssText = "font-size:11px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 4px;padding:0 2px;";
+          imgHdr.innerHTML = `<i class="fas fa-images" style="color:#2563eb;margin-right:4px;"></i>CNV Charts detected in this folder (${_cloudDirectImages.length} images — will be auto-mapped):`;
+          list.appendChild(imgHdr);
+          _cloudDirectImages.slice(0, 8).forEach(img => {
+            const div = document.createElement("div");
+            div.className = "cloud-file-item";
+            div.style.cssText = "cursor:default;opacity:.85;";
+            div.innerHTML = `<i class="fas fa-image" style="color:#2563eb;"></i><span style="flex:1;overflow:hidden;text-overflow:ellipsis;">${esc(img.name)}</span><span class="cloud-badge" style="background:#dbeafe;color:#1d4ed8;">CNV</span>`;
+            list.appendChild(div);
+          });
+          if (_cloudDirectImages.length > 8) {
+            const more = document.createElement("div");
+            more.style.cssText = "font-size:10px;color:#64748b;padding:2px 4px;font-style:italic;";
+            more.textContent = `…and ${_cloudDirectImages.length - 8} more images`;
+            list.appendChild(more);
+          }
+        }
+
+      if (footer) footer.style.display = "flex";
+      const summary = document.getElementById("cloudFolderSummary");
+      if (summary) {
+        const cntMsg = _cloudDirectImages.length > 0
+          ? ` &nbsp;·&nbsp; <span style="color:#1d4ed8;font-weight:700;">${_cloudDirectImages.length} CNV image${_cloudDirectImages.length > 1 ? 's' : ''} detected</span>`
+          : '';
+        summary.innerHTML = `Click an Excel file to select it${cntMsg}`;
+      }
 
       } catch (err) {
         list.innerHTML = `<div class="cloud-status-msg error">${esc(err.message)}</div>`;
@@ -4782,13 +4812,19 @@
         const xlsxFileObj = new File([xlsxBlob], xlsxFile.name, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         await handleBulkFile(xlsxFileObj);
 
-        // 2. Auto-map CNV images
+        // 2. Auto-map CNV images (flat layout first — images in same folder as Excel)
         if (state.bulkPatients.length > 0) {
-          if (lbl) lbl.innerHTML = `${spin}Searching for CNV images…`;
-          await _autoMapCnvImages(_cloudSelectedFolder, _cloudSubfolders);
+          if (lbl) lbl.innerHTML = `${spin}Mapping CNV images (${_cloudDirectImages.length > 0 ? _cloudDirectImages.length + ' found in same folder' : 'searching subfolders'})…`;
+          await _autoMapCnvImages(_cloudSelectedFolder, _cloudSubfolders, _cloudDirectImages);
         }
 
-        if (lbl) lbl.innerHTML = `<i class="fas fa-cloud" style="color:var(--primary);"></i>&nbsp;<strong>${esc(_cloudSelectedFolder)} / ${esc(xlsxFile.name)}</strong> &mdash; ${state.bulkPatients.length} patient(s) &nbsp;<small style="color:var(--text-muted);text-decoration:underline;">(click to change)</small>`;
+        // Count how many ended up with CNV charts mapped
+        const cnvMappedCount = state.bulkPatients.reduce((acc, p) =>
+          acc + (p.embryos || []).filter(e => e.cnv_image_b64).length, 0);
+        const cnvMsg = cnvMappedCount > 0
+          ? ` &nbsp;<small style="color:#16a34a;font-weight:bold;">(+${cnvMappedCount} CNVs mapped ✓)</small>`
+          : '';
+        if (lbl) lbl.innerHTML = `<i class="fas fa-cloud" style="color:var(--primary);"></i>&nbsp;<strong>${esc(_cloudSelectedFolder)} / ${esc(xlsxFile.name)}</strong> &mdash; ${state.bulkPatients.length} patient(s)${cnvMsg} &nbsp;<small style="color:var(--text-muted);text-decoration:underline;">(click to change)</small>`;
       } catch (err) {
         if (lbl) lbl.innerHTML = `<span style="color:#c00;"><i class="fas fa-exclamation-triangle"></i> Cloud error: ${esc(err.message)}</span>&nbsp;<small style="text-decoration:underline;">(click to retry)</small>`;
         showToast("Cloud download failed: " + err.message, "error");
@@ -4796,18 +4832,20 @@
     }
 
     /**
-     * Auto-map CNV images from cloud subfolders to bulkPatients embryos.
+     * Auto-map CNV images from cloud storage to bulkPatients embryos.
      *
-     * Supports two storage layouts:
+     * Supports three layouts:
+     *   Flat      — run_folder/PS1.png, run_folder/PS2.png  (Excel + images in same folder)
      *   Numbered  — run_folder/1/cnv_chart.png, run_folder/2/cnv_chart.png …
-     *               Subfolders are pure integers; mapped globally across all
-     *               patients' embryos in order (embryo #1 → folder "1", etc.)
      *   Named     — run_folder/PatientName/Embryo1/cnv_chart.png
-     *               Subfolders matched to patients by name, then per-embryo
-     *               subfolder matched by position / name within each patient.
+     *
+     * @param {string}   batchFolder       - Supabase folder name (e.g. "pgta_run_48")
+     * @param {Array}    subfolders        - Subfolder objects from _cloudSubfolders
+     * @param {Array}    preloadedRootImages - Image file objects already listed from the
+     *                                        root folder (avoids re-fetching; flat layout)
      */
-    async function _autoMapCnvImages(batchFolder, subfolders) {
-      console.log(`[CNV Mapping] 🚀 Starting ultra-robust engine for: ${batchFolder}`);
+    async function _autoMapCnvImages(batchFolder, subfolders, preloadedRootImages = []) {
+      console.log(`[CNV Mapping] 🚀 Starting for: ${batchFolder} | preloaded root images: ${preloadedRootImages.length}`);
       const isFolder = f => f.id === null || f.id == null || !f.metadata || !f.metadata.mimetype;
 
       async function fetchB64(storagePath) {
@@ -4829,30 +4867,35 @@
       let totalMapped = 0;
       let allMappedFiles = new Set(); // track used files to prevent duplicates
 
-      // ── STRATEGY A: Numbered layout (run/1/, run/2/ ...) ───────────────────
-      let embryoNum = 0;
-      for (const [pi, patient] of state.bulkPatients.entries()) {
-        for (const [ei] of (patient.embryos || []).entries()) {
-          embryoNum++;
-          const folderPath = `${batchFolder}/${embryoNum}`;
-          try {
-            const res = await fetch(`/pgta/storage/list?path=${encodeURIComponent(folderPath)}`);
-            if (res.ok) {
-              const { items } = await res.json();
-              const imgs = (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name));
-              if (imgs.length > 0) {
-                const b64 = await fetchB64(`${folderPath}/${imgs[0].name}`);
-                if (b64) {
-                  state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
-                  state.bulkPatients[pi].embryos[ei].cnv_image_name = imgs[0].name;
-                  allMappedFiles.add(`${folderPath}/${imgs[0].name}`);
-                  totalMapped++;
-                  continue;
+      // ── STRATEGY A: Numbered subfolders (run/1/, run/2/ ...) ──────────────
+      // Only attempt if there are no preloaded root images (flat layout takes priority)
+      if (preloadedRootImages.length === 0) {
+        let embryoNum = 0;
+        for (const [pi, patient] of state.bulkPatients.entries()) {
+          for (const [ei] of (patient.embryos || []).entries()) {
+            embryoNum++;
+            const folderPath = `${batchFolder}/${embryoNum}`;
+            try {
+              const res = await fetch(`/pgta/storage/list?path=${encodeURIComponent(folderPath)}`);
+              if (res.ok) {
+                const { items } = await res.json();
+                const imgs = (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name));
+                if (imgs.length > 0) {
+                  const b64 = await fetchB64(`${folderPath}/${imgs[0].name}`);
+                  if (b64) {
+                    state.bulkPatients[pi].embryos[ei].cnv_image_b64  = b64;
+                    state.bulkPatients[pi].embryos[ei].cnv_image_name = imgs[0].name;
+                    allMappedFiles.add(`${folderPath}/${imgs[0].name}`);
+                    totalMapped++;
+                    continue;
+                  }
                 }
               }
-            }
-          } catch (err) {}
+            } catch (err) {}
+          }
         }
+      } else {
+        console.log(`[CNV Mapping] ⚡ Flat layout detected — skipping numbered subfolder strategy.`);
       }
 
       // ── UNIVERSAL MULTI-PASS AGGREGATOR ────────────────────────────────────
@@ -4863,19 +4906,26 @@
         
         let allCandidates = []; // { name, path }
         try {
-            // 1. Root folder items
-            const rootRes = await fetch(`/pgta/storage/list?path=${encodeURIComponent(batchFolder.replace(/\/+$/, ""))}`);
-            if (rootRes.ok) {
-                const { items } = await rootRes.json();
-                (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name)).forEach(f => 
-                  allCandidates.push({ name: f.name, path: `${batchFolder.replace(/\/+$/, "")}/${f.name}` }));
+            // 1a. Pre-loaded root images (flat layout — already fetched during browse, no extra request)
+            if (preloadedRootImages.length > 0) {
+              preloadedRootImages.forEach(f =>
+                allCandidates.push({ name: f.name, path: `${batchFolder}/${f.name}` }));
+              console.log(`[CNV Mapping] Using ${preloadedRootImages.length} pre-loaded root images`);
+            } else {
+              // 1b. Re-fetch root folder (subfolder layout — no preloaded images)
+              const rootRes = await fetch(`/pgta/storage/list?path=${encodeURIComponent(batchFolder.replace(/\/+$/, ""))}`);
+              if (rootRes.ok) {
+                  const { items } = await rootRes.json();
+                  (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name)).forEach(f =>
+                    allCandidates.push({ name: f.name, path: `${batchFolder.replace(/\/+$/, "")}/${f.name}` }));
+              }
             }
-            // 2. Subfolder items
+            // 2. Subfolder items (for named/numbered subfolder layouts)
             for (const sf of subfolders) {
                 const sfRes = await fetch(`/pgta/storage/list?path=${encodeURIComponent(`${batchFolder.replace(/\/+$/, "")}/${sf.name}`)}`);
                 if (sfRes.ok) {
                     const { items } = await sfRes.json();
-                    (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name)).forEach(f => 
+                    (items || []).filter(f => /\.(png|jpe?g)$/i.test(f.name)).forEach(f =>
                       allCandidates.push({ name: f.name, path: `${batchFolder.replace(/\/+$/, "")}/${sf.name}/${f.name}` }));
                 }
             }

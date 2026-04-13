@@ -1052,3 +1052,141 @@ async def pgta_storage_list(path: str = "pgta"):
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=str(exc))
 
+
+# ================================================================
+# KARYOTYPE REPORT ENDPOINTS
+# ================================================================
+from karyotype_template import KaryotypeReportGenerator
+
+KARYOTYPE_REPORT_DIR = os.path.join(BASE_DIR, "reports-karyotype")
+KARYOTYPE_CNV_DIR   = os.path.join(BASE_DIR, "uploads", "karyotype_images")
+KARYOTYPE_DRAFT_DIR = os.path.join(BASE_DIR, "drafts", "KARYOTYPE")
+
+os.makedirs(KARYOTYPE_REPORT_DIR, exist_ok=True)
+os.makedirs(KARYOTYPE_CNV_DIR, exist_ok=True)
+os.makedirs(KARYOTYPE_DRAFT_DIR, exist_ok=True)
+
+app.mount("/reports-karyotype", StaticFiles(directory=KARYOTYPE_REPORT_DIR), name="reports-karyotype")
+
+@app.get("/karyotype")
+def karyotype_page():
+    p = os.path.join(FRONTEND_DIR, "karyotype.html")
+    if os.path.exists(p):
+        return FileResponse(p, media_type="text/html")
+    return {"error": "karyotype.html not found"}
+
+@app.post("/karyotype/upload-image")
+async def karyotype_upload_image(file: UploadFile = File(...)):
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ['.png', '.jpg', '.jpeg']:
+        return {"error": "Only PNG/JPG images allowed"}
+    unique_name = str(uuid.uuid4()) + ext
+    save_path = os.path.join(KARYOTYPE_CNV_DIR, unique_name)
+    with open(save_path, "wb") as f:
+        f.write(await file.read())
+    return {"path": save_path, "name": unique_name, "url": f"/karyotype/image/{unique_name}"}
+
+@app.get("/karyotype/image/{filename}")
+def karyotype_get_image(filename: str):
+    path = os.path.join(KARYOTYPE_CNV_DIR, filename)
+    if os.path.exists(path):
+        return FileResponse(path)
+    return {"error": "Image not found"}
+
+def _resolve_karyotype_images(image_urls: list) -> tuple:
+    """Takes a list of uploaded image URL paths (from /karyotype/upload-image) and returns full absolute paths."""
+    resolved_paths = []
+    for url in image_urls:
+        if isinstance(url, str) and url.startswith("/karyotype/image/"):
+            filename = url.split("/")[-1]
+            resolved_paths.append(os.path.join(KARYOTYPE_CNV_DIR, filename))
+        elif isinstance(url, dict) and url.get("path"):
+            resolved_paths.append(url.get("path"))
+        elif isinstance(url, str) and os.path.exists(url):
+            resolved_paths.append(url)
+    return resolved_paths
+
+@app.post("/karyotype/preview")
+async def karyotype_preview_report(request: Request):
+    try:
+        data = await request.json()
+        file_id = str(uuid.uuid4()) + ".pdf"
+        filepath = os.path.join(TEMP_DIR, file_id)
+
+        patient_data = data.get("patient_data", {})
+        images = _resolve_karyotype_images(data.get("images", []))
+
+        gen = KaryotypeReportGenerator(patient_data, images, TEMP_DIR, include_logo=data.get("show_logo", True))
+        gen.filepath = filepath
+        gen.filename = file_id
+        gen.generate()
+
+        return {"preview_url": f"/karyotype/preview-file/{file_id}"}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+@app.get("/karyotype/preview-file/{filename}")
+def karyotype_preview_file(filename: str):
+    path = os.path.join(TEMP_DIR, filename)
+    return FileResponse(path, media_type="application/pdf")
+
+@app.post("/karyotype/generate")
+async def karyotype_generate_report(request: Request, background_tasks: BackgroundTasks):
+    try:
+        data = await request.json()
+        patient_info = data.get("patient_data", {})
+        images = _resolve_karyotype_images(data.get("images", []))
+        options = data.get("options", {})
+        
+        show_logo = options.get("show_logo", True)
+
+        gen = KaryotypeReportGenerator(patient_info, images, KARYOTYPE_REPORT_DIR, include_logo=show_logo)
+        pdf_path = gen.generate()
+        file_name = os.path.basename(pdf_path)
+
+        # You can add upload scripts here like PGTA if required
+        local_pdf_url = f"/reports-karyotype/{file_name}"
+        
+        return {"status": "success", "results": {"pdf": {"file": file_name, "url": local_pdf_url, "local_url": local_pdf_url}}}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+@app.post("/karyotype/draft/save")
+async def karyotype_save_draft_file(request: Request):
+    try:
+        body = await request.json()
+        patient = body.get("patient", {})
+        patient_name = re.sub(r'[^a-zA-Z0-9 ]', '', str(patient.get("NAME", "draft"))).replace(" ", "_").strip() or "draft"
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"karyotype_bulk_draft_{patient_name}_{ts}.json"
+        import json
+        with open(os.path.join(KARYOTYPE_DRAFT_DIR, filename), "w", encoding="utf-8") as f:
+            json.dump({"patients": [patient], "_type": "karyotype_bulk_draft", "_savedAt": datetime.now().isoformat()}, f, indent=2)
+        return {"status": "saved", "filename": filename}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+@app.get("/karyotype/draft/list")
+def karyotype_list_draft_files():
+    try:
+        files = sorted([f for f in os.listdir(KARYOTYPE_DRAFT_DIR) if f.endswith(".json")], reverse=True)
+        return {"files": files}
+    except Exception as e:
+        return {"files": [], "error": str(e)}
+
+@app.delete("/karyotype/draft/delete/{filename}")
+def karyotype_delete_draft_file(filename: str):
+    try:
+        safe_name = os.path.basename(filename)
+        filepath = os.path.join(KARYOTYPE_DRAFT_DIR, safe_name)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return {"status": "deleted"}
+        return {"status": "not_found"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+

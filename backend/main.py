@@ -360,18 +360,36 @@ async def compare_pdf(file1: UploadFile = File(...), file2: UploadFile = File(..
 # -------- Excel Upload --------
 @app.post("/upload-excel")
 async def upload_excel(file: UploadFile = File(...)):
+    try:
+        df = pd.read_excel(file.file)
+        rows = df.to_dict(orient="records")
 
-    df = pd.read_excel(file.file)
+        def _to_json_safe(v):
+            """Convert any pandas/numpy value to a JSON-serializable Python primitive."""
+            # Handle None up-front
+            if v is None:
+                return None
+            # Catches NaN, NaT, None via pd.isna
+            try:
+                if pd.isna(v):
+                    return None
+            except (TypeError, ValueError):
+                pass
+            # numpy scalar types (int64, float64, bool_, etc.)
+            if hasattr(v, "item"):
+                return v.item()
+            # pandas Timestamp or any datetime-like
+            if hasattr(v, "isoformat"):
+                return str(v)
+            return v
 
-    rows = df.to_dict(orient="records")
-
-    # Convert NaN values to None
-    cleaned_rows = [
-        {k: (None if isinstance(v, float) and math.isnan(v) else v) for k, v in row.items()}
-        for row in rows
-    ]
-
-    return {"rows": cleaned_rows}
+        cleaned_rows = [
+            {k: _to_json_safe(v) for k, v in row.items()}
+            for row in rows
+        ]
+        return {"rows": cleaned_rows}
+    except Exception as e:
+        return {"error": str(e), "rows": []}
 
 @app.get("/test-db")
 def test_db():

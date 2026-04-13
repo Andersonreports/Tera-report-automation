@@ -850,7 +850,7 @@ async def _parse_pgta_excel_core(contents: bytes):
 
                 patient = {
                     "patient_name": p_name,
-                    "sample_number": pid,
+                    "sample_number": get_clean_value(p_row, ['Sample Number', 'Sample No', 'Sample No.', 'SampleNumber', 'Accession Number', 'Acc. No.']) or '',
                     "hospital_clinic": get_clean_value(p_row, ['Center name', 'Center Name', 'center_name', 'Hospital', 'Clinic']),
                     "biopsy_date": b_date,
                     "sample_receipt_date": r_date,

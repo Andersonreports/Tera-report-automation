@@ -69,7 +69,7 @@ class PGTAReportTemplate:
         "If greater than 80% mosaicism detected in an embryo it will be considered aneuploid."
     ]
     
-    MOSAICISM_CLINICAL = """Clinical significance of transferring mosaic embryos is still under evaluation. Based on Preimplantation Genetic Diagnosis International Society (PGDIS) Position Statement – 2019 transfer of these embryos should be considered only after appropriate counselling of the patient and alternatives have been discussed. Invasive prenatal testing with karyotyping in the amniotic fluid needs to be advised in such cases [4]. As shown in published literature evidence, such transfers can result in normal pregnancy or miscarriage or an offspring with chromosomal mosaicism [5,6,7]."""
+    MOSAICISM_CLINICAL = """Clinical significance of transferring mosaic embryos is still under evaluation. Based on Preimplantation Genetic Diagnosis International Society (PGDIS) Position Statement – 2019, transfer of these embryos should be considered only after appropriate counselling of the patient and alternatives have been discussed. Invasive prenatal testing with karyotyping in the amniotic fluid needs to be advised in such cases [4]. As shown in published literature evidence, such transfers can result in normal pregnancy or miscarriage or an offspring with chromosomal mosaicism [5,6,7]."""
     
     LIMITATIONS = [
         "This technique cannot detect point mutations, balanced translocations, inversions, triploidy, uniparental disomy and epigenetic modifications.",
@@ -619,12 +619,17 @@ class PGTAReportTemplate:
             res_display = info["summary_text"]
             # Interpretation column: always "NA"
             interp_display = "NA"
-            # Color: red if abnormal/mosaic, black if normal
-            cell_color = colors.red if info["is_abnormal"] else colors.black
+            # Color: blue if mosaic, red if abnormal, black if normal
+            if info["is_mosaic"]:
+                cell_color = colors.HexColor('#1F497D')
+            elif info["is_abnormal"]:
+                cell_color = colors.red
+            else:
+                cell_color = colors.black
 
-            # MTcopy: "NA" unless explicitly provided
+            # MTcopy: only show actual value for mosaic embryos; NA otherwise
             raw_mt = self._clean(embryo.get('mtcopy'), '')
-            mtcopy = raw_mt if raw_mt and raw_mt.upper() not in ('NA', 'N/A', '') else "NA"
+            mtcopy = raw_mt if (info["is_mosaic"] and raw_mt and raw_mt.upper() not in ('NA', 'N/A', '')) else "NA"
 
             # Extract short embryo ID: if format is "PATIENTNAME-ID_REST", extract just "ID"
             full_id = self._clean(embryo.get('embryo_id'))
@@ -803,15 +808,20 @@ class PGTAReportTemplate:
         # Interpretation: always "NA"
         interp_text = "NA"
 
-        # MTcopy: "NA" unless an explicit value is provided
+        # MTcopy: only show actual value for mosaic embryos; NA otherwise
         raw_mt = self._clean(embryo_data.get('mtcopy', ''))
-        mtcopy = raw_mt if raw_mt and raw_mt.upper() not in ('NA', 'N/A', '') else "NA"
+        mtcopy = raw_mt if (info["is_mosaic"] and raw_mt and raw_mt.upper() not in ('NA', 'N/A', '')) else "NA"
 
-        # Colors: red if abnormal/mosaic, black if normal
-        cell_color  = colors.red if info["is_abnormal"] else colors.black
-        auto_color  = cell_color
-        sex_color   = cell_color if sex_text.upper() not in ('NORMAL', '') else colors.black
-        interp_color= cell_color
+        # Colors: blue if mosaic, red if abnormal, black if normal
+        # Autosomes and Sex Chromosomes are always black (Bug 7)
+        if info["is_mosaic"]:
+            interp_color = colors.HexColor('#1F497D')
+        elif info["is_abnormal"]:
+            interp_color = colors.red
+        else:
+            interp_color = colors.black
+        auto_color  = colors.black
+        sex_color   = colors.black
 
         # Embryo ID: Extract short ID if format is "PATIENTNAME-ID_REST"
         detail_embryo_id = self._clean(embryo_data.get('embryo_id_detail')) or self._clean(embryo_data.get('embryo_id'))
@@ -834,8 +844,8 @@ class PGTAReportTemplate:
 
         detail_data = [
             [self._wrap_text(f"<b>Result:</b> {self._wrap_colored(res_text, colors.black, bold=False)}", False)],
-            [self._wrap_text(f"<b>Autosomes:</b> {self._wrap_colored(autosomes_text, auto_color, bold=False)}", False)],
-            [self._wrap_text(f"<b>Sex Chromosomes:</b> {self._wrap_colored(sex_text, sex_color, bold=False)}", False)],
+            [self._wrap_text(f"<b>Autosomes:</b>", False)],
+            [self._wrap_text(f"<b>Sex Chromosomes:</b>", False)],
             [self._wrap_text(f"<b>Interpretation:</b> {self._wrap_colored(interp_text, interp_color, bold=False)}", False)],
             [self._wrap_text(f"<b>MTcopy:</b> {mtcopy}", False)],
         ]
@@ -1104,9 +1114,9 @@ class PGTAReportTemplate:
         # Failed / no result → grey
         if s in ('NR', 'FAILED', 'NO RESULT'):
             return colors.HexColor('#808080')
-        # Mosaic variants → orange
+        # Mosaic variants → blue
         if s in ('ML', 'MG', 'SML', 'SMG', 'M', 'SML/SMG', 'SMG/SML'):
-            return colors.HexColor('#FF8C00')
+            return colors.HexColor('#1F497D')
         # Non-mosaic abnormal → red
         if s in ('L', 'G', 'SL', 'SG', 'SL/SG', 'SG/SL'):
             return colors.red

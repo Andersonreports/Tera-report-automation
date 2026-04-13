@@ -18,11 +18,11 @@ FAILED         = "FAILED"
 # ── Summary table Result column text ─────────────────────────────────────────
 SUMMARY_TEXT = {
     EUPLOID:        "Normal chromosome complement",
-    ANEUPLOID:      "Multiple chromosomal abnormalities",
+    ANEUPLOID:      "Abnormal chromosome complement",
     SEGMENTAL:      "Multiple chromosomal abnormalities",
-    LOW_MOSAIC:     "Low level mosaic",
-    HIGH_MOSAIC:    "High level mosaic",
-    COMPLEX_MOSAIC: "Complex mosaic",
+    LOW_MOSAIC:     "Mosaic chromosome complement",
+    HIGH_MOSAIC:    "Mosaic chromosome complement",
+    COMPLEX_MOSAIC: "Mosaic chromosome complement",
     FAILED:         "No result obtained",
 }
 
@@ -30,10 +30,10 @@ SUMMARY_TEXT = {
 RESULT_TEXT = {
     EUPLOID:        "The embryo contains normal chromosome complement",
     ANEUPLOID:      "The embryo contains abnormal chromosome complement",
-    SEGMENTAL:      "The embryo contains abnormal chromosome complement",
-    LOW_MOSAIC:     "The embryo contains low level mosaic chromosome complement",
-    HIGH_MOSAIC:    "The embryo contains high level mosaic chromosome complement",
-    COMPLEX_MOSAIC: "The embryo contains complex mosaic chromosome complement",
+    SEGMENTAL:      "The embryo contains multiple chromosomal abnormalities",
+    LOW_MOSAIC:     "The embryo contains mosaic chromosome complement",
+    HIGH_MOSAIC:    "The embryo contains mosaic chromosome complement",
+    COMPLEX_MOSAIC: "The embryo contains mosaic chromosome complement",
     FAILED:         "No result obtained",
 }
 

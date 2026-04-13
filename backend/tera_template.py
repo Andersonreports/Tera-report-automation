@@ -577,6 +577,14 @@ class TERAReportGenerator:
                      self.d.get("Corrected time for report ",
                      self.d.get("embryo transfer time in hrs", ""))))).strip()
         blast_lbl, cleave_lbl = self._parse_tr(tr_raw)
+
+        # For Post-Receptive: sync Blastocyst Transfer highlighted value to
+        # match Second Biopsy value (P+ Hours from patient data)
+        if cfg.get("has_biopsy2"):
+            bh_int = self._int(self.d.get("Biopsy time in hrs.1", ""))
+            if bh_int is not None:
+                blast_lbl = f"P+{bh_int} Hrs"
+
         suffix = cfg["reco_suffix"]
 
         c.setFont(F_BBOLD, 11)

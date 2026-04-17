@@ -3963,7 +3963,15 @@
       if (document.getElementById("fmtPdf").checked) formats.push("pdf");
       if (document.getElementById("fmtDocx").checked) formats.push("docx");
       if (!formats.length) { showToast("Select at least one format (PDF or DOCX)", "info"); btn.disabled = false; btn.innerHTML = ` Generate Report(s)`; progressWrap.style.display = "none"; return; }
+      
       const outputDir = document.getElementById("manualOutputDir").value.trim();
+      if (!outputDir) {
+        showToast("Please select output folder", "warning");
+        btn.disabled = false; btn.innerHTML = ` Generate Report(s)`;
+        progressWrap.style.display = "none";
+        return;
+      }
+      
       try {
         progressFill.style.width = "40%"; progressText.textContent = "Generating report...";
         const res = await fetch(`${BASE}/pgta/generate`, {
@@ -5322,6 +5330,12 @@
     async function _runBulkGeneration(indices, btnId, btnLabel) {
       const opts = getBulkGenOptions();
       if (!opts.formats.length) { showToast("Select at least one format (PDF or DOCX)", "info"); return; }
+
+      const outputDir = document.getElementById("bulkOutputDir").value.trim();
+      if (!outputDir) {
+        showToast("Please select output folder", "warning");
+        return;
+      }
 
       const btn = document.getElementById(btnId);
       const otherBtn = document.getElementById(btnId === "generateAllBtn" ? "generateSelectedBtn" : "generateAllBtn");

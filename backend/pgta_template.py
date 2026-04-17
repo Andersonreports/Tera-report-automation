@@ -612,24 +612,16 @@ class PGTAReportTemplate:
 
         # Add embryo rows
         for idx, embryo in enumerate(embryos_data, 1):
-            raw = self._clean(embryo.get('result_summary') or embryo.get('result_description') or '')
-            info = clf.classify_embryo(raw)
-
-            # Result column text: mapped display label
-            res_display = info["summary_text"]
-            # Interpretation column: always "NA"
-            interp_display = "NA"
-            # Color: blue if mosaic, red if abnormal, black if normal
-            if info["is_mosaic"]:
-                cell_color = colors.HexColor('#1F497D')
-            elif info["is_abnormal"]:
-                cell_color = colors.red
-            else:
-                cell_color = colors.black
-
-            # MTcopy: only show actual value for mosaic embryos; NA otherwise
-            raw_mt = self._clean(embryo.get('mtcopy'), '')
-            mtcopy = raw_mt if (info["is_mosaic"] and raw_mt and raw_mt.upper() not in ('NA', 'N/A', '')) else "NA"
+            res_sum = self._clean(embryo.get('result_summary'))
+            interp = self._clean(embryo.get('interpretation'))
+            
+            # Application of Red/Blue color logic
+            res_color = self._get_result_color(res_sum, interp)
+            
+            # MTcopy: NA for non-euploid
+            mtcopy = self._clean(embryo.get('mtcopy'), 'NA')
+            if interp.upper() != "EUPLOID":
+                mtcopy = "NA"
 
             # Extract short embryo ID: if format is "PATIENTNAME-ID_REST", extract just "ID"
             full_id = self._clean(embryo.get('embryo_id'))
@@ -644,9 +636,9 @@ class PGTAReportTemplate:
             data.append([
                 self._wrap_text(str(idx), align='CENTER'),
                 self._wrap_text(short_id, align='CENTER'),
-                self._wrap_text(self._wrap_colored(res_display, cell_color, bold=False), align='CENTER'),
+                self._wrap_text(self._wrap_colored(res_sum, res_color, bold=False), align='CENTER'),
                 self._wrap_text(mtcopy, align='CENTER'),
-                self._wrap_text(self._wrap_colored(interp_display, cell_color, bold=False), align='CENTER'),
+                self._wrap_text(self._wrap_colored(interp, res_color, bold=False), align='CENTER'),
             ])
         
         # Create table [Total: 496pt - Ensuring it fills the full content width]
@@ -805,25 +797,43 @@ class PGTAReportTemplate:
         existing_sex = self._clean(embryo_data.get('sex_chromosomes', ''))
         sex_text = clf.sanitize_sex_chromosomes(existing_sex, raw_result, info["classification"])
 
-        # Interpretation: always "NA"
-        interp_text = "NA"
+        # Interpretation always shown, mapped colors from source
+        interp_text = self._clean(embryo_data.get('interpretation'), 'NA')
+        interp_color = self._get_result_color(raw_result, interp_text)
+        
+        # Red = Multiple chromosomal abnormalities (explicit result_summary check)
+        # Black = Normal/Euploid
+        auto_color = colors.black
+        auto_upper = autosomes_text.upper()
+        
+        # Check for "Multiple chromosomal abnormalities" in result_summary first
+        if "MULTIPLE CHROMOSOMAL ABNORMALITIES" in res_text.upper():
+            auto_color = colors.red
+        # Check for Normal/Euploid
+        elif 'NORMAL' in auto_upper or 'EUPLOID' in auto_upper or not autosomes_text.strip():
+            auto_color = colors.black
+        # Mosaic = has % sign
+        elif '%' in autosomes_text:
+            auto_color = colors.blue
+        # Non-mosaic abnormalities (no % sign)
+        elif any(x in auto_upper for x in ['DEL(', 'DUP(', '-', '+', 'STATUS L', 'STATUS G', 'STATUS SL', 'STATUS SG', ' SL', ' SG', ' L,', ' G,', ' L ', ' G ']) or auto_upper.endswith(' L') or auto_upper.endswith(' G'):
+            auto_color = colors.red
+        elif 'CNV STATUS' in auto_upper:
+            auto_color = colors.red
+        
+        # Sex Chromosome Color
+        sex_color = colors.black
+        if "ABNORMAL" in sex_text.upper():
+            sex_color = colors.red
+        elif "MOSAIC" in sex_text.upper():
+            sex_color = colors.blue
 
-        # MTcopy: only show actual value for mosaic embryos; NA otherwise
-        raw_mt = self._clean(embryo_data.get('mtcopy', ''))
-        mtcopy = raw_mt if (info["is_mosaic"] and raw_mt and raw_mt.upper() not in ('NA', 'N/A', '')) else "NA"
+        # MTcopy: NA for non-euploid
+        raw_mt = self._clean(embryo_data.get('mtcopy', ''), 'NA')
+        mtcopy = raw_mt if interp_text.upper() == "EUPLOID" else "NA"
 
-        # Colors: blue if mosaic, red if abnormal, black if normal
-        # Autosomes and Sex Chromosomes are always black (Bug 7)
-        if info["is_mosaic"]:
-            interp_color = colors.HexColor('#1F497D')
-        elif info["is_abnormal"]:
-            interp_color = colors.red
-        else:
-            interp_color = colors.black
-        auto_color  = colors.black
-        sex_color   = colors.black
-
-        # Embryo ID: Extract short ID if format is "PATIENTNAME-ID_REST"
+        # Embryo Identification matching source style
+        # Font: Gill Sans MT,Bold, Size: 12.00
         detail_embryo_id = self._clean(embryo_data.get('embryo_id_detail')) or self._clean(embryo_data.get('embryo_id'))
         if '-' in detail_embryo_id:
             parts = detail_embryo_id.split('-')
@@ -836,7 +846,7 @@ class PGTAReportTemplate:
             parent=self.styles['Normal'],
             fontSize=12,
             leading=14,
-            fontName=self._get_font('Calibri-Bold', 'Helvetica-Bold'),
+            fontName=self._get_font('GillSansMT-Bold', 'Helvetica-Bold'),
             textColor=colors.HexColor(self.COLORS['blue_title'])
         )
         elements.append(Paragraph(f"<b>EMBRYO: {detail_embryo_id}</b>", embryo_id_style))
@@ -1094,39 +1104,65 @@ class PGTAReportTemplate:
         ] + self._get_grid_style()))
         return KeepTogether(header_table)
 
-    def _get_result_color(self, result_text, interpretation_text=None):
-        """Return red if embryo is abnormal/mosaic, black if euploid/normal."""
-        combined = " ".join(filter(None, [result_text, interpretation_text])).upper()
-        info = clf.classify_embryo(combined)
-        return colors.red if info["is_abnormal"] else colors.black
+    def _get_result_color(self, result_text, interpretation_text):
+        """Determine if text should be Red (Aneuploid), Blue (Mosaic) or Black (Euploid)"""
+        res_up = result_text.upper() if result_text else ""
+        int_up = interpretation_text.upper() if interpretation_text else ""
+        
+        # Euploid = Black (check first for explicit euploid)
+        if "EUPLOID" in int_up and "ANEUPLOID" not in int_up:
+            return colors.black
+        
+        # Red Logic - Aneuploid and related abnormalities
+        red_keywords = ["MONOSOMY", "TRISOMY", "SEGMENTAL GAIN", "SEGMENTAL LOSS", 
+                        "MULTIPLE CHROMOSOMAL ABNORMALITIES", "ANEUPLOID", "CHAOTIC EMBRYO"]
+        if any(kw in res_up for kw in red_keywords) or any(kw in int_up for kw in red_keywords):
+            return colors.red
+            
+        # Blue Logic - Mosaic
+        blue_keywords = ["MOSAIC CHROMOSOME COMPLEMENT", "LOW LEVEL MOSAIC", 
+                         "HIGH LEVEL MOSAIC", "COMPLEX MOSAIC", "MULTIPLE MOSAIC"]
+        if any(kw in res_up for kw in blue_keywords) or any(kw in int_up for kw in blue_keywords):
+            return colors.blue
+            
+        return colors.black
 
     def _get_autosome_color(self, autosome_text):
-        """Red if autosome text indicates abnormality, black otherwise."""
-        if not autosome_text:
-            return colors.black
-        info = clf.classify_embryo(autosome_text)
-        return colors.red if info["is_abnormal"] else colors.black
+        """Special color logic for autosomes field"""
+        if not autosome_text: return colors.black
+        txt = autosome_text.upper()
+        # Red: Multiple chromosomal abnormalities
+        if "MULTIPLE CHROMOSOMAL ABNORMALITIES" in txt:
+            return colors.red
+        # Blue: Mosaic variants
+        if "MULTIPLE MOSAIC CHROMOSOME COMPLEMENT" in txt:
+            return colors.blue
+        return colors.black
 
     def _get_status_color(self, status):
         """Color logic for CNV status codes"""
         if not status: return colors.black
         s = status.upper().strip()
-        # Failed / no result → grey
-        if s in ('NR', 'FAILED', 'NO RESULT'):
-            return colors.HexColor('#808080')
-        # Mosaic variants → blue
-        if s in ('ML', 'MG', 'SML', 'SMG', 'M', 'SML/SMG', 'SMG/SML'):
-            return colors.HexColor('#1F497D')
-        # Non-mosaic abnormal → red
-        if s in ('L', 'G', 'SL', 'SG', 'SL/SG', 'SG/SL'):
-            return colors.red
-        # Numeric mosaic percentage → orange
+        
+        # Combination codes (must check before single codes)
+        red_combos = ["SL/SG", "SG/SL"]
+        blue_combos = ["SML/SMG", "SMG/SML"]
+        if s in red_combos: return colors.red
+        if s in blue_combos: return colors.blue
+        
+        # Single codes
+        red_codes = ["G", "L", "SG", "SL"]
+        blue_codes = ["M", "MG", "ML", "SMG", "SML"]
+        if s in red_codes: return colors.red
+        if s in blue_codes: return colors.blue
+        
+        # Numeric check for mosaic percentage
         try:
             val = float(s.replace('%', ''))
-            if val > 0:
-                return colors.HexColor('#FF8C00')
-        except Exception:
+            if val > 0: return colors.blue
+        except:
             pass
+            
         return colors.black
 
     def _wrap_colored(self, text, color, bold=False):

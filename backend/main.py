@@ -145,46 +145,23 @@ def preview_file(filename: str):
 
 
 # -------- Native Folder Picker --------
+_PS_EXE = r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
+
 def _win_browse_folder() -> str:
-    """Open the Windows Shell folder-picker via ctypes (no external process)."""
-    import ctypes, ctypes.wintypes as wt
-
-    BIF_RETURNONLYFSDIRS = 0x0001
-    BIF_NEWDIALOGSTYLE   = 0x0040
-    BIF_EDITBOX          = 0x0010
-
-    class BROWSEINFOW(ctypes.Structure):
-        _fields_ = [
-            ("hwndOwner",      wt.HWND),
-            ("pidlRoot",       ctypes.c_void_p),
-            ("pszDisplayName", wt.LPWSTR),
-            ("lpszTitle",      wt.LPCWSTR),
-            ("ulFlags",        wt.UINT),
-            ("lpfn",           ctypes.c_void_p),
-            ("lParam",         ctypes.c_void_p),
-            ("iImage",         ctypes.c_int),
-        ]
-
-    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
-    ole32   = ctypes.WinDLL("ole32",   use_last_error=True)
-    ole32.CoInitialize(None)
-
-    buf = ctypes.create_unicode_buffer(260)
-    bi  = BROWSEINFOW()
-    bi.lpszTitle      = "Select Export Folder"
-    bi.ulFlags        = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_EDITBOX
-    bi.pszDisplayName = buf
-
-    pidl = shell32.SHBrowseForFolderW(ctypes.byref(bi))
-    if not pidl:
-        ole32.CoUninitialize()
-        return ""
-
-    path_buf = ctypes.create_unicode_buffer(260)
-    shell32.SHGetPathFromIDListW(pidl, path_buf)
-    ole32.CoTaskMemFree(pidl)
-    ole32.CoUninitialize()
-    return path_buf.value
+    """Open a Windows folder-picker via PowerShell WinForms (absolute path, no PATH dependency)."""
+    import subprocess
+    script = (
+        "Add-Type -AssemblyName System.Windows.Forms;"
+        "$d = New-Object System.Windows.Forms.FolderBrowserDialog;"
+        "$d.Description = 'Select Export Folder';"
+        "$d.RootFolder = 'MyComputer';"
+        "if ($d.ShowDialog() -eq 'OK') { Write-Output $d.SelectedPath }"
+    )
+    result = subprocess.run(
+        [_PS_EXE, "-NoProfile", "-NonInteractive", "-Command", script],
+        capture_output=True, text=True, timeout=120
+    )
+    return result.stdout.strip()
 
 
 @app.get("/open-folder-dialog")

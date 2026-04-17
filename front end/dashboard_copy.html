@@ -1312,14 +1312,18 @@
         p["Time for report"] = document.getElementById("edit_time_report").value;
         p["Date of Received"] = document.getElementById("edit_date_received").value;
         renderPatientTable(patients);
-        clearTimeout(window.previewTimer);
-        window.previewTimer = setTimeout(() => updateBulkPreview(p), 200);
+        updateBulkPreview(p);
         showToast("Changes saved temporarily.");
     }
   </script>
 
   <script>
+    let _manualPreviewCtrl = null;
+
     async function refreshPreview() {
+        if (_manualPreviewCtrl) _manualPreviewCtrl.abort();
+        _manualPreviewCtrl = new AbortController();
+        const signal = _manualPreviewCtrl.signal;
         const data = collectManualData();
         const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
         data["logo_option"] = logoOption;
@@ -1327,13 +1331,15 @@
             const res = await fetch(API + "/preview", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
+                body: JSON.stringify(data),
+                signal
             });
+            if (signal.aborted) return;
             const result = await res.json();
-            document.getElementById("previewFrame").src =
-                API + result.preview_url + "#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width";
+            const frame = document.getElementById("previewFrame");
+            frame.src = API + result.preview_url + "?t=" + Date.now() + "#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width";
         } catch (err) {
-            console.error("Preview error:", err);
+            if (err.name !== "AbortError") console.error("Preview error:", err);
         }
     }
   </script>
@@ -1611,24 +1617,30 @@
         document.getElementById("edit_time_report").value = p["Time for report"] || "";
         document.getElementById("edit_date_received").value = p["Date of Received"] || "";
 
-        clearTimeout(window.previewTimer);
-        window.previewTimer = setTimeout(() => updateBulkPreview(p), 200);
+        updateBulkPreview(p);
     }
 
+    let _bulkPreviewCtrl = null;
+
     async function updateBulkPreview(data) {
+        if (_bulkPreviewCtrl) _bulkPreviewCtrl.abort();
+        _bulkPreviewCtrl = new AbortController();
+        const signal = _bulkPreviewCtrl.signal;
         try {
             const logoOption = document.querySelector('#bulk input[name="logoOption"]:checked')?.value || "without_logo";
             const bodyData = { ...data, logo_option: logoOption };
             const res = await fetch(API + "/preview", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(bodyData)
+                body: JSON.stringify(bodyData),
+                signal
             });
+            if (signal.aborted) return;
             const result = await res.json();
-            document.getElementById("bulkPreviewFrame").src =
-                API + result.preview_url + "#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width";
+            const frame = document.getElementById("bulkPreviewFrame");
+            frame.src = API + result.preview_url + "?t=" + Date.now() + "#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width";
         } catch (err) {
-            console.error("Bulk preview error:", err);
+            if (err.name !== "AbortError") console.error("Bulk preview error:", err);
         }
     }
   </script>
@@ -1732,12 +1744,12 @@
             field.addEventListener("input", () => {
                 if (selectedPatientIndex === null) return;
                 clearTimeout(window.bulkPreviewTimer);
-                window.bulkPreviewTimer = setTimeout(() => saveChanges(), 250);
+                window.bulkPreviewTimer = setTimeout(() => saveChanges(), 400);
             });
             field.addEventListener("change", () => {
                 if (selectedPatientIndex === null) return;
                 clearTimeout(window.bulkPreviewTimer);
-                window.bulkPreviewTimer = setTimeout(() => saveChanges(), 150);
+                window.bulkPreviewTimer = setTimeout(() => saveChanges(), 400);
             });
         });
 

@@ -582,11 +582,9 @@ class TERAReportGenerator:
         blast_lbl, cleave_lbl = self._parse_tr(tr_raw)
 
         # For Post-Receptive: sync Blastocyst Transfer highlighted value to
-        # match Second Biopsy value (P+ Hours from patient data)
+        # match Second Biopsy value (standard recommendation)
         if cfg.get("has_biopsy2"):
-            bh_int = self._int(self.d.get("Biopsy time in hrs.1", ""))
-            if bh_int is not None:
-                blast_lbl = f"P+{bh_int} Hrs"
+            blast_lbl = "P+98 Hrs"
 
         suffix = cfg["reco_suffix"]
 
@@ -602,7 +600,8 @@ class TERAReportGenerator:
             wrap_total_w = DIV_X1 - draw_x - 5 
             
             # --- Note 1: Justified ---
-            n1 = "A Second biopsy at P+98 Hrs and P+120Hrs is strongly recommended to confirm the Window of implantation."
+            # Sync second biopsy recommendation to the blastocyst transfer hour
+            n1 = f"A Second biopsy at {blast_lbl} and P+120Hrs is strongly recommended to confirm the Window of implantation."
             curr_y = cfg["recom_line_y"] - 14
             curr_y = _wrap_justify(c, n1, draw_x, curr_y, wrap_total_w, F_LBL, 11, 14)
             

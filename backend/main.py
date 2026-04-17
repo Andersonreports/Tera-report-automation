@@ -159,6 +159,17 @@ async def generate_report(data: dict):
 
         file_name = _build_file_name(data, with_logo)
 
+        # Copy to custom output_dir if provided
+        custom_dir = (data.get("output_dir") or "").strip()
+        if custom_dir:
+            try:
+                out_dir = custom_dir if os.path.isabs(custom_dir) else os.path.join(BASE_DIR, custom_dir)
+                os.makedirs(out_dir, exist_ok=True)
+                import shutil as _shutil
+                _shutil.copy2(pdf_path, os.path.join(out_dir, os.path.basename(pdf_path)))
+            except Exception as cp_err:
+                print(f"output_dir copy failed: {cp_err}")
+
         # upload to Supabase
         file_url = upload_pdf(pdf_path, file_name)
 
@@ -195,9 +206,20 @@ async def generate_bulk(request: Request):
 
             file_name = _build_file_name(row, with_logo)
 
+            # Copy to custom output_dir if provided
+            custom_dir = (row.get("output_dir") or "").strip()
+            if custom_dir:
+                try:
+                    out_dir = custom_dir if os.path.isabs(custom_dir) else os.path.join(BASE_DIR, custom_dir)
+                    os.makedirs(out_dir, exist_ok=True)
+                    import shutil as _shutil
+                    _shutil.copy2(pdf_path, os.path.join(out_dir, os.path.basename(pdf_path)))
+                except Exception as cp_err:
+                    print(f"output_dir copy failed for {patient_name}: {cp_err}")
+
             # upload to Supabase if client available
             file_url = upload_pdf(pdf_path, file_name) if upload_pdf else f"/reports/{file_name}"
-            
+
             try:
                 doc_folder = row.get("doctor_name") or row.get("center_name") or "Unknown"
                 if save_report:
@@ -316,7 +338,7 @@ async def compare_pdf(file1: UploadFile = File(...), file2: UploadFile = File(..
 
         if n_left != n_right:
             sections.append(("Page Count",
-                [f"Left PDF has <b>{n_left}</b> pages, Right PDF has <b>{n_right}</b> pages."]))
+                [f"Manual PDF has <b>{n_left}</b> pages, Automated PDF has <b>{n_right}</b> pages."]))
         else:
             sections.append(("Page Count", [f"Both PDFs have {n_left} pages. ✓"]))
 
@@ -335,8 +357,8 @@ async def compare_pdf(file1: UploadFile = File(...), file2: UploadFile = File(..
                 issues.append(f"<span style='color:#c0392b'>Full page text differs ({len(diffs)} change(s)).</span>")
                 for lw, rw in diffs[:20]:
                     issues.append(
-                        f"  <tt>Left:</tt> <span style='background:#fde8e8'>{lw or '(empty)'}</span>"
-                        f"  →  <tt>Right:</tt> <span style='background:#e8f5e9'>{rw or '(empty)'}</span>")
+                        f"  <tt>Manual:</tt> <span style='background:#fde8e8'>{lw or '(empty)'}</span>"
+                        f"  →  <tt>Automated:</tt> <span style='background:#e8f5e9'>{rw or '(empty)'}</span>")
                 if len(diffs) > 20:
                     issues.append(f"  … and {len(diffs)-20} more difference(s).")
 
@@ -350,8 +372,8 @@ async def compare_pdf(file1: UploadFile = File(...), file2: UploadFile = File(..
                     issues.append(f"  <span style='color:#c0392b'>[{region_name}] {len(rdiffs)} difference(s):</span>")
                     for lw, rw in rdiffs[:8]:
                         issues.append(
-                            f"    <tt>L:</tt> <span style='background:#fde8e8'>{lw or '(empty)'}</span>"
-                            f"  →  <tt>R:</tt> <span style='background:#e8f5e9'>{rw or '(empty)'}</span>")
+                            f"    <tt>Manual:</tt> <span style='background:#fde8e8'>{lw or '(empty)'}</span>"
+                            f"  →  <tt>Automated:</tt> <span style='background:#e8f5e9'>{rw or '(empty)'}</span>")
 
             sections.append((pg_label, issues))
 

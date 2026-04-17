@@ -650,6 +650,26 @@
     .modal-box-hdr h3 { color: var(--primary); font-size: 14px; font-weight: 700; }
     .modal-close { cursor: pointer; font-size: 20px; color: #888; line-height: 1; background: none; border: none; }
 
+    /* ── Report Generated Popup ── */
+    .report-popup-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+    }
+    .report-popup-box {
+      background: #fff; border-radius: 14px;
+      padding: 36px 48px; text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.22); min-width: 240px;
+    }
+    .report-popup-icon { font-size: 42px; margin-bottom: 10px; color: var(--success); }
+    .report-popup-title { font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 18px; }
+    .report-popup-close {
+      padding: 8px 28px; background: var(--primary); color: #fff;
+      border: none; border-radius: 7px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.15s;
+    }
+    .report-popup-close:hover { background: var(--primary-hover); }
+
     /* ── Toast ── */
     #toast-container {
       position: fixed; bottom: 22px; right: 22px;
@@ -808,6 +828,11 @@
             <!-- Generate Report -->
             <div class="fast-report-section">
               <div class="fast-report-title">&#9889; Generate Report</div>
+              <div class="fast-report-controls-row" style="margin-bottom:8px;">
+                <span class="fr-label">Export Path:</span>
+                <input type="text" id="manualExportPath" placeholder="Leave blank for default folder"
+                  style="flex:1;padding:5px 9px;border:1px solid var(--input-border);border-radius:5px;font-size:11px;font-family:'Inter',sans-serif;background:var(--input-bg);height:30px;">
+              </div>
               <div class="fast-report-controls-row">
                 <span class="fr-label">Branding:</span>
                 <label class="fr-radio">
@@ -934,16 +959,21 @@
 
           <!-- Bottom Controls Bar -->
           <div class="bulk-bottom-controls">
+            <div class="bulk-bottom-row" style="margin-bottom:6px;">
+              <span class="fr-label">Export Path:</span>
+              <input type="text" id="bulkExportPath" placeholder="Leave blank for default folder"
+                style="flex:1;padding:5px 9px;border:1px solid var(--input-border);border-radius:5px;font-size:11px;font-family:'Inter',sans-serif;background:var(--input-bg);height:28px;">
+            </div>
             <div class="bulk-bottom-row">
               <button class="btn-bulk-draft" onclick="saveBulkDraft()">Save Draft</button>
               <button class="btn-bulk-draft muted" onclick="loadBulkDraft()">Load Draft</button>
               <div class="bulk-bottom-divider"></div>
               <span class="fr-label">Branding:</span>
               <label class="fr-radio">
-                <input type="radio" name="LogoOption" value="without_logo"> Without Logo
+                <input type="radio" name="logoOption" value="without_logo"> Without Logo
               </label>
               <label class="fr-radio">
-                <input type="radio" name="LogoOption" value="with_logo" checked> With Logo
+                <input type="radio" name="logoOption" value="with_logo" checked> With Logo
               </label>
               <div class="bulk-bottom-divider"></div>
               <button class="btn-gen-all" onclick="generateAllReports()">Generate All</button>
@@ -959,13 +989,13 @@
           <div class="compare-tab-inner">
 
             <div class="compare-info-banner">
-              Compare two TERA PDFs: auto-generated (left) vs reference (right).
+              Compare two TERA PDFs: <b>Manual</b> (left) vs <b>Automated</b> (right).
               Click <b>Compare PDFs</b> for a visual side-by-side view and an automated text-diff summary.
             </div>
 
             <div class="compare-upload-row">
               <div class="compare-upload-box" id="cmpBoxLeft">
-                <div class="compare-upload-label">Auto-Generated PDF (Left)</div>
+                <div class="compare-upload-label">Manual PDF</div>
                 <button class="btn-upload-cmp" onclick="document.getElementById('pdf1').click()">Choose File</button>
                 <input type="file" id="pdf1" accept=".pdf" style="display:none;"
                   onchange="document.getElementById('cmpFname1').textContent=this.files[0]?this.files[0].name:'';document.getElementById('cmpBoxLeft').classList.toggle('has-file',!!this.files[0])">
@@ -973,7 +1003,7 @@
               </div>
               <div class="cmp-vs-badge">VS</div>
               <div class="compare-upload-box" id="cmpBoxRight">
-                <div class="compare-upload-label">Reference PDF (Right)</div>
+                <div class="compare-upload-label">Automated PDF</div>
                 <button class="btn-upload-cmp" onclick="document.getElementById('pdf2').click()">Choose File</button>
                 <input type="file" id="pdf2" accept=".pdf" style="display:none;"
                   onchange="document.getElementById('cmpFname2').textContent=this.files[0]?this.files[0].name:'';document.getElementById('cmpBoxRight').classList.toggle('has-file',!!this.files[0])">
@@ -1183,10 +1213,24 @@
         if (sidebar) sidebar.style.display = (tabId === "manual") ? "" : "none";
     }
 
+    function showReportGeneratedPopup() {
+        const overlay = document.createElement('div');
+        overlay.className = 'report-popup-overlay';
+        overlay.innerHTML = `<div class="report-popup-box">
+            <div class="report-popup-icon">&#10003;</div>
+            <div class="report-popup-title">Report Generated</div>
+            <button class="report-popup-close" onclick="this.closest('.report-popup-overlay').remove()">OK</button>
+        </div>`;
+        overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+        document.body.appendChild(overlay);
+    }
+
     async function downloadReport() {
         const data = collectManualData();
         const logoOption = document.querySelector('#manual input[name="logoOption"]:checked')?.value || "without_logo";
+        const outputDir = (document.getElementById("manualExportPath")?.value || "").trim();
         data["logo_option"] = logoOption;
+        if (outputDir) data["output_dir"] = outputDir;
         try {
             const res = await fetch(API + "/generate", {
                 method: "POST",
@@ -1195,11 +1239,7 @@
             });
             const result = await res.json();
             if (result.error) { showToast("Error: " + result.error, "error"); return; }
-            const link = document.createElement("a");
-            link.href = result.file_url;
-            link.download = "TERA_Report.pdf";
-            link.click();
-            showToast("Report generated successfully!");
+            showReportGeneratedPopup();
         } catch (err) {
             showToast("Error: " + err.message, "error");
         }
@@ -1259,8 +1299,8 @@
     async function generateSelected(rows) {
         if (!rows || rows.length === 0) { showToast("No patients selected.", "error"); return; }
         const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
-        const rowsWithLogo = rows.map(r => ({ ...r, logo_option: logoOption }));
-        showToast("Generating " + rowsWithLogo.length + " reports…");
+        const outputDir = (document.getElementById("bulkExportPath")?.value || "").trim();
+        const rowsWithLogo = rows.map(r => ({ ...r, logo_option: logoOption, ...(outputDir && { output_dir: outputDir }) }));
         try {
             const res = await fetch(API + "/generate-bulk", {
                 method: "POST",
@@ -1268,8 +1308,8 @@
                 body: JSON.stringify(rowsWithLogo)
             });
             const result = await res.json();
-            showDownloadLinks(result.generated, result.errors);
-            showToast((result.generated?.length || 0) + " reports generated!");
+            if (result.errors?.length) showDownloadLinks(result.generated, result.errors);
+            showReportGeneratedPopup();
         } catch (err) {
             showToast("Error: " + err.message, "error");
         }
@@ -1394,9 +1434,9 @@
     }
 
     async function generateAllReports() {
-        const logoOption = document.querySelector('input[name="LogoOption"]:checked')?.value || "without_logo";
-        const rows = patients.map(r => ({ ...r, logo_option: logoOption }));
-        showToast("Generating " + rows.length + " reports…");
+        const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
+        const outputDir = (document.getElementById("bulkExportPath")?.value || "").trim();
+        const rows = patients.map(r => ({ ...r, logo_option: logoOption, ...(outputDir && { output_dir: outputDir }) }));
         try {
             const res = await fetch(API + "/generate-bulk", {
                 method: "POST",
@@ -1404,8 +1444,8 @@
                 body: JSON.stringify(rows)
             });
             const result = await res.json();
-            showDownloadLinks(result.generated, result.errors);
-            showToast((result.generated?.length || 0) + " reports generated!");
+            if (result.errors?.length) showDownloadLinks(result.generated, result.errors);
+            showReportGeneratedPopup();
         } catch (err) {
             showToast("Error: " + err.message, "error");
         }
@@ -1473,14 +1513,17 @@
     function renderPatientTable(data) {
         const tbody = document.getElementById("patientTableBody");
         tbody.innerHTML = "";
-        data.forEach((row, index) => {
+        data.forEach((row, displayIdx) => {
+            // Resolve original index so filtered views still target the right patient
+            const origIdx = patients.indexOf(row);
+            const idx = origIdx >= 0 ? origIdx : displayIdx;
             const tr = document.createElement("tr");
-            tr.dataset.index = index;
+            tr.dataset.index = idx;
             tr.innerHTML = `
-<td style="text-align:center;"><input type="checkbox" class="row-check" data-index="${index}" style="accent-color:var(--primary);" onclick="event.stopPropagation()"></td>
-<td style="color:var(--text-muted);">${index + 1}</td>
+<td style="text-align:center;"><input type="checkbox" class="row-check" data-index="${idx}" style="accent-color:var(--primary);" onclick="event.stopPropagation()"></td>
+<td style="color:var(--text-muted);">${displayIdx + 1}</td>
 <td>${row["Patient Name"] || "Unknown"}</td>`;
-            tr.onclick = () => loadPatient(index);
+            tr.onclick = () => loadPatient(idx);
             tbody.appendChild(tr);
         });
     }
@@ -1531,7 +1574,7 @@
 
     async function updateBulkPreview(data) {
         try {
-            const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
+            const logoOption = document.querySelector('#bulk input[name="logoOption"]:checked')?.value || "without_logo";
             const bodyData = { ...data, logo_option: logoOption };
             const res = await fetch(API + "/preview", {
                 method: "POST",

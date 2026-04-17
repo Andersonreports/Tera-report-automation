@@ -5028,7 +5028,7 @@
       <input type="checkbox" class="bulk-cb" id="bulk-cb-${i}" checked onchange="updateBulkSelectedCount()">
       <div class="patient-info">
         <div class="patient-name">${esc(p.patient_name || "Unknown")} (${(p.embryos || []).length} embryos)</div>
-        <div class="patient-meta">${esc(p.sample_number || "—")}</div>
+        ${p.sample_number ? `<div class="patient-meta">${esc(p.sample_number)}</div>` : ''}
       </div>
       <span class="patient-status" id="bulk-status-${i}" style="font-size:9px;">Pending</span>`;
         list.appendChild(div);

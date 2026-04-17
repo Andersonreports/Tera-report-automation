@@ -477,6 +477,126 @@ body {
 'use strict';
 
 /* ╔══════════════════════════════════════════════════════════════╗
+   ║  CLASSIFICATION CONSTANTS  (mirrors pgta_classify.py)       ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+const CLS = { EUPLOID:'EUPLOID', ANEUPLOID:'ANEUPLOID', SEGMENTAL:'SEGMENTAL',
+              LOW_MOSAIC:'LOW_MOSAIC', HIGH_MOSAIC:'HIGH_MOSAIC',
+              COMPLEX_MOSAIC:'COMPLEX_MOSAIC', FAILED:'FAILED' };
+
+// SUMMARY_TEXT — used in Results Summary table (Result column)
+const SUMMARY_TEXT = {
+  EUPLOID:        "Normal chromosome complement",
+  ANEUPLOID:      "Abnormal chromosome complement",
+  SEGMENTAL:      "Multiple chromosomal abnormalities",
+  LOW_MOSAIC:     "Mosaic chromosome complement",
+  HIGH_MOSAIC:    "Mosaic chromosome complement",
+  COMPLEX_MOSAIC: "Mosaic chromosome complement",
+  FAILED:         "No result obtained"
+};
+
+// RESULT_TEXT — used in per-embryo detail page (Result: row)
+const RESULT_TEXT = {
+  EUPLOID:        "The embryo contains normal chromosome complement",
+  ANEUPLOID:      "The embryo contains abnormal chromosome complement",
+  SEGMENTAL:      "The embryo contains multiple chromosomal abnormalities",
+  LOW_MOSAIC:     "The embryo contains mosaic chromosome complement",
+  HIGH_MOSAIC:    "The embryo contains mosaic chromosome complement",
+  COMPLEX_MOSAIC: "The embryo contains mosaic chromosome complement",
+  FAILED:         "No result obtained"
+};
+
+// INTERP_TEXT — Interpretation column / row
+const INTERP_TEXT = {
+  EUPLOID:        "Euploid",
+  ANEUPLOID:      "Aneuploid",
+  SEGMENTAL:      "Multiple chromosomal abnormalities",
+  LOW_MOSAIC:     "Low Level Mosaic",
+  HIGH_MOSAIC:    "High Level Mosaic",
+  COMPLEX_MOSAIC: "Complex Mosaic",
+  FAILED:         "No Result"
+};
+
+// Color class per classification
+const CLASS_COLOR = {
+  EUPLOID:        'c-normal',
+  ANEUPLOID:      'c-abnormal',
+  SEGMENTAL:      'c-abnormal',
+  LOW_MOSAIC:     'c-mosaic',
+  HIGH_MOSAIC:    'c-mosaic',
+  COMPLEX_MOSAIC: 'c-mosaic',
+  FAILED:         'c-normal'
+};
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  CLASSIFICATION ENGINE  (mirrors pgta_classify.py logic)    ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+const MOSAIC_CODES = ['M','MG','ML','SMG','SML'];
+const ABN_CODES    = ['G','L','SG','SL'];
+
+function classifyEmbryo(emb) {
+  // If class is already set by backend, trust it
+  if (emb._cls && CLS[emb._cls]) return emb._cls;
+
+  const statuses = emb.chromosome_statuses || {};
+  const mosaics  = emb.mosaic_percentages  || {};
+
+  // Count mosaic and abnormal chromosomes from CNV status codes
+  const mosaicChrs = Object.entries(statuses).filter(([,s]) =>
+    MOSAIC_CODES.includes((s||'').toUpperCase().trim()));
+  const abnChrs = Object.entries(statuses).filter(([,s]) =>
+    ABN_CODES.includes((s||'').toUpperCase().trim()));
+
+  // Complex mosaic: ≥3 mosaic chromosomes
+  if (mosaicChrs.length >= 3) return CLS.COMPLEX_MOSAIC;
+
+  // If any mosaic chromosome found
+  if (mosaicChrs.length > 0) {
+    // Get max mosaic percentage across mosaic chromosomes
+    let maxPct = 0;
+    mosaicChrs.forEach(([n]) => {
+      const raw = String(mosaics[n] || mosaics[String(n)] || '0').replace('%','');
+      const pct = parseFloat(raw);
+      if (!isNaN(pct) && pct > maxPct) maxPct = pct;
+    });
+    if (maxPct > 80)  return CLS.ANEUPLOID;   // >80% → treat as aneuploid
+    if (maxPct >= 51) return CLS.HIGH_MOSAIC;
+    if (maxPct >= 30) return CLS.LOW_MOSAIC;
+    return CLS.LOW_MOSAIC; // code present, pct not given → low mosaic
+  }
+
+  // Abnormal chromosomes (no mosaic codes)
+  if (abnChrs.length >= 2) return CLS.SEGMENTAL;
+  if (abnChrs.length === 1) return CLS.ANEUPLOID;
+
+  // Fall back to interpretation string if chromosome data is missing
+  const interp = (emb.interpretation || '').toUpperCase();
+  if (interp.includes('COMPLEX MOSAIC'))             return CLS.COMPLEX_MOSAIC;
+  if (interp.includes('HIGH') && interp.includes('MOSAIC')) return CLS.HIGH_MOSAIC;
+  if (interp.includes('LOW')  && interp.includes('MOSAIC')) return CLS.LOW_MOSAIC;
+  if (interp.includes('MOSAIC'))                     return CLS.LOW_MOSAIC;
+  if (interp.includes('ANEUPLOID'))                  return CLS.ANEUPLOID;
+  if (interp.includes('SEGMENTAL') || interp.includes('MULTIPLE')) return CLS.SEGMENTAL;
+  if (interp.includes('FAILED') || interp.includes('NO RESULT'))   return CLS.FAILED;
+
+  return CLS.EUPLOID;
+}
+
+/* Enforce all rules on each embryo before rendering */
+function normalizeEmbryo(emb) {
+  const cls = classifyEmbryo(emb);
+  return {
+    ...emb,
+    _cls:               cls,
+    result_summary:     SUMMARY_TEXT[cls],
+    result_description: RESULT_TEXT[cls],
+    interpretation:     INTERP_TEXT[cls],
+    // MTcopy: only for Euploid embryos
+    mtcopy: (cls === CLS.EUPLOID && emb.mtcopy && String(emb.mtcopy).toUpperCase() !== 'NA')
+              ? emb.mtcopy : 'NA'
+  };
+}
+
+/* ╔══════════════════════════════════════════════════════════════╗
    ║  SAMPLE PLACEHOLDER DATA — replace with real patient data   ║
    ╚══════════════════════════════════════════════════════════════╝ */
 const SAMPLE_DATA = {
@@ -536,54 +656,18 @@ const SAMPLE_DATA = {
 };
 
 /* ════════════════════════════════════════
-   COLOR LOGIC  (mirrors Python helpers)
+   COLOR LOGIC
    ════════════════════════════════════════ */
-function getResultClass(result, interp) {
-  const r = (result||'').toUpperCase(), i = (interp||'').toUpperCase();
-  if (i.includes('EUPLOID') && !i.includes('ANEUPLOID')) return 'c-normal';
-  const RED = ['MONOSOMY','TRISOMY','SEGMENTAL GAIN','SEGMENTAL LOSS',
-               'MULTIPLE CHROMOSOMAL ABNORMALITIES','ANEUPLOID','CHAOTIC EMBRYO'];
-  if (RED.some(k => r.includes(k)||i.includes(k))) return 'c-abnormal';
-  const BLUE = ['MOSAIC CHROMOSOME COMPLEMENT','LOW LEVEL MOSAIC',
-                'HIGH LEVEL MOSAIC','COMPLEX MOSAIC','MULTIPLE MOSAIC','MOSAIC'];
-  if (BLUE.some(k => r.includes(k)||i.includes(k))) return 'c-mosaic';
-  return 'c-normal';
-}
 
+// CNV cell color — used only in the CNV table, not for embryo-level classification
 function getStatusClass(s) {
   if (!s) return 'c-normal';
   const u = s.toUpperCase().trim();
-  if (['SL/SG','SG/SL'].includes(u))       return 'c-abnormal';
-  if (['SML/SMG','SMG/SML'].includes(u))    return 'c-mosaic';
-  if (['G','L','SG','SL'].includes(u))      return 'c-abnormal';
-  if (['M','MG','ML','SMG','SML'].includes(u)) return 'c-mosaic';
+  if (['SL/SG','SG/SL'].includes(u))           return 'c-abnormal';
+  if (['SML/SMG','SMG/SML'].includes(u))        return 'c-mosaic';
+  if (['G','L','SG','SL'].includes(u))          return 'c-abnormal';
+  if (['M','MG','ML','SMG','SML'].includes(u))  return 'c-mosaic';
   try { if (parseFloat(u.replace('%',''))>0) return 'c-mosaic'; } catch(e){}
-  return 'c-normal';
-}
-
-function getMTcopy(emb) {
-  const interp = (emb.interpretation||'').toUpperCase();
-  const raw    = (emb.mtcopy||'NA').toString().trim().toUpperCase();
-  if (interp !== 'EUPLOID') return 'NA';
-  if (!raw || raw==='NA'||raw==='N/A') return 'NA';
-  return emb.mtcopy;
-}
-
-function getAutoClass(emb) {
-  const rSum = (emb.result_summary||'').toUpperCase();
-  const auto = (emb.autosomes||'').toUpperCase();
-  if (rSum.includes('MULTIPLE CHROMOSOMAL ABNORMALITIES')) return 'c-abnormal';
-  if (!auto || auto.includes('NORMAL')||auto.includes('EUPLOID')) return 'c-normal';
-  if ((emb.autosomes||'').includes('%')) return 'c-mosaic';
-  if (['DEL(','DUP('].some(x=>auto.includes(x))||
-      [' SL',' SG',' L,',' G,',' L ',' G ','+','-'].some(x=>auto.includes(x))) return 'c-abnormal';
-  return 'c-normal';
-}
-
-function getSexClass(emb) {
-  const s = (emb.sex_chromosomes||'').toUpperCase();
-  if (s.includes('ABNORMAL')) return 'c-abnormal';
-  if (s.includes('MOSAIC'))   return 'c-mosaic';
   return 'c-normal';
 }
 
@@ -704,18 +788,18 @@ function buildCoverPage(patient, embryos, opts={}) {
     ['BIOPSY PERFORMED BY',patient.biopsy_performed_by,
      'REPORT DATE',        patient.report_date]
   ].map(([l1,v1,l2,v2])=>`<tr>
-    <td class="c-lbl">${l1}</td><td class="c-col">:</td><td class="c-val">${v1||'&mdash;'}</td>
-    <td class="c-lbl2">${l2}</td><td class="c-col2">:</td><td class="c-val2">${v2||'&mdash;'}</td>
+    <td class="c-lbl">${l1}</td><td class="c-col">:</td><td class="c-val">${v1||''}</td>
+    <td class="c-lbl2">${l2}</td><td class="c-col2">:</td><td class="c-val2">${v2||''}</td>
   </tr>`).join('');
 
-  const rsRows = embryos.map((e,i)=>{
-    const cls = getResultClass(e.result_summary, e.interpretation);
+  const rsRows = embryos.map((n,i)=>{
+    const cls = CLASS_COLOR[n._cls];
     return `<tr>
       <td>${i+1}</td>
-      <td>${e.embryo_id}</td>
-      <td><span class="${cls}">${e.result_summary}</span></td>
-      <td>${getMTcopy(e)}</td>
-      <td><span class="${cls}">${e.interpretation}</span></td>
+      <td>${n.embryo_id}</td>
+      <td><span class="${cls}">${n.result_summary}</span></td>
+      <td>${n.mtcopy||'NA'}</td>
+      <td><span class="${cls}">${n.interpretation}</span></td>
     </tr>`;
   }).join('');
 
@@ -811,10 +895,11 @@ function buildMethodologyPage(anyMosaic, opts={}) {
    PAGE 3+ — PER-EMBRYO DETAIL
    ════════════════════════════════════════ */
 function buildEmbryoPage(patient, emb, opts={}) {
-  const colorClass = getResultClass(emb.result_summary, emb.interpretation);
-  const autoClass  = getAutoClass(emb);
-  const sexClass   = getSexClass(emb);
-  const mt         = getMTcopy(emb);
+  const colorClass = CLASS_COLOR[emb._cls] || 'c-normal';
+  // Autosomes and Sex Chromosomes text is always black (source code: colors.black)
+  const autoClass  = 'c-normal';
+  const sexClass   = 'c-normal';
+  const mt         = emb.mtcopy || 'NA';
   const embId      = emb.embryo_id_detail || emb.embryo_id;
   const combinedName = patient.name + (patient.spouse_name ? '<br>'+patient.spouse_name : '');
 
@@ -873,23 +958,22 @@ function buildEmbryoPage(patient, emb, opts={}) {
    MAIN RENDER
    ════════════════════════════════════════ */
 function renderReport(data, opts={}) {
-  const { patient, embryos } = data;
+  const { patient } = data;
+  // Normalize all embryos through classification engine before rendering
+  const embryos = (data.embryos || []).map(normalizeEmbryo);
 
-  const anyMosaic = embryos.some(e =>
-    (e.interpretation||'').toUpperCase().includes('MOSAIC'));
+  const anyMosaic = embryos.some(e => e._cls && e._cls.includes('MOSAIC'));
 
-  const allLowDNA = embryos.length > 0 && embryos.every(e => {
-    const i=(e.interpretation||'').toUpperCase(), r=(e.result_summary||'').toUpperCase();
-    return i.includes('LOW DNA') || r.includes('LOW DNA');
-  });
+  const allLowDNA = embryos.length > 0 && embryos.every(e =>
+    e._cls === CLS.FAILED ||
+    (e.result_summary||'').toUpperCase().includes('LOW DNA'));
 
   let html = buildCoverPage(patient, embryos, opts)
            + buildMethodologyPage(anyMosaic, opts);
 
   if (!allLowDNA) {
     embryos.forEach(emb => {
-      const i=(emb.interpretation||'').toUpperCase(), r=(emb.result_summary||'').toUpperCase();
-      if (i.includes('LOW DNA') || r.includes('LOW DNA')) return;
+      if (emb._cls === CLS.FAILED) return;
       html += buildEmbryoPage(patient, emb, opts);
     });
   }

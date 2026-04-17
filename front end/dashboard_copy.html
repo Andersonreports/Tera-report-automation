@@ -650,6 +650,29 @@
     .modal-box-hdr h3 { color: var(--primary); font-size: 14px; font-weight: 700; }
     .modal-close { cursor: pointer; font-size: 20px; color: #888; line-height: 1; background: none; border: none; }
 
+    /* ── Folder Picker Row ── */
+    .folder-pick-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .folder-pick-display {
+      flex: 1; padding: 5px 9px; height: 30px;
+      border: 1px solid var(--input-border); border-radius: 5px;
+      font-size: 11px; font-family: 'Inter', sans-serif;
+      background: var(--input-bg); color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      cursor: default;
+    }
+    .folder-pick-display.placeholder { color: var(--text-muted); }
+    .btn-browse-folder {
+      padding: 5px 11px; height: 30px;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: 5px;
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      font-family: 'Inter', sans-serif; white-space: nowrap;
+      display: flex; align-items: center; gap: 4px; transition: 0.15s;
+    }
+    .btn-browse-folder:hover { background: var(--primary-hover); }
+
     /* ── Report Generated Popup ── */
     .report-popup-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.45);
@@ -830,8 +853,11 @@
               <div class="fast-report-title">&#9889; Generate Report</div>
               <div class="fast-report-controls-row" style="margin-bottom:8px;">
                 <span class="fr-label">Export Path:</span>
-                <input type="text" id="manualExportPath" placeholder="Leave blank for default folder"
-                  style="flex:1;padding:5px 9px;border:1px solid var(--input-border);border-radius:5px;font-size:11px;font-family:'Inter',sans-serif;background:var(--input-bg);height:30px;">
+                <div class="folder-pick-row" style="flex:1;">
+                  <div class="folder-pick-display placeholder" id="manualExportDisplay">No folder selected</div>
+                  <input type="hidden" id="manualExportPath">
+                  <button class="btn-browse-folder" onclick="browseFolder('manualExportPath','manualExportDisplay')">&#128193; Browse</button>
+                </div>
               </div>
               <div class="fast-report-controls-row">
                 <span class="fr-label">Branding:</span>
@@ -961,8 +987,11 @@
           <div class="bulk-bottom-controls">
             <div class="bulk-bottom-row" style="margin-bottom:6px;">
               <span class="fr-label">Export Path:</span>
-              <input type="text" id="bulkExportPath" placeholder="Leave blank for default folder"
-                style="flex:1;padding:5px 9px;border:1px solid var(--input-border);border-radius:5px;font-size:11px;font-family:'Inter',sans-serif;background:var(--input-bg);height:28px;">
+              <div class="folder-pick-row" style="flex:1;">
+                <div class="folder-pick-display placeholder" id="bulkExportDisplay">No folder selected</div>
+                <input type="hidden" id="bulkExportPath">
+                <button class="btn-browse-folder" onclick="browseFolder('bulkExportPath','bulkExportDisplay')">&#128193; Browse</button>
+              </div>
             </div>
             <div class="bulk-bottom-row">
               <button class="btn-bulk-draft" onclick="saveBulkDraft()">Save Draft</button>
@@ -1653,11 +1682,62 @@
         window.previewTimer = setTimeout(() => refreshPreview(), 400);
     }
 
+    // ── Native folder picker via backend ──
+    async function browseFolder(hiddenId, displayId) {
+        try {
+            const res = await fetch(API + "/open-folder-dialog");
+            const data = await res.json();
+            if (data.error) { showToast("Folder picker error: " + data.error, "error"); return; }
+            const path = data.path || "";
+            const hidden = document.getElementById(hiddenId);
+            const display = document.getElementById(displayId);
+            if (hidden) hidden.value = path;
+            if (display) {
+                if (path) {
+                    display.textContent = path;
+                    display.classList.remove("placeholder");
+                } else {
+                    display.textContent = "No folder selected";
+                    display.classList.add("placeholder");
+                }
+            }
+        } catch (err) {
+            showToast("Could not open folder picker: " + err.message, "error");
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
-        const fields = document.querySelectorAll(".form-grid input, .form-grid select");
-        fields.forEach(field => {
+        // Manual tab — auto-refresh preview on any field change
+        document.querySelectorAll(".form-grid input, .form-grid select").forEach(field => {
             field.addEventListener("input", triggerPreview);
             field.addEventListener("change", triggerPreview);
+        });
+
+        // Bulk tab — auto-refresh preview when editor fields change (debounced)
+        document.querySelectorAll(".bulk-editor-scroll input, .bulk-editor-scroll select").forEach(field => {
+            field.addEventListener("input", () => {
+                if (selectedPatientIndex === null) return;
+                clearTimeout(window.bulkPreviewTimer);
+                window.bulkPreviewTimer = setTimeout(() => {
+                    saveChanges();
+                }, 600);
+            });
+            field.addEventListener("change", () => {
+                if (selectedPatientIndex === null) return;
+                clearTimeout(window.bulkPreviewTimer);
+                window.bulkPreviewTimer = setTimeout(() => {
+                    saveChanges();
+                }, 300);
+            });
+        });
+
+        // Compare tab — auto-run compare when both files are chosen
+        ["pdf1", "pdf2"].forEach(id => {
+            document.getElementById(id)?.addEventListener("change", () => {
+                const f1 = document.getElementById("pdf1").files[0];
+                const f2 = document.getElementById("pdf2").files[0];
+                if (f1 && f2) comparePDF();
+            });
         });
     });
   </script>

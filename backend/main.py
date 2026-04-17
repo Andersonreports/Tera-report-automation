@@ -144,6 +144,25 @@ def preview_file(filename: str):
     return FileResponse(path, media_type="application/pdf")
 
 
+# -------- Native Folder Picker --------
+@app.get("/open-folder-dialog")
+async def open_folder_dialog():
+    """Open the OS native folder-picker dialog and return the chosen path."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.wm_attributes("-topmost", True)
+        folder = filedialog.askdirectory(title="Select Export Folder", parent=root)
+        root.destroy()
+        if folder:
+            return {"path": folder}
+        return {"path": ""}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # -------- Single Report Generation --------
 @app.post("/generate")
 async def generate_report(data: dict):

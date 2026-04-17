@@ -675,9 +675,9 @@
       font-size: 11px; font-family: 'Inter', sans-serif;
       background: var(--input-bg); color: var(--text);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      cursor: default;
+      outline: none; box-sizing: border-box;
     }
-    .folder-pick-display.placeholder { color: var(--text-muted); }
+    .folder-pick-display::placeholder { color: var(--text-muted); }
     .btn-browse-folder {
       padding: 5px 11px; height: 30px;
       background: var(--primary); color: #fff;
@@ -869,9 +869,8 @@
               <div class="fast-report-controls-row" style="margin-bottom:8px;">
                 <span class="fr-label">Export Path:</span>
                 <div class="folder-pick-row" style="flex:1;">
-                  <div class="folder-pick-display placeholder" id="manualExportDisplay">No folder selected</div>
-                  <input type="hidden" id="manualExportPath">
-                  <button class="btn-browse-folder" onclick="browseFolder('manualExportPath','manualExportDisplay')">&#128193; Browse</button>
+                  <input type="text" class="folder-pick-display placeholder" id="manualExportDisplay" placeholder="No folder selected — click Browse or type a path" value="">
+                  <button class="btn-browse-folder" onclick="selectOutputFolder('manualExportDisplay')">&#128193; Browse</button>
                 </div>
               </div>
               <div class="fast-report-controls-row">
@@ -905,9 +904,8 @@
             <div class="bulk-top-sep"></div>
             <span class="fr-label" style="white-space:nowrap;">Export Folder:</span>
             <div class="folder-pick-row" style="flex:1;">
-              <div class="folder-pick-display placeholder" id="bulkExportDisplay">No folder selected</div>
-              <input type="hidden" id="bulkExportPath">
-              <button class="btn-browse-folder" onclick="browseFolder('bulkExportPath','bulkExportDisplay')">&#128193; Browse</button>
+              <input type="text" class="folder-pick-display placeholder" id="bulkExportDisplay" placeholder="No folder selected — click Browse or type a path" value="">
+              <button class="btn-browse-folder" onclick="selectOutputFolder('bulkExportDisplay')">&#128193; Browse</button>
             </div>
           </div>
 
@@ -1271,9 +1269,7 @@
     async function downloadReport() {
         const data = collectManualData();
         const logoOption = document.querySelector('#manual input[name="logoOption"]:checked')?.value || "without_logo";
-        const outputDir = (document.getElementById("manualExportPath")?.value || "").trim();
         data["logo_option"] = logoOption;
-        if (outputDir) data["output_dir"] = outputDir;
         try {
             const res = await fetch(API + "/generate", {
                 method: "POST",
@@ -1282,6 +1278,12 @@
             });
             const result = await res.json();
             if (result.error) { showToast("Error: " + result.error, "error"); return; }
+            if (_dirHandles["manualExportDisplay"] && result.file_url) {
+                const fileUrl = result.file_url.startsWith("/") ? API + result.file_url : result.file_url;
+                const blob = await fetch(fileUrl).then(r => r.blob());
+                const filename = result.file_url.split("/").pop();
+                await saveFileToDir("manualExportDisplay", blob, filename);
+            }
             showReportGeneratedPopup();
         } catch (err) {
             showToast("Error: " + err.message, "error");
@@ -1348,8 +1350,7 @@
     async function generateSelected(rows) {
         if (!rows || rows.length === 0) { showToast("No patients selected.", "error"); return; }
         const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
-        const outputDir = (document.getElementById("bulkExportPath")?.value || "").trim();
-        const rowsWithLogo = rows.map(r => ({ ...r, logo_option: logoOption, ...(outputDir && { output_dir: outputDir }) }));
+        const rowsWithLogo = rows.map(r => ({ ...r, logo_option: logoOption }));
         try {
             const res = await fetch(API + "/generate-bulk", {
                 method: "POST",
@@ -1358,6 +1359,7 @@
             });
             const result = await res.json();
             if (result.errors?.length) showDownloadLinks(result.generated, result.errors);
+            await _saveBulkToDir(result.generated);
             showReportGeneratedPopup();
         } catch (err) {
             showToast("Error: " + err.message, "error");
@@ -1484,8 +1486,7 @@
 
     async function generateAllReports() {
         const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
-        const outputDir = (document.getElementById("bulkExportPath")?.value || "").trim();
-        const rows = patients.map(r => ({ ...r, logo_option: logoOption, ...(outputDir && { output_dir: outputDir }) }));
+        const rows = patients.map(r => ({ ...r, logo_option: logoOption }));
         try {
             const res = await fetch(API + "/generate-bulk", {
                 method: "POST",
@@ -1494,9 +1495,22 @@
             });
             const result = await res.json();
             if (result.errors?.length) showDownloadLinks(result.generated, result.errors);
+            await _saveBulkToDir(result.generated);
             showReportGeneratedPopup();
         } catch (err) {
             showToast("Error: " + err.message, "error");
+        }
+    }
+
+    async function _saveBulkToDir(generated) {
+        if (!_dirHandles["bulkExportDisplay"] || !generated?.length) return;
+        for (const f of generated) {
+            if (!f.file_url) continue;
+            try {
+                const fileUrl = f.file_url.startsWith("/") ? API + f.file_url : f.file_url;
+                const blob = await fetch(fileUrl).then(r => r.blob());
+                await saveFileToDir("bulkExportDisplay", blob, f.file_name || f.file_url.split("/").pop());
+            } catch (e) { console.warn("Save to dir failed for", f.file_name, e); }
         }
     }
 
@@ -1708,27 +1722,43 @@
         window.previewTimer = setTimeout(() => refreshPreview(), 250);
     }
 
-    // ── Native folder picker via backend ──
-    async function browseFolder(hiddenId, displayId) {
+    // ── Folder picker (File System Access API — same as PGTA) ──
+    const _dirHandles = {};
+
+    async function selectOutputFolder(inputId) {
+        if (!window.showDirectoryPicker) {
+            const inp = document.getElementById(inputId);
+            if (inp) { inp.removeAttribute("readonly"); inp.placeholder = "Type folder path (e.g. C:\\Reports)"; inp.focus(); }
+            showToast("Folder picker needs Chrome/Edge. Type a path directly.", "info");
+            return;
+        }
         try {
-            const res = await fetch(API + "/open-folder-dialog");
-            const data = await res.json();
-            if (data.error) { showToast("Folder picker error: " + data.error, "error"); return; }
-            const path = data.path || "";
-            const hidden = document.getElementById(hiddenId);
-            const display = document.getElementById(displayId);
-            if (hidden) hidden.value = path;
-            if (display) {
-                if (path) {
-                    display.textContent = path;
-                    display.classList.remove("placeholder");
-                } else {
-                    display.textContent = "No folder selected";
-                    display.classList.add("placeholder");
-                }
-            }
+            const dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+            _dirHandles[inputId] = dirHandle;
+            const inp = document.getElementById(inputId);
+            if (inp) { inp.value = dirHandle.name; inp.classList.remove("placeholder"); }
+            showToast("Folder selected: " + dirHandle.name, "success");
         } catch (err) {
-            showToast("Could not open folder picker: " + err.message, "error");
+            if (err.name !== "AbortError") {
+                const inp = document.getElementById(inputId);
+                if (inp) { inp.removeAttribute("readonly"); inp.placeholder = "Type folder path manually"; }
+                showToast("Could not open folder picker — type a path in the box.", "info");
+            }
+        }
+    }
+
+    async function saveFileToDir(inputId, blob, filename) {
+        const dirHandle = _dirHandles[inputId];
+        if (!dirHandle) return false;
+        try {
+            const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            return true;
+        } catch (err) {
+            console.warn("Could not write to selected folder:", err);
+            return false;
         }
     }
 

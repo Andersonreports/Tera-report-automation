@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PGT-A Report Preview</title>
+<style>
+/* ═══════════════════════════════════════════
+   RESET & CSS VARIABLES
+   (All measurements in pt to match PDF exactly)
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Colors extracted from PGTAReportTemplate.COLORS */
+  --patient-bg:    #F1F1F7;
+  --results-hdr:   #F9BE8F;
+  --grey-bg:       #F2F2F2;
+  --blue-title:    #1F497D;
+  --approval-blue: #4F81BD;
+  --section-line:  #989998;
+  --white:         #ffffff;
+
+  /* Text-color classes (mapped to Python color values) */
+  --c-normal:   #000000;
+  --c-abnormal: #C00000;   /* colors.red in ReportLab → dark red */
+  --c-mosaic:   #1F497D;   /* design-system blue (matches fix) */
+
+  /* Font stacks (closest web equivalents) */
+  --f-title:  'Trebuchet MS', 'Gill Sans MT', 'Gill Sans', Arial, sans-serif;
+  --f-label:  'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --f-body:   'Calibri', 'Carlito', Arial, sans-serif;
+}
+
+/* ═══════════════════════════════════════════
+   BODY / PRINT CHROME
+   ═══════════════════════════════════════════ */
+body {
+  background: #c8c8c8;
+  font-family: var(--f-body);
+  font-size: 11pt;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ═══════════════════════════════════════════
+   PAGE CONTAINER  (612 × 792 pt — US Letter)
+   ═══════════════════════════════════════════ */
+.page {
+  width: 612pt;
+  min-height: 792pt;
+  background: #fff;
+  margin: 16pt auto;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.28);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  page-break-after: always;
+}
+
+/* ─── Header (72 pt tall, image at x=72 as in PDF draw call) ─── */
+.page-header {
+  width: 612pt;
+  height: 72pt;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.page-header img {
+  display: block;
+  width: 468pt;
+  height: 72pt;
+  margin: 0 72pt;
+  object-fit: fill;
+}
+
+/* Placeholder shown when no real image is provided */
+.hdr-placeholder {
+  width: 468pt;
+  height: 72pt;
+  margin: 0 72pt;
+  background: linear-gradient(135deg, #1F497D 0%, #4F81BD 55%, #F9BE8F 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7pt 14pt;
+}
+.hdr-logo-circle {
+  width: 48pt; height: 48pt;
+  background: #fff; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--f-label); font-size: 5.5pt; font-weight: 700;
+  color: var(--blue-title); text-align: center; line-height: 1.2;
+  flex-shrink: 0;
+}
+.hdr-name {
+  font-family: var(--f-label); font-size: 10.5pt; font-weight: 700;
+  color: #fff; line-height: 1.35; padding-left: 8pt;
+}
+.hdr-name small { display: block; font-size: 7pt; font-weight: 400; opacity: .85; }
+.hdr-accred {
+  font-family: var(--f-label); font-size: 6.5pt; color: #fff;
+  text-align: right; line-height: 1.5; opacity: .92;
+}
+.hdr-sub { display: flex; align-items: center; }
+
+/* ─── Page Body (margins: 58pt left/right, ~2 pt top/bottom buffer) ─── */
+.page-body {
+  flex: 1;
+  padding: 4pt 58pt 6pt 58pt;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Footer (66 pt tall, banner at bottom) ─── */
+.page-footer {
+  width: 612pt;
+  height: 66pt;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.page-footer img {
+  display: block;
+  width: 468pt;
+  height: 66pt;
+  margin: 0 72pt;
+  object-fit: fill;
+}
+
+.ftr-placeholder {
+  width: 468pt; height: 66pt; margin: 0 72pt;
+  background: linear-gradient(90deg, #F9BE8F 0%, #F1F1F7 55%, #4F81BD 100%);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6pt 14pt;
+}
+.ftr-text {
+  font-family: var(--f-label); font-size: 6.5pt; color: #333; line-height: 1.55;
+}
+.ftr-genqa {
+  width: 46pt; height: 34pt; background: #fff; border-radius: 4pt;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7pt; font-weight: 700; color: #555; flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════
+   REPORT TITLE  (GillSansMT-Bold 16pt, #1F497D, centered)
+   ═══════════════════════════════════════════ */
+.report-title {
+  font-family: var(--f-title);
+  font-size: 16pt;
+  font-weight: 700;
+  color: var(--blue-title);
+  text-align: center;
+  line-height: 18pt;
+  margin-bottom: 6pt;
+  letter-spacing: 0.1pt;
+}
+
+/* ═══════════════════════════════════════════
+   PATIENT INFO TABLE
+   colWidths: [108, 12, 161, 108, 12, 89] = 490pt
+   bg: #F1F1F7   font: SegoeUI-Bold 10pt
+   padding: 4pt  valign: TOP
+   ═══════════════════════════════════════════ */
+.pi-table {
+  width: 490pt;
+  border-collapse: collapse;
+  margin-bottom: 12pt;
+}
+.pi-table td {
+  font-family: var(--f-label);
+  font-size: 10pt;
+  font-weight: 700;
+  background: var(--patient-bg);
+  vertical-align: top;
+  padding: 4pt 4pt;
+  line-height: 12pt;
+}
+.pi-table .c-lbl  { width: 108pt; padding-left: 4pt; }
+.pi-table .c-col  { width: 12pt;  padding-left: 0; padding-right: 0; }
+.pi-table .c-val  { width: 161pt; padding-left: 0; }
+.pi-table .c-lbl2 { width: 108pt; padding-left: 4pt; }
+.pi-table .c-col2 { width: 12pt;  padding-left: 0; padding-right: 0; }
+.pi-table .c-val2 { width: 89pt;  padding-left: 0; }
+
+/* ═══════════════════════════════════════════
+   PNDT DISCLAIMER BOX
+   bg: #F2F2F2  font: SegoeUI-SemiboldItalic 10.5pt  centered
+   ═══════════════════════════════════════════ */
+.pndt-box {
+  width: 490pt;
+  background: var(--grey-bg);
+  padding: 6pt 8pt;
+  text-align: center;
+  font-family: var(--f-label);
+  font-size: 10.5pt;
+  font-style: italic;
+  font-weight: 600;
+  margin-bottom: 12pt;
+  line-height: 13pt;
+}
+
+/* ═══════════════════════════════════════════
+   SECTION HEADER
+   SegoeUI-Bold 11pt  #1F497D  line: 0.5pt #989998 below
+   spaceBefore: 12pt  spaceAfter: 8pt
+   ═══════════════════════════════════════════ */
+.sec-hdr {
+  font-family: var(--f-label);
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--blue-title);
+  border-bottom: 0.5pt solid var(--section-line);
+  padding-bottom: 6pt;
+  margin-top: 12pt;
+  margin-bottom: 8pt;
+}
+.sec-hdr.first  { margin-top: 0; }
+.sec-hdr.no-line{ border-bottom: none; padding-bottom: 0; }
+
+/* ═══════════════════════════════════════════
+   RESULTS SUMMARY TABLE
+   colWidths: [50, 95, 185, 80, 86] = 496pt
+   header bg: #F9BE8F   data bg: #F1F1F7
+   font: Calibri 9pt   horizontal lines only (0.5pt grey)
+   ═══════════════════════════════════════════ */
+.rs-table {
+  width: 496pt;
+  border-collapse: collapse;
+  font-family: var(--f-body);
+  font-size: 9pt;
+  margin-bottom: 4pt;
+}
+.rs-table thead th {
+  background: var(--results-hdr);
+  font-weight: 700;
+  text-align: center;
+  padding: 5pt;
+  border-bottom: 0.5pt solid #c4894a;
+  line-height: 11pt;
+}
+.rs-table tbody td {
+  background: var(--patient-bg);
+  text-align: center;
+  padding: 5pt;
+  border-bottom: 0.5pt solid #bbbbbb;
+  vertical-align: middle;
+  line-height: 11pt;
+}
+.rs-table .col-sno    { width: 50pt; }
+.rs-table .col-sample { width: 95pt; }
+.rs-table .col-result { width: 185pt; }
+.rs-table .col-mt     { width: 80pt; }
+.rs-table .col-interp { width: 86pt; }
+
+/* ═══════════════════════════════════════════
+   COLOR UTILITY CLASSES
+   ═══════════════════════════════════════════ */
+.c-normal   { color: var(--c-normal); }
+.c-abnormal { color: var(--c-abnormal); }
+.c-mosaic   { color: var(--c-mosaic); }
+
+/* ═══════════════════════════════════════════
+   BODY TEXT  (Calibri 11pt  justified  leading 13pt)
+   BULLET TEXT (same + left-indent 20pt, text-indent -10pt)
+   ═══════════════════════════════════════════ */
+.body-text {
+  font-family: var(--f-body);
+  font-size: 11pt;
+  line-height: 13pt;
+  text-align: justify;
+  margin-bottom: 6pt;
+}
+.bullet-item {
+  display: block;
+  font-family: var(--f-body);
+  font-size: 11pt;
+  line-height: 13pt;
+  text-align: justify;
+  padding-left: 20pt;
+  text-indent: -10pt;
+  margin-bottom: 4pt;
+}
+.ref-item {
+  font-family: var(--f-body);
+  font-size: 11pt;
+  line-height: 13pt;
+  text-align: justify;
+  margin-bottom: 3pt;
+}
+
+/* ═══════════════════════════════════════════
+   EMBRYO MINI BANNER
+   Table: colWidths [82, 254, 24, 130] = 490pt
+   bg: #F1F1F7  SegoeUI-Bold 10pt  padding 2pt top/bottom
+   ═══════════════════════════════════════════ */
+.emb-banner {
+  width: 490pt;
+  border-collapse: collapse;
+  margin-bottom: 8pt;
+}
+.emb-banner td {
+  font-family: var(--f-label);
+  font-size: 10pt;
+  font-weight: 700;
+  background: var(--patient-bg);
+  vertical-align: top;
+  padding: 2pt 4pt;
+  line-height: 12pt;
+}
+.emb-banner .eb-lbl  { width: 82pt; }
+.emb-banner .eb-val  { width: 254pt; padding-left: 0; }
+.emb-banner .eb-pin  { width: 24pt; text-align: right; padding-right: 4pt; }
+.emb-banner .eb-pinv { width: 130pt; }
+
+/* ─── Embryo ID heading: GillSansMT-Bold 12pt, #1F497D ─── */
+.emb-id-heading {
+  font-family: var(--f-title);
+  font-size: 12pt;
+  font-weight: 700;
+  color: var(--blue-title);
+  margin-bottom: 6pt;
+}
+
+/* ═══════════════════════════════════════════
+   DETAIL TABLE  (colWidths=[490])
+   bg: #F1F1F7  Calibri 11pt  padding 3pt  valign MIDDLE
+   ═══════════════════════════════════════════ */
+.detail-table {
+  width: 490pt;
+  border-collapse: collapse;
+  margin-bottom: 12pt;
+}
+.detail-table td {
+  background: var(--patient-bg);
+  font-family: var(--f-body);
+  font-size: 11pt;
+  padding: 3pt 4pt;
+  vertical-align: middle;
+  line-height: 13pt;
+}
+
+/* ═══════════════════════════════════════════
+   CNV CHART AREA
+   ═══════════════════════════════════════════ */
+.cnv-chart-wrap {
+  width: 496pt;
+  margin-bottom: 12pt;
+}
+.cnv-chart-wrap img {
+  display: block;
+  max-width: 496pt;
+  height: auto;
+}
+.cnv-chart-placeholder {
+  width: 496pt;
+  height: 110pt;
+  background: #f5f5f5;
+  border: 1pt dashed #bbb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--f-label);
+  font-size: 9pt;
+  color: #aaa;
+}
+
+/* ═══════════════════════════════════════════
+   CNV STATUS TABLE
+   colWidths: [75] + [19.13]*22  = 496pt
+   bg: #F1F1F7  SegoeUI-Bold 7pt
+   border: 1pt solid white (white-grid effect)
+   ═══════════════════════════════════════════ */
+.cnv-table {
+  width: 496pt;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--f-label);
+  font-size: 7pt;
+  font-weight: 700;
+  line-height: 9pt;
+}
+.cnv-table td {
+  background: var(--patient-bg);
+  text-align: center;
+  padding: 3pt 0;
+  border: 1pt solid #ffffff;
+  vertical-align: middle;
+}
+.cnv-table td.cnv-lbl { width: 75pt; padding: 3pt 4pt; text-align: left; }
+.cnv-table td.cnv-chr { width: 19.13pt; }
+
+/* ─── Legend ─── */
+.cnv-legend {
+  font-family: var(--f-label);
+  font-size: 8pt;
+  font-style: italic;
+  color: #444;
+  margin-top: 4pt;
+  margin-bottom: 12pt;
+  line-height: 10pt;
+}
+
+/* ═══════════════════════════════════════════
+   SIGNATURE BLOCK
+   Approval text: SegoeUI-Bold 12.48pt #4F81BD
+   Table: 3 cols × 156pt
+   Names/Titles: SegoeUI 11.04pt centered
+   ═══════════════════════════════════════════ */
+.sig-wrap { margin-top: 12pt; }
+.sig-approval {
+  font-family: var(--f-label);
+  font-size: 12.48pt;
+  font-weight: 700;
+  color: var(--approval-blue);
+  margin-bottom: 12.7pt;
+}
+.sig-table { width: 468pt; border-collapse: collapse; }
+.sig-table td {
+  width: 156pt;
+  text-align: center;
+  vertical-align: bottom;
+  padding: 0;
+}
+.sig-img { display: block; width: 100pt; height: 40pt; margin: 0 auto 2pt; }
+.sig-img-ph {
+  display: flex; align-items: center; justify-content: center;
+  width: 100pt; height: 40pt; margin: 0 auto 2pt;
+  background: #f5f5f5; border: 1pt dashed #ccc;
+  font-size: 7pt; color: #bbb;
+}
+.sig-name  { display: block; font-family: var(--f-label); font-size: 11.04pt; text-align: center; line-height: 13pt; }
+.sig-title { display: block; font-family: var(--f-label); font-size: 11.04pt; text-align: center; line-height: 13pt; }
+
+/* ═══════════════════════════════════════════
+   TOOLBAR (screen only)
+   ═══════════════════════════════════════════ */
+.toolbar {
+  position: fixed; top: 10pt; right: 10pt; z-index: 9999;
+  display: flex; gap: 8pt;
+}
+.toolbar button {
+  padding: 7pt 16pt; background: var(--blue-title); color: #fff;
+  border: none; border-radius: 5pt; font-size: 10pt; font-weight: 600;
+  font-family: var(--f-label); cursor: pointer; transition: background .15s;
+}
+.toolbar button:hover { background: #163a63; }
+.toolbar button.btn-sec {
+  background: transparent; color: var(--blue-title);
+  border: 1.5pt solid var(--blue-title);
+}
+.toolbar button.btn-sec:hover { background: var(--blue-title); color: #fff; }
+
+/* ═══════════════════════════════════════════
+   PRINT OVERRIDES
+   ═══════════════════════════════════════════ */
+@media print {
+  body { background: white; }
+  .page { box-shadow: none; margin: 0; }
+  .toolbar { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOOLBAR ── -->
+<div class="toolbar">
+  <button onclick="window.print()">&#128438; Print / Save PDF</button>
+  <button class="btn-sec" onclick="document.getElementById('report-container').innerHTML=''; renderReport(SAMPLE_DATA)">&#8635; Reset Sample</button>
+</div>
+
+<!-- ── REPORT PAGES INJECTED HERE ── -->
+<div id="report-container"></div>
+
+<script>
+'use strict';
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  SAMPLE PLACEHOLDER DATA — replace with real patient data   ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+const SAMPLE_DATA = {
+  patient: {
+    name:                  "Mrs. [Patient Name]",
+    spouse_name:           "Mr. [Spouse Name]",
+    pin:                   "AND-XXXXXXXX",
+    age:                   "32 Years",
+    sample_number:         "XXXXXXXXX",
+    referring_clinician:   "Dr. [Clinician Name]",
+    biopsy_date:           "DD-MM-YYYY",
+    hospital_clinic:       "[Hospital / Clinic Name]",
+    sample_collection_date:"DD-MM-YYYY",
+    specimen:              "DAY 5 TROPHECTODERM BIOPSY",
+    sample_receipt_date:   "DD-MM-YYYY",
+    biopsy_performed_by:   "[Embryologist Name]",
+    report_date:           "DD-MM-YYYY",
+    indication:            "History of implantation failure.",
+    results_summary_comment: ""
+  },
+  embryos: [
+    {
+      embryo_id: "SA1", embryo_id_detail: "SA1",
+      result_summary:     "Normal chromosome complement",
+      result_description: "The embryo contains normal chromosome complement",
+      mtcopy: "18.5",
+      interpretation: "Euploid",
+      autosomes: "Normal",
+      sex_chromosomes: "Normal",
+      chromosome_statuses: Object.fromEntries(Array.from({length:22},(_,i)=>[String(i+1),'N'])),
+      mosaic_percentages: {}, cnv_image_path: null, inconclusive_comment: ""
+    },
+    {
+      embryo_id: "SA2", embryo_id_detail: "SA2",
+      result_summary:     "Trisomy of chromosome 21",
+      result_description: "The embryo contains abnormal chromosome complement",
+      mtcopy: "NA",
+      interpretation: "Aneuploid",
+      autosomes: "Trisomy of chromosome 21",
+      sex_chromosomes: "Normal",
+      chromosome_statuses: { ...Object.fromEntries(Array.from({length:22},(_,i)=>[String(i+1),'N'])), "21":"G" },
+      mosaic_percentages: {}, cnv_image_path: null, inconclusive_comment: ""
+    },
+    {
+      embryo_id: "SA3", embryo_id_detail: "SA3",
+      result_summary:     "Mosaic chromosome complement",
+      result_description: "The embryo contains mosaic chromosome complement",
+      mtcopy: "21.3",
+      interpretation: "Low Level Mosaic",
+      autosomes: "+15(~38%)",
+      sex_chromosomes: "Normal",
+      chromosome_statuses: { ...Object.fromEntries(Array.from({length:22},(_,i)=>[String(i+1),'N'])), "15":"ML" },
+      mosaic_percentages: { "15":"38%" },
+      cnv_image_path: null, inconclusive_comment: ""
+    }
+  ]
+};
+
+/* ════════════════════════════════════════
+   COLOR LOGIC  (mirrors Python helpers)
+   ════════════════════════════════════════ */
+function getResultClass(result, interp) {
+  const r = (result||'').toUpperCase(), i = (interp||'').toUpperCase();
+  if (i.includes('EUPLOID') && !i.includes('ANEUPLOID')) return 'c-normal';
+  const RED = ['MONOSOMY','TRISOMY','SEGMENTAL GAIN','SEGMENTAL LOSS',
+               'MULTIPLE CHROMOSOMAL ABNORMALITIES','ANEUPLOID','CHAOTIC EMBRYO'];
+  if (RED.some(k => r.includes(k)||i.includes(k))) return 'c-abnormal';
+  const BLUE = ['MOSAIC CHROMOSOME COMPLEMENT','LOW LEVEL MOSAIC',
+                'HIGH LEVEL MOSAIC','COMPLEX MOSAIC','MULTIPLE MOSAIC','MOSAIC'];
+  if (BLUE.some(k => r.includes(k)||i.includes(k))) return 'c-mosaic';
+  return 'c-normal';
+}
+
+function getStatusClass(s) {
+  if (!s) return 'c-normal';
+  const u = s.toUpperCase().trim();
+  if (['SL/SG','SG/SL'].includes(u))       return 'c-abnormal';
+  if (['SML/SMG','SMG/SML'].includes(u))    return 'c-mosaic';
+  if (['G','L','SG','SL'].includes(u))      return 'c-abnormal';
+  if (['M','MG','ML','SMG','SML'].includes(u)) return 'c-mosaic';
+  try { if (parseFloat(u.replace('%',''))>0) return 'c-mosaic'; } catch(e){}
+  return 'c-normal';
+}
+
+function getMTcopy(emb) {
+  const interp = (emb.interpretation||'').toUpperCase();
+  const raw    = (emb.mtcopy||'NA').toString().trim().toUpperCase();
+  if (interp !== 'EUPLOID') return 'NA';
+  if (!raw || raw==='NA'||raw==='N/A') return 'NA';
+  return emb.mtcopy;
+}
+
+function getAutoClass(emb) {
+  const rSum = (emb.result_summary||'').toUpperCase();
+  const auto = (emb.autosomes||'').toUpperCase();
+  if (rSum.includes('MULTIPLE CHROMOSOMAL ABNORMALITIES')) return 'c-abnormal';
+  if (!auto || auto.includes('NORMAL')||auto.includes('EUPLOID')) return 'c-normal';
+  if ((emb.autosomes||'').includes('%')) return 'c-mosaic';
+  if (['DEL(','DUP('].some(x=>auto.includes(x))||
+      [' SL',' SG',' L,',' G,',' L ',' G ','+','-'].some(x=>auto.includes(x))) return 'c-abnormal';
+  return 'c-normal';
+}
+
+function getSexClass(emb) {
+  const s = (emb.sex_chromosomes||'').toUpperCase();
+  if (s.includes('ABNORMAL')) return 'c-abnormal';
+  if (s.includes('MOSAIC'))   return 'c-mosaic';
+  return 'c-normal';
+}
+
+/* ════════════════════════════════════════
+   HEADER / FOOTER HELPERS
+   ════════════════════════════════════════ */
+function buildHeader(src) {
+  if (src) return `<div class="page-header"><img src="${src}" alt="Header"></div>`;
+  return `<div class="page-header">
+  <div class="hdr-placeholder">
+    <div class="hdr-sub">
+      <div class="hdr-logo-circle">ANDERSON<br>DIAGNOSTICS<br>&amp; LABS</div>
+      <div class="hdr-name">Anderson Diagnostics &amp; Labs<small>Private Limited &nbsp;|&nbsp; Chennai</small></div>
+    </div>
+    <div class="hdr-accred">NABL Accredited<br>ISO 15189:2012<br>CAP Accredited</div>
+  </div></div>`;
+}
+
+function buildFooter(src) {
+  if (src) return `<div class="page-footer"><img src="${src}" alt="Footer"></div>`;
+  return `<div class="page-footer">
+  <div class="ftr-placeholder">
+    <div class="ftr-text">
+      <b>Anderson Diagnostics &amp; Labs Private Limited</b><br>
+      No.22, Vijayaraghava Road, T. Nagar, Chennai – 600 017<br>
+      Tel: 044-4296 9999 &nbsp;|&nbsp; www.andersondiagnostics.com
+    </div>
+    <div class="ftr-genqa">GenQA</div>
+  </div></div>`;
+}
+
+/* ════════════════════════════════════════
+   SECTION HEADER
+   ════════════════════════════════════════ */
+function secHdr(txt, cls='') {
+  return `<div class="sec-hdr ${cls}">${txt}</div>`;
+}
+
+/* ════════════════════════════════════════
+   SIGNATURE BLOCK
+   ════════════════════════════════════════ */
+const SIGNATURES = [
+  { name:"Anand Babu. K, Ph.D",       title:"Molecular Biologist" },
+  { name:"Sachin D Honguntikar, Ph.D", title:"Molecular Geneticist" },
+  { name:"Dr Suriyakumar G",           title:"Director" }
+];
+
+function buildSigBlock(opts={}) {
+  const cells = SIGNATURES.map(s => {
+    const img = (opts.sigImages && opts.sigImages[s.name])
+      ? `<img class="sig-img" src="${opts.sigImages[s.name]}" alt="${s.name}">`
+      : `<div class="sig-img-ph">[Signature]</div>`;
+    return `<td>${img}<span class="sig-name">${s.name}</span><span class="sig-title">${s.title}</span></td>`;
+  }).join('');
+  return `<div class="sig-wrap">
+  <p class="sig-approval"><b>This report has been reviewed and approved by: </b></p>
+  <table class="sig-table"><tr>${cells}</tr></table>
+</div>`;
+}
+
+/* ════════════════════════════════════════
+   CNV TABLE
+   ════════════════════════════════════════ */
+function buildCNVTable(emb) {
+  const statuses = emb.chromosome_statuses || {};
+  const mosaics  = emb.mosaic_percentages  || {};
+  const chrs     = Array.from({length:22},(_,i)=>i+1);
+
+  // hasMosaic: at least one non-empty mosaic percentage with a digit
+  const hasMosaic = Object.values(mosaics).some(
+    v => v && String(v).trim() && String(v).trim()!=='-' && /\d/.test(String(v))
+  );
+
+  const hdrRow = `<tr>
+    <td class="cnv-lbl"><b>Chromosome</b></td>
+    ${chrs.map(n=>`<td class="cnv-chr"><b>${n}</b></td>`).join('')}
+  </tr>`;
+
+  const cnvRow = `<tr>
+    <td class="cnv-lbl"><b>CNV status</b></td>
+    ${chrs.map(n=>{
+      const s = statuses[String(n)]||'N';
+      const cls = getStatusClass(s);
+      const disp = s.replace('/','/<br>');
+      return `<td class="cnv-chr"><span class="${cls}"><b>${disp}</b></span></td>`;
+    }).join('')}
+  </tr>`;
+
+  const mosRow = hasMosaic ? `<tr>
+    <td class="cnv-lbl"><b>Mosaic (%)</b></td>
+    ${chrs.map(n=>{
+      const s = statuses[String(n)]||'N';
+      const p = mosaics[String(n)]||'-';
+      return `<td class="cnv-chr"><span class="${getStatusClass(s)}"><b>${p}</b></span></td>`;
+    }).join('')}
+  </tr>` : '';
+
+  return `<table class="cnv-table">${hdrRow}${cnvRow}${mosRow}</table>
+<p class="cnv-legend"><i>N &ndash; Normal, G-Gain, L-Loss, SG-Segmental Gain, SL-Segmental Loss,
+M-Mosaic, MG-Mosaic Gain, ML-Mosaic Loss, SMG-Segmental Mosaic Gain, SML-Segmental Mosaic Loss</i></p>`;
+}
+
+/* ════════════════════════════════════════
+   PAGE 1 — COVER
+   ════════════════════════════════════════ */
+function buildCoverPage(patient, embryos, opts={}) {
+  const piRows = [
+    ['PATIENT NAME',      patient.name+(patient.spouse_name?'<br>'+patient.spouse_name:''),
+     'PIN',               patient.pin],
+    ['DATE OF BIRTH/ AGE',patient.age,
+     'SAMPLE NUMBER',     patient.sample_number],
+    ['REFERRING CLINICIAN',patient.referring_clinician,
+     'BIOPSY DATE',       patient.biopsy_date],
+    ['HOSPITAL/CLINIC',   patient.hospital_clinic,
+     'SAMPLE COLLECTION DATE', patient.sample_collection_date],
+    ['SPECIMEN',          patient.specimen,
+     'SAMPLE RECEIPT DATE',patient.sample_receipt_date],
+    ['BIOPSY PERFORMED BY',patient.biopsy_performed_by,
+     'REPORT DATE',        patient.report_date]
+  ].map(([l1,v1,l2,v2])=>`<tr>
+    <td class="c-lbl">${l1}</td><td class="c-col">:</td><td class="c-val">${v1||'&mdash;'}</td>
+    <td class="c-lbl2">${l2}</td><td class="c-col2">:</td><td class="c-val2">${v2||'&mdash;'}</td>
+  </tr>`).join('');
+
+  const rsRows = embryos.map((e,i)=>{
+    const cls = getResultClass(e.result_summary, e.interpretation);
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${e.embryo_id}</td>
+      <td><span class="${cls}">${e.result_summary}</span></td>
+      <td>${getMTcopy(e)}</td>
+      <td><span class="${cls}">${e.interpretation}</span></td>
+    </tr>`;
+  }).join('');
+
+  const indicHTML = patient.indication
+    ? `${secHdr('Indication')}<p class="body-text">${patient.indication}</p>` : '';
+  const cmtHTML = patient.results_summary_comment
+    ? `<p class="body-text" style="margin-top:8pt;">${patient.results_summary_comment}</p>` : '';
+
+  return `<div class="page">
+  ${buildHeader(opts.headerSrc)}
+  <div class="page-body">
+    <h1 class="report-title">Preimplantation Genetic Testing for Aneuploidies (PGT-A)</h1>
+    <table class="pi-table">${piRows}</table>
+    <div class="pndt-box"><b>This test does not reveal sex of the fetus &amp; confers to PNDT act, 1994</b></div>
+    ${indicHTML}
+    ${secHdr('Results summary')}
+    <table class="rs-table">
+      <thead><tr>
+        <th class="col-sno">S. No.</th>
+        <th class="col-sample">Sample</th>
+        <th class="col-result">Result</th>
+        <th class="col-mt">MTcopy</th>
+        <th class="col-interp">Interpretation</th>
+      </tr></thead>
+      <tbody>${rsRows}</tbody>
+    </table>
+    ${cmtHTML}
+  </div>
+  ${buildFooter(opts.footerSrc)}
+</div>`;
+}
+
+/* ════════════════════════════════════════
+   PAGE 2 — METHODOLOGY (static content)
+   ════════════════════════════════════════ */
+const METHODOLOGY = `Chromosomal aneuploidy analysis was performed using ChromInst&reg; PGT-A kit from Yikon Genomics (Suzhou) Co., Ltd - China. The Yikon - ChromInst&reg; PGT-A kit with the Genemind - SURFSeq 5000* High-throughput Sequencing Platform allows detection of aneuploidies in all 23 sets of Chromosomes. Probes are not covering the p arm of acrocentric chromosomes as they are rich in repeat regions and RNA markers and devoid of genes. Changes in this region will not be detected. However, these regions have less clinical significance due to the absence of genes. Chromosomal aneuploidy can be detected by copy number variations (CNVs), which represent a class of variation in which segments of the genome have been duplicated (gains) or deleted (losses). Large, genomic copy number imbalances can range from sub-chromosomal regions to entire chromosomes. Inherited and de-novo CNVs (up to 10 Mb) have been associated with many disease conditions. This assay was performed on DNA extracted from embryo biopsy samples.`;
+
+const MOSAICISM_INTRO = `Mosaicism arises in the embryo due to mitotic errors which lead to the production of karyotypically distinct cell lineages within a single embryo [1]. NGS has the sensitivity to detect mosaicism when 30% or the above cells are abnormal [2]. Mosaicism is reported in our laboratory as follows [3].`;
+
+const MOSAICISM_BULLETS = [
+  "Embryos with less than 30% mosaicism are considered as euploid.",
+  "Embryos with 30% to 50% mosaicism will be reported as low level mosaic, 51% to 80% mosaicism will be reported as high level mosaic.",
+  "When three chromosomes or more than three chromosomes showing mosaic change, it will be denoted as complex mosaic.",
+  "If greater than 80% mosaicism detected in an embryo it will be considered aneuploid."
+];
+
+const MOSAICISM_CLINICAL = `Clinical significance of transferring mosaic embryos is still under evaluation. Based on Preimplantation Genetic Diagnosis International Society (PGDIS) Position Statement &ndash; 2019, transfer of these embryos should be considered only after appropriate counselling of the patient and alternatives have been discussed. Invasive prenatal testing with karyotyping in the amniotic fluid needs to be advised in such cases [4]. As shown in published literature evidence, such transfers can result in normal pregnancy or miscarriage or an offspring with chromosomal mosaicism [5,6,7].`;
+
+const LIMITATIONS = [
+  "This technique cannot detect point mutations, balanced translocations, inversions, triploidy, uniparental disomy and epigenetic modifications.",
+  "Probes used do not cover the p arm of acrocentric chromosomes as they are rich in repeat regions and RNA markers and devoid of genes. Changes in this region will not be detected. However, these regions have less clinical significance due to the absence of genes.",
+  "Deletions and duplications with the size of &lt; 10 Mb cannot be detected.",
+  "Risk of misinterpretation of the actual embryo karyotype due to the presence of chromosomal mosaicism, either at cleavage-stage or at blastocyst stage may exist.",
+  "This technique cannot detect variants of polyploidy and haploidy.",
+  "NGS without genotyping cannot identify the nature (meiotic or mitotic) nor the parental origin of aneuploidies.",
+  "Due to the intrinsic nature of chromosomal mosaicism, the chromosomal make-up achieved from a biopsy only may represent a picture of a small part of the embryo and may not necessarily reflect the chromosomal content of the entire embryo. Also, the mosaicism level inferred from a multi-cell TE biopsy might not unequivocally represent the exact chromosomal mosaicism percentage of the TE cells or the inner cell mass constitution."
+];
+
+const REFERENCES = [
+  'McCoy, Rajiv C. "Mosaicism in Preimplantation human embryos: when chromosomal abnormalities are the norm." <i>Trends in genetics</i> 33.7 (2017): 448-463.',
+  'ESHRE PGT-SR/PGT-A Working Group, et al. "ESHRE PGT Consortium good practice recommendations for the detection of structural and numerical chromosomal aberrations." <i>Human reproduction open</i> 2020.3 (2020): hoaa017.',
+  'ESHRE Working Group on Chromosomal Mosaicism, et al. "ESHRE survey results and good practice recommendations on managing chromosomal mosaicism." <i>Hum Reprod Open.</i> 2022 Nov 7;2022(4):hoac044.',
+  'Cram, D. S., et al. "PGDIS position statement on the transfer of mosaic embryos 2019." <i>Reproductive biomedicine online</i> 39 (2019): e1-e4.',
+  'Victor, Andrea R., et al. "One hundred mosaic embryos transferred prospectively in a single clinic: exploring when and why they result in healthy pregnancies." <i>Fertility and sterility</i> 111.2 (2019): 280-293.',
+  'Lin, Pin-Yao, et al. "Clinical outcomes of single mosaic embryo transfer: high-level or low-level mosaic embryo, does it matter?" <i>Journal of clinical medicine</i> 9.6 (2020): 1695.',
+  'Kahraman, Semra, et al. "The birth of a baby with mosaicism resulting from a known mosaic embryo transfer: a case report." <i>Human Reproduction</i> 35.3 (2020): 727-733.'
+];
+
+function buildMethodologyPage(anyMosaic, opts={}) {
+  const mosaicHTML = anyMosaic ? `
+    ${secHdr('Conditions for reporting mosaicism')}
+    <p class="body-text">${MOSAICISM_INTRO}</p>
+    ${MOSAICISM_BULLETS.map(b=>`<span class="bullet-item">&bull; ${b}</span>`).join('')}
+    <p class="body-text" style="margin-top:6pt;">${MOSAICISM_CLINICAL}</p>` : '';
+
+  return `<div class="page">
+  ${buildHeader(opts.headerSrc)}
+  <div class="page-body">
+    ${secHdr('Methodology','first')}
+    <p class="body-text">${METHODOLOGY}</p>
+    ${mosaicHTML}
+    ${secHdr('Limitations')}
+    ${LIMITATIONS.map(l=>`<span class="bullet-item">&bull; ${l}</span>`).join('')}
+    <div style="margin-top:12pt;"></div>
+    ${secHdr('References')}
+    ${REFERENCES.map((r,i)=>`<p class="ref-item">${i+1}. ${r}</p>`).join('')}
+  </div>
+  ${buildFooter(opts.footerSrc)}
+</div>`;
+}
+
+/* ════════════════════════════════════════
+   PAGE 3+ — PER-EMBRYO DETAIL
+   ════════════════════════════════════════ */
+function buildEmbryoPage(patient, emb, opts={}) {
+  const colorClass = getResultClass(emb.result_summary, emb.interpretation);
+  const autoClass  = getAutoClass(emb);
+  const sexClass   = getSexClass(emb);
+  const mt         = getMTcopy(emb);
+  const embId      = emb.embryo_id_detail || emb.embryo_id;
+  const combinedName = patient.name + (patient.spouse_name ? '<br>'+patient.spouse_name : '');
+
+  const isInconclusive = ['INCONCLUSIVE'].some(k =>
+    (emb.result_summary||'').toUpperCase().includes(k) ||
+    (emb.result_description||'').toUpperCase().includes(k) ||
+    (emb.interpretation||'').toUpperCase().includes(k));
+
+  const chartHTML = emb.cnv_image_path
+    ? `<div class="cnv-chart-wrap"><img src="${emb.cnv_image_path}" alt="CNV Chart ${embId}"></div>`
+    : `<div class="cnv-chart-wrap"><div class="cnv-chart-placeholder">[ CNV Chart Image &mdash; ${embId} ]</div></div>`;
+
+  const incHTML = (isInconclusive && emb.inconclusive_comment)
+    ? `<p class="body-text" style="margin-bottom:12pt;">${emb.inconclusive_comment}</p>` : '';
+
+  const cnvContent = isInconclusive ? incHTML : (buildCNVTable(emb) + incHTML);
+
+  return `<div class="page">
+  ${buildHeader(opts.headerSrc)}
+  <div class="page-body">
+    <h1 class="report-title">Preimplantation Genetic Testing for Aneuploidies (PGT-A)</h1>
+
+    <!-- Mini patient banner [82+254+24+130=490pt] -->
+    <table class="emb-banner">
+      <tr>
+        <td class="eb-lbl">PATIENT NAME:</td>
+        <td class="eb-val">${combinedName}</td>
+        <td class="eb-pin">PIN:</td>
+        <td class="eb-pinv">${patient.pin}</td>
+      </tr>
+    </table>
+
+    <div class="pndt-box"><b>This test does not reveal sex of the fetus &amp; confers to PNDT act, 1994</b></div>
+
+    <p class="emb-id-heading"><b>EMBRYO: ${embId}</b></p>
+
+    <!-- Detail table [490pt, 1 col, 5 rows] -->
+    <table class="detail-table">
+      <tr><td><b>Result:</b> ${emb.result_description||emb.result_summary}</td></tr>
+      <tr><td><b>Autosomes:</b> <span class="${autoClass}">${emb.autosomes||'Normal'}</span></td></tr>
+      <tr><td><b>Sex Chromosomes:</b> <span class="${sexClass}">${emb.sex_chromosomes||'Normal'}</span></td></tr>
+      <tr><td><b>Interpretation:</b> <span class="${colorClass}">${emb.interpretation}</span></td></tr>
+      <tr><td><b>MTcopy:</b> ${mt}</td></tr>
+    </table>
+
+    ${secHdr('COPY NUMBER CHART','','no-line')}
+    ${chartHTML}
+    ${cnvContent}
+    ${buildSigBlock(opts)}
+  </div>
+  ${buildFooter(opts.footerSrc)}
+</div>`;
+}
+
+/* ════════════════════════════════════════
+   MAIN RENDER
+   ════════════════════════════════════════ */
+function renderReport(data, opts={}) {
+  const { patient, embryos } = data;
+
+  const anyMosaic = embryos.some(e =>
+    (e.interpretation||'').toUpperCase().includes('MOSAIC'));
+
+  const allLowDNA = embryos.length > 0 && embryos.every(e => {
+    const i=(e.interpretation||'').toUpperCase(), r=(e.result_summary||'').toUpperCase();
+    return i.includes('LOW DNA') || r.includes('LOW DNA');
+  });
+
+  let html = buildCoverPage(patient, embryos, opts)
+           + buildMethodologyPage(anyMosaic, opts);
+
+  if (!allLowDNA) {
+    embryos.forEach(emb => {
+      const i=(emb.interpretation||'').toUpperCase(), r=(emb.result_summary||'').toUpperCase();
+      if (i.includes('LOW DNA') || r.includes('LOW DNA')) return;
+      html += buildEmbryoPage(patient, emb, opts);
+    });
+  }
+
+  document.getElementById('report-container').innerHTML = html;
+}
+
+/* ── Expose for external use ── */
+window.renderPGTAReport = renderReport;
+
+/* ── Auto-render sample on load ── */
+document.addEventListener('DOMContentLoaded', () => renderReport(SAMPLE_DATA));
+</script>
+</body>
+</html>

@@ -82,15 +82,15 @@ def _reg(name, filename):
             pass
     return False
 
-_reg("GillSansMT-Bold", "GillSansMT-Bold.ttf")
-_reg("SegoeUI-Bold",    "SegoeUI-Bold.ttf")
-_reg("SegoeUI",         "SegoeUI.ttf")
+_reg("GillSansMT-Bold", "GILB____.TTF")
+_reg("SegoeUI-Bold",    "SEGOEUIB.TTF")
+_reg("SegoeUI",         "SEGOEUI.TTF")
 _reg("DengXian",        "DengXian.ttf")
 _reg("DengXian-Bold",   "DengXian_Bold.ttf")
 _reg("Arial-Bold",      "Arial-BoldMT.ttf")
 _reg("Arial",           "ArialMT.ttf")
-_reg("Calibri",         "Calibri.ttf")
-_reg("Calibri-Bold",    "Calibri-Bold.ttf")
+_reg("Calibri",         "CALIBRI.TTF")
+_reg("Calibri-Bold",    "CALIBRIB.TTF")
 _reg("SymbolMT",        "SymbolMT.ttf")
 
 def _font_ok(name):
@@ -122,13 +122,16 @@ if _font_ok("DengXian") and _font_ok("DengXian-Bold"):
 F_TITLE  = "GillSansMT-Bold" if _font_ok("GillSansMT-Bold") else "Helvetica-Bold"
 F_HDG    = "GillSansMT-Bold" if _font_ok("GillSansMT-Bold") else "Helvetica-Bold"
 F_LBL    = "SegoeUI-Bold"    if _font_ok("SegoeUI-Bold")    else "Helvetica-Bold"
-# DengXian: matches reference PDF body font exactly
-F_BODY   = "DengXian"        if _font_ok("DengXian")        else "Helvetica"
-F_BBOLD  = "DengXian-Bold"   if _font_ok("DengXian-Bold")   else "Helvetica-Bold"
+
+# Body: Use SegoeUI to match dashboard_copy.html design language
+F_BODY   = "SegoeUI"         if _font_ok("SegoeUI")         else ("DengXian" if _font_ok("DengXian") else "Helvetica")
+F_BBOLD  = "SegoeUI-Bold"    if _font_ok("SegoeUI-Bold")    else ("DengXian-Bold" if _font_ok("DengXian-Bold") else "Helvetica-Bold")
+
 F_SIG    = "SegoeUI"         if _font_ok("SegoeUI")         else "Helvetica"
 F_SIGB   = "SegoeUI-Bold"    if _font_ok("SegoeUI-Bold")    else "Helvetica-Bold"
-# Bullet: DengXian is the body font and reliably renders U+2022 as a filled circle
-F_BULLET = "DengXian"        if _font_ok("DengXian")        else ("Calibri" if _font_ok("Calibri") else "Helvetica")
+
+# Bullet: Calibri is preferred for standard bullet rendering
+F_BULLET = "Calibri"         if _font_ok("Calibri")        else ("SegoeUI" if _font_ok("SegoeUI") else "Helvetica")
 
 print(f"[tera_template] Fonts: TITLE={F_TITLE}  LBL={F_LBL}  BODY={F_BODY}  BULLET={F_BULLET}")
 

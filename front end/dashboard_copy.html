@@ -23,9 +23,14 @@
       --shadow: 0 2px 8px rgba(0,0,0,0.08);
       --radius: 10px;
     }
+
+    @font-face { font-family: 'SegoeUI'; src: url('/pgta-fonts/SEGOEUI.TTF'); }
+    @font-face { font-family: 'SegoeUI-Bold'; src: url('/pgta-fonts/SEGOEUIB.TTF'); }
+    @font-face { font-family: 'GillSansMT-Bold'; src: url('/pgta-fonts/GILB____.TTF'); }
+    @font-face { font-family: 'Calibri'; src: url('/pgta-fonts/CALIBRI.TTF'); }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'SegoeUI', 'Inter', sans-serif;
       font-size: 13px;
       background: var(--bg);
       color: var(--text);
@@ -52,6 +57,7 @@
     }
     .page-hdr-left { display: flex; align-items: center; gap: 14px; }
     .page-hdr-left h1 {
+      font-family: 'GillSansMT-Bold', sans-serif;
       font-size: 20px;
       font-weight: 700;
       background: linear-gradient(135deg, #1F497D, #4F81BD);
@@ -136,6 +142,7 @@
       padding: 16px 18px;
     }
     .card h3 {
+      font-family: 'GillSansMT-Bold', sans-serif;
       font-size: 13px;
       font-weight: 700;
       color: var(--primary);
@@ -1231,7 +1238,7 @@
   <script>
     async function refreshPreview() {
         const data = collectManualData();
-        const logoOption = document.querySelector('#manual input[name="logoOption"]:checked')?.value || "without_logo";
+        const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
         data["logo_option"] = logoOption;
         try {
             const res = await fetch(API + "/preview", {
@@ -1251,7 +1258,7 @@
   <script>
     async function generateSelected(rows) {
         if (!rows || rows.length === 0) { showToast("No patients selected.", "error"); return; }
-        const logoOption = document.querySelector('input[name="LogoOption"]:checked')?.value || "without_logo";
+        const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
         const rowsWithLogo = rows.map(r => ({ ...r, logo_option: logoOption }));
         showToast("Generating " + rowsWithLogo.length + " reports…");
         try {
@@ -1524,10 +1531,12 @@
 
     async function updateBulkPreview(data) {
         try {
+            const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
+            const bodyData = { ...data, logo_option: logoOption };
             const res = await fetch(API + "/preview", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
+                body: JSON.stringify(bodyData)
             });
             const result = await res.json();
             document.getElementById("bulkPreviewFrame").src =

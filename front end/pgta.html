@@ -2898,31 +2898,31 @@
               <h3> Patient Information</h3>
               <div class="field-grid">
                 <div class="field"><label>Patient Name <span class="req">*</span></label><textarea id="f_patient_name"
-                    rows="2" placeholder="Mrs. Priya Sharma"></textarea></div>
+                    rows="2" placeholder="Mrs. Priya Sharma" oninput="schedulePreview()"></textarea></div>
                 <div class="field"><label>Spouse Name</label><textarea id="f_spouse_name" rows="2"
-                    placeholder="w/o">w/o</textarea></div>
-                <div class="field"><label>PIN</label><input type="text" id="f_pin" placeholder="e.g. ANC2024001"></div>
-                <div class="field"><label>Age</label><input type="text" id="f_age" placeholder="e.g. 32 years"></div>
+                    placeholder="w/o" oninput="schedulePreview()">w/o</textarea></div>
+                <div class="field"><label>PIN</label><input type="text" id="f_pin" placeholder="e.g. ANC2024001" oninput="schedulePreview()"></div>
+                <div class="field"><label>Age</label><input type="text" id="f_age" placeholder="e.g. 32 years" oninput="schedulePreview()"></div>
                 <div class="field"><label>Sample Number <span class="req">*</span></label><input type="text"
-                    id="f_sample_number" placeholder="e.g. 632504349"></div>
+                    id="f_sample_number" placeholder="e.g. 632504349" oninput="schedulePreview()"></div>
                 <div class="field"><label>Referring Clinician</label><input type="text" id="f_referring_clinician"
-                    placeholder="Dr. Name"></div>
+                    placeholder="Dr. Name" oninput="schedulePreview()"></div>
                 <div class="field"><label>Biopsy Date</label><input type="text" id="f_biopsy_date"
-                    placeholder="DD-MM-YYYY"></div>
+                    placeholder="DD-MM-YYYY" oninput="schedulePreview()"></div>
                 <div class="field"><label>Hospital / Clinic</label><textarea id="f_hospital_clinic" rows="2"
-                    placeholder="Hospital / IVF Center name"></textarea></div>
+                    placeholder="Hospital / IVF Center name" oninput="schedulePreview()"></textarea></div>
                 <div class="field"><label>Sample Collection Date</label><input type="text" id="f_sample_collection_date"
-                    placeholder="DD-MM-YYYY"></div>
+                    placeholder="DD-MM-YYYY" oninput="schedulePreview()"></div>
                 <div class="field"><label>Specimen</label><textarea id="f_specimen" rows="2"
-                    placeholder="DAY 5 TROPHECTODERM BIOPSY">DAY 5 TROPHECTODERM BIOPSY</textarea></div>
+                    placeholder="DAY 5 TROPHECTODERM BIOPSY" oninput="schedulePreview()">DAY 5 TROPHECTODERM BIOPSY</textarea></div>
                 <div class="field"><label>Sample Receipt Date</label><input type="text" id="f_sample_receipt_date"
-                    placeholder="DD-MM-YYYY"></div>
+                    placeholder="DD-MM-YYYY" oninput="schedulePreview()"></div>
                 <div class="field"><label>Biopsy Performed By</label><input type="text" id="f_biopsy_performed_by"
-                    placeholder="Embryologist name"></div>
+                    placeholder="Embryologist name" oninput="schedulePreview()"></div>
                 <div class="field"><label>Report Date</label><input type="text" id="f_report_date"
-                    placeholder="DD-MM-YYYY"></div>
+                    placeholder="DD-MM-YYYY" oninput="schedulePreview()"></div>
                 <div class="field full"><label>Indication</label><textarea id="f_indication" rows="3"
-                    placeholder="Clinical indication for testing..."></textarea></div>
+                    placeholder="Clinical indication for testing..." oninput="schedulePreview()"></textarea></div>
               </div>
             </div>
 
@@ -3177,7 +3177,12 @@
               <div class="progress-bar-wrap" id="bulkProgressWrap" style="margin-top:6px;">
                 <div class="progress-bar-fill" id="bulkProgressBar"></div>
               </div>
-              <p class="progress-text" id="bulkProgressText" style="font-size:10px;margin-top:2px;"></p>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px;">
+                <p class="progress-text" id="bulkProgressText" style="font-size:10px;"></p>
+                <button id="cancelGenBtn" onclick="state.stopGeneration=true" class="btn-sm btn-danger-outline" style="padding:2px 8px;font-size:9px;display:none;">
+                  <i class="fas fa-stop"></i> Cancel
+                </button>
+              </div>
               <div class="result-box hidden" id="bulkResult" style="margin-top:6px;"></div>
             </div>
 
@@ -3501,7 +3506,8 @@
       embryoForms: [],
       cnvImages: {},
       previewTimer: null,
-      bulkPatients: []
+      bulkPatients: [],
+      stopGeneration: false
     };
 
     // ── Report Comparison Stubs ──
@@ -5390,8 +5396,15 @@
 
       let done = 0, errors = [];
       const total = indices.length;
+      state.stopGeneration = false;
+      const cancelBtn = document.getElementById("cancelGenBtn");
+      if (cancelBtn) cancelBtn.style.display = "inline-flex";
 
       for (let n = 0; n < total; n++) {
+        if (state.stopGeneration) {
+            showToast("Generation cancelled by user", "info");
+            break;
+        }
         const i = indices[n];
         const p = state.bulkPatients[i];
         const statusEl = document.getElementById(`bulk-status-${i}`);

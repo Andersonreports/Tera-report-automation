@@ -165,8 +165,8 @@ def _win_browse_folder() -> str:
             ("iImage",         ctypes.c_int),
         ]
 
-    shell32 = ctypes.windll.shell32
-    ole32   = ctypes.windll.ole32
+    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+    ole32   = ctypes.WinDLL("ole32",   use_last_error=True)
     ole32.CoInitialize(None)
 
     buf = ctypes.create_unicode_buffer(260)

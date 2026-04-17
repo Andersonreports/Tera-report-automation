@@ -145,39 +145,56 @@ def preview_file(filename: str):
 
 
 # -------- Native Folder Picker --------
+def _win_browse_folder() -> str:
+    """Open the Windows Shell folder-picker via ctypes (no external process)."""
+    import ctypes, ctypes.wintypes as wt
+
+    BIF_RETURNONLYFSDIRS = 0x0001
+    BIF_NEWDIALOGSTYLE   = 0x0040
+    BIF_EDITBOX          = 0x0010
+
+    class BROWSEINFOW(ctypes.Structure):
+        _fields_ = [
+            ("hwndOwner",      wt.HWND),
+            ("pidlRoot",       ctypes.c_void_p),
+            ("pszDisplayName", wt.LPWSTR),
+            ("lpszTitle",      wt.LPCWSTR),
+            ("ulFlags",        wt.UINT),
+            ("lpfn",           ctypes.c_void_p),
+            ("lParam",         ctypes.c_void_p),
+            ("iImage",         ctypes.c_int),
+        ]
+
+    shell32 = ctypes.windll.shell32
+    ole32   = ctypes.windll.ole32
+    ole32.CoInitialize(None)
+
+    buf = ctypes.create_unicode_buffer(260)
+    bi  = BROWSEINFOW()
+    bi.lpszTitle      = "Select Export Folder"
+    bi.ulFlags        = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_EDITBOX
+    bi.pszDisplayName = buf
+
+    pidl = shell32.SHBrowseForFolderW(ctypes.byref(bi))
+    if not pidl:
+        ole32.CoUninitialize()
+        return ""
+
+    path_buf = ctypes.create_unicode_buffer(260)
+    shell32.SHGetPathFromIDListW(pidl, path_buf)
+    ole32.CoTaskMemFree(pidl)
+    ole32.CoUninitialize()
+    return path_buf.value
+
+
 @app.get("/open-folder-dialog")
 async def open_folder_dialog():
-    """Open the OS native folder-picker dialog and return the chosen path.
-    Tries tkinter first; falls back to PowerShell FolderBrowserDialog on Windows."""
-    # Attempt 1: tkinter (works when display is available)
+    """Open the OS native folder-picker and return the chosen path."""
+    import asyncio
     try:
-        import tkinter as tk
-        from tkinter import filedialog
-        root = tk.Tk()
-        root.withdraw()
-        root.wm_attributes("-topmost", True)
-        folder = filedialog.askdirectory(title="Select Export Folder", parent=root)
-        root.destroy()
-        return {"path": folder or ""}
-    except Exception:
-        pass
-
-    # Attempt 2: PowerShell FolderBrowserDialog (Windows fallback)
-    try:
-        import subprocess
-        ps = (
-            "Add-Type -AssemblyName System.Windows.Forms; "
-            "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
-            "$d.Description = 'Select Export Folder'; "
-            "$d.ShowNewFolderButton = $true; "
-            "if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK)"
-            "{ Write-Output $d.SelectedPath }"
-        )
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
-            capture_output=True, text=True, timeout=60
-        )
-        return {"path": result.stdout.strip()}
+        loop = asyncio.get_event_loop()
+        path = await loop.run_in_executor(None, _win_browse_folder)
+        return {"path": path}
     except Exception as e:
         return {"error": str(e)}
 

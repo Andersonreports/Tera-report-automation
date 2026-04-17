@@ -147,7 +147,9 @@ def preview_file(filename: str):
 # -------- Native Folder Picker --------
 @app.get("/open-folder-dialog")
 async def open_folder_dialog():
-    """Open the OS native folder-picker dialog and return the chosen path."""
+    """Open the OS native folder-picker dialog and return the chosen path.
+    Tries tkinter first; falls back to PowerShell FolderBrowserDialog on Windows."""
+    # Attempt 1: tkinter (works when display is available)
     try:
         import tkinter as tk
         from tkinter import filedialog
@@ -156,9 +158,26 @@ async def open_folder_dialog():
         root.wm_attributes("-topmost", True)
         folder = filedialog.askdirectory(title="Select Export Folder", parent=root)
         root.destroy()
-        if folder:
-            return {"path": folder}
-        return {"path": ""}
+        return {"path": folder or ""}
+    except Exception:
+        pass
+
+    # Attempt 2: PowerShell FolderBrowserDialog (Windows fallback)
+    try:
+        import subprocess
+        ps = (
+            "Add-Type -AssemblyName System.Windows.Forms; "
+            "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
+            "$d.Description = 'Select Export Folder'; "
+            "$d.ShowNewFolderButton = $true; "
+            "if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK)"
+            "{ Write-Output $d.SelectedPath }"
+        )
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
+            capture_output=True, text=True, timeout=60
+        )
+        return {"path": result.stdout.strip()}
     except Exception as e:
         return {"error": str(e)}
 

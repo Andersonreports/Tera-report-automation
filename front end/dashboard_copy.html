@@ -433,10 +433,18 @@
       font-size: 11px;
     }
     .bulk-editor-field label {
-      width: 120px;
+      width: 130px;
       font-weight: 600;
       color: var(--text-muted);
-      text-align: right;
+      text-align: left;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+    .bulk-editor-field label::after {
+      content: ':';
+      margin-left: auto;
+      padding-left: 3px;
       flex-shrink: 0;
     }
     .bulk-editor-field input, .bulk-editor-field select {
@@ -580,11 +588,18 @@
       font-family: 'Inter', sans-serif;
     }
     .compare-nav span { font-size: 12px; color: var(--text-muted); }
-    .compare-workspace { display: grid; grid-template-columns: 1fr 1fr 280px; gap: 14px; }
-    .compare-pdf-frame {
-      height: 500px; width: 100%;
+    .compare-workspace { display: grid; grid-template-columns: 1fr 1fr 280px; gap: 14px; overflow: hidden; }
+    .compare-pdf-wrap {
+      overflow: hidden;
       border: 1px solid var(--input-border);
-      border-radius: 8px; background: var(--input-bg);
+      border-radius: 8px;
+      background: var(--input-bg);
+      height: 500px;
+    }
+    .compare-pdf-frame {
+      height: 100%; width: 100%;
+      border: none; display: block;
+      overflow: hidden;
     }
     .diff-summary-panel {
       background: var(--panel); border: 1px solid var(--panel-border);
@@ -877,9 +892,9 @@
         <!-- ══════════ TAB 2: BULK UPLOAD ══════════ -->
         <div id="bulk" class="tab-content">
 
-          <!-- Top bar: Excel upload -->
+          <!-- Top bar: Excel upload + Export folder -->
           <div class="bulk-top-bar">
-            <label class="drop-zone-compact" for="excelFile">
+            <label class="drop-zone-compact" for="excelFile" style="flex:1.4;">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;">
                 <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
               </svg>
@@ -887,6 +902,13 @@
               <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none;"
                 onchange="uploadExcel(); document.getElementById('excelFileLabel').textContent = this.files[0] ? this.files[0].name : 'Click to browse or drag Excel file (.xlsx / .xls)';">
             </label>
+            <div class="bulk-top-sep"></div>
+            <span class="fr-label" style="white-space:nowrap;">Export Folder:</span>
+            <div class="folder-pick-row" style="flex:1;">
+              <div class="folder-pick-display placeholder" id="bulkExportDisplay">No folder selected</div>
+              <input type="hidden" id="bulkExportPath">
+              <button class="btn-browse-folder" onclick="browseFolder('bulkExportPath','bulkExportDisplay')">&#128193; Browse</button>
+            </div>
           </div>
 
           <!-- 3-column editor -->
@@ -924,16 +946,16 @@
               <div class="bulk-editor-scroll">
 
                 <div class="bulk-editor-section-title">Patient Details</div>
-                <div class="bulk-editor-field"><label>Patient Name:</label><input type="text" id="edit_patient_name"></div>
-                <div class="bulk-editor-field"><label>Age (Years):</label><input type="number" id="edit_age"></div>
-                <div class="bulk-editor-field"><label>Sample ID:</label><input type="text" id="edit_sample_id"></div>
-                <div class="bulk-editor-field"><label>Lab No.:</label><input type="text" id="edit_lab_no"></div>
-                <div class="bulk-editor-field"><label>Biopsy No.:</label><input type="text" id="edit_biopsy_no"></div>
-                <div class="bulk-editor-field"><label>Doctor Name:</label><input type="text" id="edit_doctor_name"></div>
-                <div class="bulk-editor-field"><label>Center / Hospital:</label><input type="text" id="edit_center"></div>
+                <div class="bulk-editor-field"><label>Patient Name</label><input type="text" id="edit_patient_name"></div>
+                <div class="bulk-editor-field"><label>Age (Years)</label><input type="number" id="edit_age"></div>
+                <div class="bulk-editor-field"><label>Sample ID</label><input type="text" id="edit_sample_id"></div>
+                <div class="bulk-editor-field"><label>Lab No.</label><input type="text" id="edit_lab_no"></div>
+                <div class="bulk-editor-field"><label>Biopsy No.</label><input type="text" id="edit_biopsy_no"></div>
+                <div class="bulk-editor-field"><label>Doctor Name</label><input type="text" id="edit_doctor_name"></div>
+                <div class="bulk-editor-field"><label>Center / Hospital</label><input type="text" id="edit_center"></div>
 
                 <div class="bulk-editor-section-title" style="margin-top:10px;">Cycle &amp; Timing</div>
-                <div class="bulk-editor-field"><label>Cycle Type:</label>
+                <div class="bulk-editor-field"><label>Cycle Type</label>
                   <select id="edit_cycle_type">
                     <option>HRT</option>
                     <option>Modified Natural Cycle</option>
@@ -941,22 +963,22 @@
                     <option>Stimulated</option>
                   </select>
                 </div>
-                <div class="bulk-editor-field"><label>P+ Day (Biopsy):</label><input type="text" id="edit_pday"></div>
-                <div class="bulk-editor-field"><label>P4/hCG Date &amp; Time:</label><input type="text" id="edit_p4_date"></div>
-                <div class="bulk-editor-field"><label>Biopsy Date &amp; Time:</label><input type="text" id="edit_biopsy_date"></div>
-                <div class="bulk-editor-field"><label>P+ Hours:</label><input type="text" id="edit_phours"></div>
-                <div class="bulk-editor-field"><label>Biopsy2 time in hrs:</label><input type="text" id="edit_biopsy2_hours"></div>
+                <div class="bulk-editor-field"><label>P+ Day (Biopsy)</label><input type="text" id="edit_pday"></div>
+                <div class="bulk-editor-field"><label>P4/hCG Date &amp; Time</label><input type="text" id="edit_p4_date"></div>
+                <div class="bulk-editor-field"><label>Biopsy Date &amp; Time</label><input type="text" id="edit_biopsy_date"></div>
+                <div class="bulk-editor-field"><label>P+ Hours</label><input type="text" id="edit_phours"></div>
+                <div class="bulk-editor-field"><label>Biopsy2 time in hrs</label><input type="text" id="edit_biopsy2_hours"></div>
 
                 <div class="bulk-editor-section-title" style="margin-top:10px;">Results</div>
-                <div class="bulk-editor-field"><label>TERA Result:</label>
+                <div class="bulk-editor-field"><label>TERA Result</label>
                   <select id="edit_result">
                     <option>Receptive</option>
                     <option>Pre-receptive</option>
                     <option>Post-receptive</option>
                   </select>
                 </div>
-                <div class="bulk-editor-field"><label>Time for Report:</label><input type="text" id="edit_time_report"></div>
-                <div class="bulk-editor-field"><label>Date Received:</label><input type="text" id="edit_date_received"></div>
+                <div class="bulk-editor-field"><label>Time for Report</label><input type="text" id="edit_time_report"></div>
+                <div class="bulk-editor-field"><label>Date Received</label><input type="text" id="edit_date_received"></div>
 
                 <div class="bulk-editor-btns">
                   <button class="btn-save-changes" onclick="saveChanges()">Save Changes</button>
@@ -985,14 +1007,6 @@
 
           <!-- Bottom Controls Bar -->
           <div class="bulk-bottom-controls">
-            <div class="bulk-bottom-row" style="margin-bottom:6px;">
-              <span class="fr-label">Export Path:</span>
-              <div class="folder-pick-row" style="flex:1;">
-                <div class="folder-pick-display placeholder" id="bulkExportDisplay">No folder selected</div>
-                <input type="hidden" id="bulkExportPath">
-                <button class="btn-browse-folder" onclick="browseFolder('bulkExportPath','bulkExportDisplay')">&#128193; Browse</button>
-              </div>
-            </div>
             <div class="bulk-bottom-row">
               <button class="btn-bulk-draft" onclick="saveBulkDraft()">Save Draft</button>
               <button class="btn-bulk-draft muted" onclick="loadBulkDraft()">Load Draft</button>
@@ -1051,8 +1065,8 @@
             </div>
 
             <div class="compare-workspace">
-              <iframe id="leftPDF" class="compare-pdf-frame"></iframe>
-              <iframe id="rightPDF" class="compare-pdf-frame"></iframe>
+              <div class="compare-pdf-wrap"><iframe id="leftPDF" class="compare-pdf-frame" scrolling="auto"></iframe></div>
+              <div class="compare-pdf-wrap"><iframe id="rightPDF" class="compare-pdf-frame" scrolling="auto"></iframe></div>
               <div class="diff-summary-panel">
                 <h4>Auto Diff Summary</h4>
                 <div class="diff-box">Click Compare PDFs to run the automatic analysis.</div>
@@ -1598,7 +1612,7 @@
         document.getElementById("edit_date_received").value = p["Date of Received"] || "";
 
         clearTimeout(window.previewTimer);
-        window.previewTimer = setTimeout(() => updateBulkPreview(p), 400);
+        window.previewTimer = setTimeout(() => updateBulkPreview(p), 200);
     }
 
     async function updateBulkPreview(data) {
@@ -1679,7 +1693,7 @@
 
     function triggerPreview() {
         clearTimeout(window.previewTimer);
-        window.previewTimer = setTimeout(() => refreshPreview(), 400);
+        window.previewTimer = setTimeout(() => refreshPreview(), 250);
     }
 
     // ── Native folder picker via backend ──
@@ -1718,16 +1732,12 @@
             field.addEventListener("input", () => {
                 if (selectedPatientIndex === null) return;
                 clearTimeout(window.bulkPreviewTimer);
-                window.bulkPreviewTimer = setTimeout(() => {
-                    saveChanges();
-                }, 600);
+                window.bulkPreviewTimer = setTimeout(() => saveChanges(), 250);
             });
             field.addEventListener("change", () => {
                 if (selectedPatientIndex === null) return;
                 clearTimeout(window.bulkPreviewTimer);
-                window.bulkPreviewTimer = setTimeout(() => {
-                    saveChanges();
-                }, 300);
+                window.bulkPreviewTimer = setTimeout(() => saveChanges(), 150);
             });
         });
 

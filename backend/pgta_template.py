@@ -612,16 +612,26 @@ class PGTAReportTemplate:
 
         # Add embryo rows
         for idx, embryo in enumerate(embryos_data, 1):
-            res_sum = self._clean(embryo.get('result_summary'))
-            interp = self._clean(embryo.get('interpretation'))
+            raw_result = self._clean(embryo.get('result_summary') or embryo.get('result_description') or '')
             
-            # Application of Red/Blue color logic
-            res_color = self._get_result_color(res_sum, interp)
+            # Map raw result (e.g., MCA) to pretty summary text using classification engine
+            info = clf.classify_embryo(raw_result)
+            res_sum = info["summary_text"]
             
+            # Application of Red/Blue color logic based on classification
+            if info["is_mosaic"]:
+                res_color = colors.blue
+                interp = info["classification"].replace("_", " ").title()
+            elif info["is_abnormal"]:
+                res_color = colors.red
+                interp = "NA"
+            else:
+                res_color = colors.black
+                interp = "NA"
+
             # MTcopy: NA for non-euploid
-            mtcopy = self._clean(embryo.get('mtcopy'), 'NA')
-            if interp.upper() != "EUPLOID":
-                mtcopy = "NA"
+            raw_mt = self._clean(embryo.get('mtcopy'), 'NA')
+            mtcopy = raw_mt if not info["is_abnormal"] and not info["is_mosaic"] else "NA"
 
             # Extract short embryo ID: if format is "PATIENTNAME-ID_REST", extract just "ID"
             full_id = self._clean(embryo.get('embryo_id'))
@@ -629,7 +639,6 @@ class PGTAReportTemplate:
             if '-' in full_id:
                 parts = full_id.split('-')
                 if len(parts) >= 2:
-                    # Get the part after the hyphen, then extract before underscore or use whole part
                     id_part = parts[1]
                     short_id = id_part.split('_')[0] if '_' in id_part else id_part
 
@@ -1109,19 +1118,19 @@ class PGTAReportTemplate:
         res_up = result_text.upper() if result_text else ""
         int_up = interpretation_text.upper() if interpretation_text else ""
         
-        # Euploid = Black (check first for explicit euploid)
+        # Determination based on keywords and desktop logic
+        # Euploid = Black
         if "EUPLOID" in int_up and "ANEUPLOID" not in int_up:
             return colors.black
         
         # Red Logic - Aneuploid and related abnormalities
         red_keywords = ["MONOSOMY", "TRISOMY", "SEGMENTAL GAIN", "SEGMENTAL LOSS", 
-                        "MULTIPLE CHROMOSOMAL ABNORMALITIES", "ANEUPLOID", "CHAOTIC EMBRYO"]
+                        "MULTIPLE CHROMOSOMAL ABNORMALITIES", "ANEUPLOID", "CHAOTIC", "MCA"]
         if any(kw in res_up for kw in red_keywords) or any(kw in int_up for kw in red_keywords):
             return colors.red
             
         # Blue Logic - Mosaic
-        blue_keywords = ["MOSAIC CHROMOSOME COMPLEMENT", "LOW LEVEL MOSAIC", 
-                         "HIGH LEVEL MOSAIC", "COMPLEX MOSAIC", "MULTIPLE MOSAIC"]
+        blue_keywords = ["MOSAIC", "LOW LEVEL", "HIGH LEVEL", "COMPLEX", "MG-", "ML-", "SML", "SMG"]
         if any(kw in res_up for kw in blue_keywords) or any(kw in int_up for kw in blue_keywords):
             return colors.blue
             

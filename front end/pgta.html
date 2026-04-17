@@ -32,6 +32,12 @@
       --topbar-h: 60px;
     }
 
+    @font-face { font-family: 'SegoeUI'; src: url('/pgta-fonts/SEGOEUI.TTF'); }
+    @font-face { font-family: 'SegoeUI-Bold'; src: url('/pgta-fonts/SEGOEUIB.TTF'); }
+    @font-face { font-family: 'GillSansMT-Bold'; src: url('/pgta-fonts/GILB____.TTF'); }
+    @font-face { font-family: 'Calibri'; src: url('/pgta-fonts/CALIBRI.TTF'); }
+    @font-face { font-family: 'Calibri-Bold'; src: url('/pgta-fonts/CALIBRIB.TTF'); }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -39,7 +45,7 @@
     }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'SegoeUI', 'Inter', sans-serif;
       font-size: 13px;
       background: var(--bg);
       color: var(--text);
@@ -3572,25 +3578,47 @@
       const tbody = document.getElementById("summaryTbody");
       tbody.innerHTML = "";
       state.summaryRows.forEach((row, idx) => {
-        const tr = document.createElement("tr");
+        const prettyResult = getPrettySummary(row.result_summary);
         const resultColor = getResultColor(row.result_summary);
-        const interpretColor = row.result_summary === "Normal chromosome complement" ? "#000" : "#dc2626";
+        const prettyInterp = getPrettyInterpretation(row);
+        
+        const tr = document.createElement("tr");
         tr.innerHTML = `
       <td>${idx + 1}</td>
       <td><input type="text" value="${esc(row.embryo_id)}" oninput="updateSummaryId(${idx},this.value)" style="width:80px;"></td>
-      <td><select onchange="updateSummaryResult(${idx},this.value)" style="color:${resultColor};font-weight:600;">
-        ${RESULT_OPTIONS.map(o => `<option${o === row.result_summary ? " selected" : ""}>${esc(o)}</option>`).join("")}
-      </select></td>
+      <td><span style="color:${resultColor};font-weight:600;">${esc(prettyResult)}</span></td>
       <td><input type="text" value="${esc(row.mtcopy || 'NA')}" oninput="updateSummaryMtcopy(${idx},this.value)" style="width:70px;" placeholder="NA"></td>
-      <td><span style="color:${interpretColor};font-weight:600;">NA</span></td>
+      <td><span style="color:${resultColor};font-weight:600;">${esc(prettyInterp)}</span></td>
     `;
         tbody.appendChild(tr);
       });
     }
 
+    function getPrettySummary(val) {
+      if (!val) return "";
+      const v = val.trim().toUpperCase();
+      if (v === "MCA") return "Multiple chromosomal abnormalities";
+      if (v === "EUPLOID" || v === "NORMAL") return "Normal chromosome complement";
+      if (v.includes("MG-") || v.includes("ML-") || v.includes("SML") || v.includes("SMG") || v.includes("MOSAIC")) return "Mosaic chromosome complement";
+      if (v === "INCONCLUSIVE") return "Inconclusive";
+      if (v.includes("LOSS") || v.includes("GAIN") || v.includes("-") || v.includes("+")) return "Abnormal chromosome complement";
+      return val;
+    }
+
     function getResultColor(result) {
-      if (result === "Normal chromosome complement") return "#000";
+      if (!result) return "#000";
+      const r = result.toUpperCase();
+      if (r.includes("NORMAL") || r.includes("EUPLOID")) return "#000";
+      if (r.includes("MOSAIC") || r.includes("MG-") || r.includes("ML-") || r.includes("SML") || r.includes("SMG")) return "#2563eb";
       return "#dc2626";
+    }
+
+    function getPrettyInterpretation(row) {
+      const r = (row.result_summary || "").toUpperCase();
+      if (r.includes("MOSAIC") || r.includes("MG-") || r.includes("ML-") || r.includes("SML") || r.includes("SMG")) {
+         return "Low level mosaic"; // Default for mosaic interpretation parity
+      }
+      return "NA";
     }
 
 
@@ -3652,13 +3680,20 @@
     function createEmbryoBlock(idx, ef) {
       const div = document.createElement("div");
       div.className = "embryo-block"; div.id = `embryo-block-${idx}`;
-      const resultDisplay = ef.result_summary || ef.result_description || "No result";
-      const bgBadge = resultDisplay === "Normal chromosome complement" ? "#d1fae5" : "#fca5a5";
+      const resultDisplay = getPrettySummary(ef.result_summary || ef.result_description || "No result");
+      const resColor = getResultColor(resultDisplay);
+      
+      let bgBadge = "#f1f5f9"; // Neutral grey
+      let txtColor = "#333";
+      if (resColor === "#000") { bgBadge = "#d1fae5"; txtColor = "#065f46"; } // Green for normal
+      else if (resColor === "#2563eb") { bgBadge = "#dbeafe"; txtColor = "#1e40af"; } // Blue for mosaic
+      else if (resColor === "#dc2626") { bgBadge = "#fee2e2"; txtColor = "#991b1b"; } // Red for abnormal
+
       div.innerHTML = `
     <div class="embryo-header" id="embryo-header-${idx}" onclick="toggleEmbryo(${idx})">
       <div class="embryo-title">
         Embryo <span class="eid-display">${esc(ef.embryo_id || `PS${idx + 1}`)}</span>
-        <span class="interp-badge" id="badge-${idx}" style="background:${bgBadge};color:#333;">${esc(resultDisplay)}</span>
+        <span class="interp-badge" id="badge-${idx}" style="background:${bgBadge};color:${txtColor};">${esc(resultDisplay)}</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         ${idx > 0 ? `<button class="copy-btn" onclick="copyFromPrev(event,${idx})"> Copy from Embryo ${idx}</button>` : ""}
@@ -3741,9 +3776,13 @@
 
     function updateEmbryoBadge(idx, result) {
       const b = document.getElementById(`badge-${idx}`); if (!b) return;
-      b.textContent = result;
-      const bgColor = result === "Normal chromosome complement" ? "#d1fae5" : "#fca5a5";
-      b.style.background = bgColor;
+      const pretty = getPrettySummary(result);
+      const resColor = getResultColor(pretty);
+      
+      b.textContent = pretty;
+      if (resColor === "#000") { b.style.background = "#d1fae5"; b.style.color = "#065f46"; } 
+      else if (resColor === "#2563eb") { b.style.background = "#dbeafe"; b.style.color = "#1e40af"; }
+      else { b.style.background = "#fee2e2"; b.style.color = "#991b1b"; }
     }
 
     function onEmbryoChange(idx, field, value) {

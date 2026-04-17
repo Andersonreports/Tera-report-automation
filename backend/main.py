@@ -62,6 +62,8 @@ os.makedirs(PGTA_DRAFT_DIR, exist_ok=True)
 
 app.mount("/reports", StaticFiles(directory=REPORT_DIR), name="reports")
 app.mount("/reports-pgta", StaticFiles(directory=PGTA_REPORT_DIR), name="reports-pgta")
+app.mount("/pgta-fonts", StaticFiles(directory=os.path.join(BASE_DIR, "assets", "pgta", "fonts")), name="pgta-fonts")
+app.mount("/pgta-assets", StaticFiles(directory=os.path.join(BASE_DIR, "assets", "pgta")), name="pgta-assets")
 
 # Serve root-level static assets (logo, icons, images)
 if os.path.exists(ROOT_DIR):

@@ -2872,6 +2872,165 @@
     cursor: pointer;
     border: none;
 }
+
+/* ── Bulk 2-Column Panel Layout ── */
+.bulk-3col {
+  display: flex;
+  gap: 0;
+  min-height: 420px;
+  margin-top: 4px;
+}
+.bulk-col-left,
+.bulk-col-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  min-width: 0;
+}
+.bulk-col-left {
+  border-radius: var(--radius) 0 0 var(--radius);
+  border-right: none;
+  max-width: 340px;
+  min-width: 220px;
+}
+.bulk-col-right {
+  border-radius: 0 var(--radius) var(--radius) 0;
+  border-left: 1px solid var(--panel-border);
+}
+.bulk-col-header {
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  border-bottom: 2px solid var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.bulk-search {
+  margin: 8px;
+  padding: 7px 10px 7px 28px;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  font-size: 11px;
+  width: calc(100% - 16px);
+  background: var(--input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 8px center no-repeat;
+  flex-shrink: 0;
+}
+.bulk-select-btns {
+  display: flex;
+  gap: 5px;
+  padding: 5px 8px;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.5);
+  margin: 0 8px 4px;
+  border-radius: 6px;
+  border: 1px solid #ddd !important;
+}
+.bulk-select-btns button {
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: 0.15s;
+  border: 1px solid var(--input-border);
+  background: #fff;
+  color: var(--text-muted);
+}
+.bulk-select-btns button:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.bulk-selected-count-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: auto;
+  align-self: center;
+}
+.bulk-patient-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  border: none;
+  max-height: none;
+  margin-bottom: 0;
+}
+.bulk-patient-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: 0.15s;
+}
+.bulk-patient-item:hover { background: #f0f4f8; }
+.bulk-patient-item.active {
+  background: #dbeafe;
+  border-left: 3px solid var(--primary);
+}
+.bulk-cb {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+}
+.patient-info { flex: 1; min-width: 0; cursor: pointer; }
+.patient-name {
+  font-weight: 600;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.patient-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.patient-status {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 700;
+  background: #dbeafe;
+  color: #1e40af;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.patient-status.miss { background: #fee2e2; color: #991b1b; }
+
+/* ── Bulk Bottom Controls ── */
+.bulk-bottom-controls {
+  padding: 10px 16px;
+  border: 1px solid var(--panel-border);
+  border-top: 2px solid var(--accent);
+  background: var(--panel);
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow);
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.bulk-bottom-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.bulk-bottom-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--input-border);
+  flex-shrink: 0;
+}
 </style>
 
 </head>
@@ -2991,7 +3150,7 @@
             <div class="bulk-top-file">
               <div class="drop-zone-compact" id="excel-drop-zone" onclick="document.getElementById('excel-input').click()">
                 <i class="fas fa-file-excel" style="color:#10b981;"></i>
-                <span id="excelFileName">Drop Excel file or click to browse (.xlsx / .xls)</span>
+                <span id="excelFileName">Click to browse Excel file &nbsp;<small style="color:var(--text-muted);">(.xlsx / .xls)</small></span>
                 <input type="file" id="excel-input" accept=".xlsx, .xls" style="display:none;">
               </div>
             </div>
@@ -3003,33 +3162,57 @@
                 <input type="file" id="folder-input" webkitdirectory directory multiple style="display:none;">
               </div>
             </div>
-            <div class="bulk-top-sep"></div>
-            <div class="bulk-top-folder">
-              <label>Logo:</label>
-              <select id="bulk_logo_option">
-                <option value="with_logo">With Logo</option>
-                <option value="without_logo">Without Logo</option>
-              </select>
-            </div>
           </div>
 
-          <!-- Patient table (shown after Excel upload) -->
-          <div id="bulk-table-container" style="display:none; flex:1; overflow-y:auto; margin-top:6px;">
-            <div class="card" style="margin:0;">
-              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-                <h3 style="margin:0; border:none; padding:0;"><i class="fas fa-users"></i> Patients &nbsp;<span id="bulkPatientCount" style="font-size:11px; font-weight:400; color:var(--text-muted);"></span></h3>
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                  <button class="btn-sm btn-outline" onclick="document.querySelectorAll('.bulk-cb').forEach(cb=>cb.checked=true)">Select All</button>
-                  <button class="btn-sm btn-outline" onclick="document.querySelectorAll('.bulk-cb').forEach(cb=>cb.checked=false)">Deselect All</button>
-                  <button class="btn-primary" onclick="generateBulk()"><i class="fas fa-cogs"></i> Generate Selected</button>
+          <!-- 2-column bulk layout -->
+          <div class="bulk-3col" id="bulkPatientSection">
+
+            <!-- LEFT: Patient List -->
+            <div class="bulk-col-left">
+              <div class="bulk-col-header">
+                <i class="fas fa-users"></i> Patients:
+                <span id="bulkPatientCount" style="font-weight:400;color:var(--text-muted);"></span>
+              </div>
+              <input type="text" class="bulk-search" id="bulkSearch" placeholder="Search by patient name..." oninput="filterBulkPatients()">
+              <div class="bulk-select-btns">
+                <button onclick="document.querySelectorAll('.bulk-cb').forEach(cb=>cb.checked=true);updateBulkCount()">Select All</button>
+                <button onclick="document.querySelectorAll('.bulk-cb').forEach(cb=>cb.checked=false);updateBulkCount()">Deselect All</button>
+                <span class="bulk-selected-count-label" id="bulkSelectedCountLabel">0 selected</span>
+              </div>
+              <div class="bulk-patient-list" id="bulkPatientList"></div>
+            </div>
+
+            <!-- RIGHT: Karyogram Images -->
+            <div class="bulk-col-right">
+              <div class="bulk-col-header">
+                <i class="fas fa-images"></i> Karyogram Images
+                <span id="bulkImagesPatientName" style="font-weight:400;color:var(--text-muted);margin-left:4px;"></span>
+              </div>
+              <div id="bulkImagesPanel" style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div id="bulkImagesPlaceholder" style="text-align:center;color:var(--text-muted);">
+                  <i class="fas fa-images" style="font-size:36px;margin-bottom:12px;display:block;opacity:0.4;"></i>
+                  <span style="font-size:12px;">Select a patient to see matched karyogram images</span>
                 </div>
+                <div id="bulkImagesContent" style="display:none;width:100%;flex-wrap:wrap;gap:12px;"></div>
               </div>
-              <div style="overflow-x:auto;">
-                <table id="bulk-table" class="chr-table" style="font-size:12px;">
-                  <thead><tr><th style="width:40px;">Select</th><th>Patient Name</th><th>Sample Number</th><th>Images Found</th></tr></thead>
-                  <tbody id="bulk-table-body"></tbody>
-                </table>
+            </div>
+
+          </div><!-- /bulk-3col -->
+
+          <!-- Bottom controls bar -->
+          <div class="bulk-bottom-controls">
+            <div class="bulk-bottom-row">
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <label style="font-size:11px;font-weight:700;color:var(--text-muted);">Logo:</label>
+                <select id="bulk_logo_option" style="border:1px solid var(--input-border);border-radius:6px;padding:5px 10px;font-size:11px;background:#fff;">
+                  <option value="with_logo">With Logo</option>
+                  <option value="without_logo">Without Logo</option>
+                </select>
               </div>
+              <div class="bulk-bottom-divider"></div>
+              <button class="btn-primary" style="margin-left:auto;" onclick="generateBulk()">
+                <i class="fas fa-cogs"></i> Generate Selected
+              </button>
             </div>
           </div>
 
@@ -3284,20 +3467,67 @@ function getMappedImages(row) {
 }
 
 function renderBulkTable() {
-    if(!bulkRows.length) return;
-    const tbd = document.getElementById('bulk-table-body');
-    tbd.innerHTML = '';
+    if (!bulkRows.length) return;
+    const list = document.getElementById('bulkPatientList');
+    list.innerHTML = '';
     bulkRows.forEach((r, i) => {
-        let mapped = getMappedImages(r);
-        tbd.innerHTML += `
-        <tr>
-            <td style="text-align:center;"><input type="checkbox" checked class="bulk-cb" data-index="${i}"></td>
-            <td>${r.NAME || r['Patient Name'] || 'Unknown'}</td>
-            <td>${r['SAMPLE NUMBER'] || ''}</td>
-            <td>${mapped.length} images found</td>
-        </tr>`;
+        const mapped = getMappedImages(r);
+        const name = r.NAME || r['Patient Name'] || 'Unknown';
+        const sn = r['SAMPLE NUMBER'] || '';
+        const item = document.createElement('div');
+        item.className = 'bulk-patient-item';
+        item.dataset.index = i;
+        item.innerHTML = `
+            <input type="checkbox" checked class="bulk-cb" data-index="${i}" onchange="updateBulkCount()">
+            <div class="patient-info" onclick="showBulkImages(${i})">
+                <div class="patient-name">${name}</div>
+                <div class="patient-meta">${sn}</div>
+            </div>
+            <span class="patient-status ${mapped.length === 0 ? 'miss' : ''}">${mapped.length} img${mapped.length !== 1 ? 's' : ''}</span>`;
+        list.appendChild(item);
     });
-    document.getElementById('bulk-table-container').style.display = 'block';
+    document.getElementById('bulkPatientCount').textContent = `(${bulkRows.length})`;
+    updateBulkCount();
+}
+
+function filterBulkPatients() {
+    const q = document.getElementById('bulkSearch').value.toLowerCase();
+    document.querySelectorAll('.bulk-patient-item').forEach(item => {
+        const name = item.querySelector('.patient-name').textContent.toLowerCase();
+        item.style.display = name.includes(q) ? '' : 'none';
+    });
+}
+
+function updateBulkCount() {
+    const checked = document.querySelectorAll('.bulk-cb:checked').length;
+    document.getElementById('bulkSelectedCountLabel').textContent = `${checked} selected`;
+}
+
+function showBulkImages(index) {
+    const row = bulkRows[index];
+    const mapped = getMappedImages(row);
+    const name = row.NAME || row['Patient Name'] || 'Unknown';
+    document.getElementById('bulkImagesPatientName').textContent = `— ${name}`;
+    document.querySelectorAll('.bulk-patient-item').forEach(item => {
+        item.classList.toggle('active', parseInt(item.dataset.index) === index);
+    });
+    const placeholder = document.getElementById('bulkImagesPlaceholder');
+    const content = document.getElementById('bulkImagesContent');
+    if (mapped.length === 0) {
+        placeholder.innerHTML = `<i class="fas fa-exclamation-circle" style="font-size:30px;color:var(--danger);margin-bottom:10px;display:block;opacity:0.7;"></i><span style="font-size:12px;">No matching images found for this patient</span>`;
+        placeholder.style.display = '';
+        content.style.display = 'none';
+    } else {
+        placeholder.style.display = 'none';
+        content.style.display = 'flex';
+        content.innerHTML = mapped.map(f => {
+            const url = URL.createObjectURL(f);
+            return `<div style="text-align:center;">
+                <img src="${url}" style="width:130px;height:88px;object-fit:cover;border-radius:6px;border:1px solid var(--input-border);">
+                <p style="font-size:10px;color:var(--text-muted);margin-top:4px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</p>
+            </div>`;
+        }).join('');
+    }
 }
 
 async function generateBulk() {

@@ -223,9 +223,10 @@
       </div>
     </div>
 
+    <button class="nav-btn active" id="btn-home"     onclick="showSection('home')">Welcome</button>
     <button class="nav-btn" id="btn-databases"      onclick="showSection('databases')">Databases</button>
     <button class="nav-btn" id="btn-reports"        onclick="showSection('reports')">Report Automation</button>
-    <button class="nav-btn" id="btn-trackers"       onclick="showSection('trackers')">Trackers</button>
+    <button class="nav-btn" id="btn-trackers"       onclick="showSection('trackers')">Inhouse Tools</button>
   </nav>
 
   <!-- Main content -->
@@ -235,28 +236,7 @@
     <div id="section-home" class="section active">
       <div class="hero">
         <h1>Anderson Diagnostics and Labs</h1>
-        <p>Select a module below to get started</p>
-      </div>
-      <div class="cards">
-
-        <div class="card" onclick="showSection('databases')">
-          <div class="card-icon"><i class="fas fa-database"></i></div>
-          <span>Databases</span>
-          <small>Patient &amp; sample records</small>
-        </div>
-
-        <div class="card" onclick="showSection('reports')">
-          <div class="card-icon"><i class="fas fa-file-medical-alt"></i></div>
-          <span>Report Automation</span>
-          <small>TERA, PGTA, Karyotype &amp; more</small>
-        </div>
-
-        <div class="card" onclick="showSection('trackers')">
-          <div class="card-icon"><i class="fas fa-chart-line"></i></div>
-          <span>Trackers</span>
-          <small>Analytics &amp; dashboards</small>
-        </div>
-
+        <p>Select a module from the sidebar to get started</p>
       </div>
     </div>
 
@@ -302,21 +282,15 @@
         <div class="coming-soon-badge"><i class="fas fa-hourglass-half"></i> Coming Soon</div>
         <h2>Databases</h2>
         <p>Patient records, sample management, and laboratory databases<br>will be available here.</p>
-        <a href="#" class="btn-back-home" onclick="showSection('home');return false;">
-          <i class="fas fa-arrow-left"></i> Back to Home
-        </a>
       </div>
     </div>
 
-    <!-- Trackers – Coming Soon -->
+    <!-- Inhouse Tools – Coming Soon -->
     <div id="section-trackers" class="section">
       <div class="coming-soon">
         <div class="coming-soon-badge"><i class="fas fa-hourglass-half"></i> Coming Soon</div>
-        <h2>Trackers</h2>
-        <p>Analytics dashboards, KPI tracking, and performance reports<br>will be available here.</p>
-        <a href="#" class="btn-back-home" onclick="showSection('home');return false;">
-          <i class="fas fa-arrow-left"></i> Back to Home
-        </a>
+        <h2>Inhouse Tools</h2>
+        <p>Internal calculators, tools, and utilities<br>will be available here.</p>
       </div>
     </div>
 
@@ -324,7 +298,7 @@
 
   <script>
     // Section switching
-    const NAV_MAP = { databases: 'btn-databases', reports: 'btn-reports', trackers: 'btn-trackers' };
+    const NAV_MAP = { home: 'btn-home', databases: 'btn-databases', reports: 'btn-reports', trackers: 'btn-trackers' };
     function showSection(id) {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById('section-' + id).classList.add('active');

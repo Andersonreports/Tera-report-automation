@@ -37,16 +37,11 @@ load_dotenv()
 # ── Config ────────────────────────────────────────────────────
 TRACKER_USER      = os.getenv("TRACKER_USER", "")
 TRACKER_PASS_HASH = os.getenv("TRACKER_PASS_HASH", "").encode()
-TRACKER_SECRET    = os.getenv("TRACKER_SECRET", "")
+TRACKER_SECRET    = os.getenv("TRACKER_SECRET", "change-me-set-TRACKER_SECRET-in-env")
 TOKEN_EXPIRE_H    = int(os.getenv("TRACKER_SESSION_HOURS", "8"))
 ALGORITHM         = "HS256"
 
-# Fail fast if critical config is missing
-if not TRACKER_USER or not TRACKER_PASS_HASH or not TRACKER_SECRET:
-    raise RuntimeError(
-        "Missing tracker credentials in .env — run create_credentials.py first. "
-        "Required: TRACKER_USER, TRACKER_PASS_HASH, TRACKER_SECRET"
-    )
+_CREDS_CONFIGURED = bool(TRACKER_USER and TRACKER_PASS_HASH and os.getenv("TRACKER_SECRET"))
 
 FRONTEND_DIR = Path(__file__).parent.parent / "front end"
 COOKIE_NAME  = "tracker_session"
@@ -118,8 +113,26 @@ def _secure_cookie(response, token: str):
 
 # ── Login page ────────────────────────────────────────────────
 
+_NOT_CONFIGURED_HTML = """<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Tracker — Not Configured</title>
+<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;
+min-height:100vh;margin:0;background:#f1f5f9;}
+.box{background:#fff;border-radius:12px;padding:40px 48px;text-align:center;
+box-shadow:0 4px 24px rgba(0,0,0,.1);max-width:480px;}
+h2{color:#dc2626;margin-bottom:12px;}p{color:#64748b;line-height:1.6;}
+code{background:#f8fafc;padding:2px 6px;border-radius:4px;font-size:13px;color:#0f172a;}
+</style></head><body><div class="box">
+<h2>Tracker Not Configured</h2>
+<p>Set these environment variables on the server, then restart:</p>
+<p><code>TRACKER_USER</code> &nbsp; <code>TRACKER_PASS_HASH</code> &nbsp; <code>TRACKER_SECRET</code></p>
+<p>Run <code>python create_credentials.py</code> in the backend folder to generate the hash.</p>
+</div></body></html>"""
+
+
 @router.get("/login", response_class=HTMLResponse)
 def get_login(tracker_session: str | None = Cookie(default=None)):
+    if not _CREDS_CONFIGURED:
+        return HTMLResponse(_NOT_CONFIGURED_HTML, status_code=503)
     if verify_token(tracker_session):
         return RedirectResponse("/tracker/")
     login_path = FRONTEND_DIR / "tracker_login.html"
@@ -133,6 +146,8 @@ def post_login(
     password: str = Form(...),
 ):
     """Validate credentials and issue a session cookie."""
+    if not _CREDS_CONFIGURED:
+        return HTMLResponse(_NOT_CONFIGURED_HTML, status_code=503)
     ip = request.client.host
 
     # Rate-limit check
@@ -172,6 +187,8 @@ def post_login(
 
 @router.get("/", response_class=HTMLResponse)
 def get_tracker(tracker_session: str | None = Cookie(default=None)):
+    if not _CREDS_CONFIGURED:
+        return RedirectResponse("/tracker/login")
     if not verify_token(tracker_session):
         return RedirectResponse("/tracker/login")
     tracker_path = FRONTEND_DIR / "report_tracker.html"

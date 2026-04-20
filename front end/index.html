@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anderson Diagnostics and Labs</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,600,700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" crossorigin="anonymous">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lato', sans-serif;
+      background: #F58220;
+      color: #111;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      min-height: 100vh;
+    }
+    body.loaded { opacity: 1; }
+
+    /* ── Logo bar ── */
+    .logo-bar {
+      position: fixed; top: 0; left: 0; width: 100%; z-index: 200;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      line-height: 0;
+    }
+    .logo-bar img {
+      width: 100%; max-height: 80px;
+      object-fit: contain; object-position: left center;
+      display: block;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0;
+      width: 220px; height: 100vh;
+      background: #1F5EA8;
+      display: flex; flex-direction: column; align-items: center;
+      padding-top: 130px; gap: 20px;
+      z-index: 100;
+    }
+
+    /* ── User dropdown ── */
+    .dropdown {
+      position: relative; width: 100%;
+      display: flex; justify-content: center;
+    }
+    .user-button {
+      background: rgba(255,255,255,0.2);
+      padding: 10px 20px; border-radius: 30px;
+      border: 2px solid rgba(255,255,255,0.6);
+      display: inline-flex; align-items: center; gap: 8px;
+      text-decoration: none; transition: 0.2s;
+      width: 80%; justify-content: center;
+    }
+    .user-button:hover { background: rgba(255,255,255,0.35); }
+    .dropdown-content {
+      display: none; position: absolute; top: 100%; left: 50%;
+      transform: translateX(-50%); margin-top: 8px;
+      background: #fff; min-width: 140px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      border-radius: 8px; overflow: hidden; text-align: center; z-index: 300;
+    }
+    .dropdown-content a {
+      display: block; padding: 10px 15px;
+      text-decoration: none; color: #111; transition: background 0.2s;
+    }
+    .dropdown-content a:hover { background: #1F5EA8; color: #fff; }
+
+    /* ── Nav buttons ── */
+    .nav-btn {
+      width: 180px; padding: 14px;
+      border: 2px solid #1b4b8c;
+      background: #fff; border-radius: 8px;
+      font-size: 12px; letter-spacing: 2px; font-weight: 700;
+      color: #1b4b8c; cursor: pointer; transition: 0.3s;
+      text-transform: uppercase;
+    }
+    .nav-btn:hover, .nav-btn.active {
+      background: #1b4b8c; color: #fff;
+    }
+
+    /* ── Main content ── */
+    .main {
+      margin-left: 220px;
+      padding-top: 100px;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Landing section ── */
+    .section { display: none; width: 100%; max-width: 860px; padding: 40px 20px; }
+    .section.active { display: block; }
+
+    /* Hero */
+    .hero { text-align: center; margin-bottom: 48px; }
+    .hero h1 {
+      font-size: 2.6em; font-weight: 700;
+      color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      margin-bottom: 10px;
+      line-height: 1.2;
+    }
+    .hero p {
+      font-size: 1.05em; color: rgba(255,255,255,0.88);
+    }
+
+    /* Section cards */
+    .cards {
+      display: flex; justify-content: center; gap: 28px; flex-wrap: wrap;
+    }
+    .card {
+      width: 220px; background: #fff; border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      padding: 36px 20px 28px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      cursor: pointer; transition: 0.22s; text-decoration: none; color: inherit;
+      border: 2px solid transparent;
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+      border-color: #1F5EA8;
+    }
+    .card-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: #e8f0fb;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card-icon i { font-size: 26px; color: #1F5EA8; }
+    .card span {
+      font-size: 13px; font-weight: 700; color: #1b4b8c;
+      text-align: center; letter-spacing: 0.5px;
+    }
+    .card small { font-size: 11px; color: #888; text-align: center; }
+
+    /* Coming Soon section */
+    .coming-soon {
+      text-align: center; padding: 60px 20px;
+    }
+    .coming-soon-badge {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.4);
+      border-radius: 50px; padding: 8px 22px;
+      color: #fff; font-size: 12px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px;
+    }
+    .coming-soon h2 {
+      font-size: 2.2em; color: #fff; font-weight: 700; margin-bottom: 12px;
+    }
+    .coming-soon p { font-size: 1em; color: rgba(255,255,255,0.82); }
+    .btn-back-home {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-top: 32px; padding: 12px 26px;
+      background: #fff; color: #1F5EA8;
+      border-radius: 8px; font-weight: 700; font-size: 13px;
+      text-decoration: none; letter-spacing: 0.5px;
+      transition: 0.2s; border: 2px solid transparent;
+    }
+    .btn-back-home:hover {
+      background: #1F5EA8; color: #fff; border-color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Logo -->
+  <div class="logo-bar">
+    <img src="/static/backend/logo.png" alt="Anderson Diagnostics and Labs">
+  </div>
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="dropdown">
+      <a href="#" id="userButton" class="user-button">
+        <i class="fas fa-user-circle" style="font-size:22px;color:#fff;"></i>
+        <span id="sidebarUserLabel" style="color:#fff;font-size:13px;font-weight:600;">User</span>
+        <i class="fas fa-caret-down" style="color:#fff;font-size:11px;"></i>
+      </a>
+      <div class="dropdown-content">
+        <a id="userRoleLabel" style="font-weight:bold;color:#1F5EA8;cursor:default;"></a>
+        <a class="admin-only" style="font-size:11px;color:#888;cursor:default;">Manage Users</a>
+        <hr style="margin:4px 0;border:none;border-top:1px solid #eee;">
+        <a href="#" onclick="signOut()">Sign Out</a>
+      </div>
+    </div>
+
+    <button class="nav-btn" onclick="showSection('databases')">Databases</button>
+    <button class="nav-btn" onclick="window.location.href='/home'">Report Automation</button>
+    <button class="nav-btn" onclick="showSection('trackers')">Trackers</button>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- Default landing view -->
+    <div id="section-home" class="section active">
+      <div class="hero">
+        <h1>Anderson Diagnostics and Labs</h1>
+        <p>Select a module below to get started</p>
+      </div>
+      <div class="cards">
+
+        <div class="card" onclick="showSection('databases')">
+          <div class="card-icon"><i class="fas fa-database"></i></div>
+          <span>Databases</span>
+          <small>Patient &amp; sample records</small>
+        </div>
+
+        <a href="/home" class="card">
+          <div class="card-icon"><i class="fas fa-file-medical-alt"></i></div>
+          <span>Report Automation</span>
+          <small>TERA, PGTA, Karyotype &amp; more</small>
+        </a>
+
+        <div class="card" onclick="showSection('trackers')">
+          <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+          <span>Trackers</span>
+          <small>Analytics &amp; dashboards</small>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Databases – Coming Soon -->
+    <div id="section-databases" class="section">
+      <div class="coming-soon">
+        <div class="coming-soon-badge"><i class="fas fa-hourglass-half"></i> Coming Soon</div>
+        <h2>Databases</h2>
+        <p>Patient records, sample management, and laboratory databases<br>will be available here.</p>
+        <a href="#" class="btn-back-home" onclick="showSection('home');return false;">
+          <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+      </div>
+    </div>
+
+    <!-- Trackers – Coming Soon -->
+    <div id="section-trackers" class="section">
+      <div class="coming-soon">
+        <div class="coming-soon-badge"><i class="fas fa-hourglass-half"></i> Coming Soon</div>
+        <h2>Trackers</h2>
+        <p>Analytics dashboards, KPI tracking, and performance reports<br>will be available here.</p>
+        <a href="#" class="btn-back-home" onclick="showSection('home');return false;">
+          <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // Section switching
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById('section-' + id).classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    }
+
+    // User dropdown
+    const userBtn = document.getElementById('userButton');
+    const dropContent = document.querySelector('.dropdown-content');
+    userBtn.addEventListener('click', e => {
+      e.preventDefault();
+      dropContent.style.display = dropContent.style.display === 'block' ? 'none' : 'block';
+    });
+    window.addEventListener('click', e => {
+      if (!userBtn.contains(e.target) && !dropContent.contains(e.target))
+        dropContent.style.display = 'none';
+    });
+
+    window.onload = () => document.body.classList.add('loaded');
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL  = "https://wriaonorqjhmofwrhqlp.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    sb.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        window.location.href = "/";
+      } else {
+        const role = localStorage.getItem("tera_role") || "user";
+        const name = localStorage.getItem("tera_user_name") || data.session.user.email;
+        const label = document.getElementById("sidebarUserLabel");
+        if (label) label.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+        const roleLabel = document.getElementById("userRoleLabel");
+        if (roleLabel) roleLabel.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+        if (role !== "admin")
+          document.querySelectorAll(".admin-only").forEach(el => el.style.display = "none");
+      }
+    });
+
+    async function signOut() {
+      await sb.auth.signOut();
+      localStorage.removeItem("tera_role");
+      localStorage.removeItem("tera_user_name");
+      window.location.href = "/";
+    }
+  </script>
+</body>
+</html>

@@ -104,6 +104,13 @@ def root():
         return FileResponse(p, media_type="text/html")
     return {"status": "TERA backend running"}
 
+@app.get("/landing")
+def landing():
+    p = os.path.join(FRONTEND_DIR, "index.html")
+    if os.path.exists(p):
+        return FileResponse(p, media_type="text/html")
+    return {"status": "not found"}
+
 @app.get("/home")
 def home():
     p = os.path.join(FRONTEND_DIR, "home page.html")

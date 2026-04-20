@@ -17,14 +17,10 @@ Credentials are stored ONLY in .env:
 """
 
 import os
-import ssl
 import time
-import urllib.request
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-
-import certifi
 
 import bcrypt
 from dotenv import load_dotenv
@@ -207,7 +203,7 @@ def get_sheetjs(tracker_session: str | None = Cookie(default=None)):
 # ── Google Sheet proxy (auth required) ────────────────────────
 
 @router.get("/fetch-sheet")
-def fetch_sheet(tracker_session: str | None = Cookie(default=None)):
+async def fetch_sheet(tracker_session: str | None = Cookie(default=None)):
     """Download the live Google Sheet as XLSX and return it to the frontend."""
     if not verify_token(tracker_session):
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
@@ -217,16 +213,27 @@ def fetch_sheet(tracker_session: str | None = Cookie(default=None)):
         f"/export?format=xlsx"
     )
     try:
-        ssl_ctx = ssl.create_default_context(cafile=certifi.where())
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=30, context=ssl_ctx) as resp:
-            data = resp.read()
+        import httpx
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+            "Accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*",
+        }
+        async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
+            resp = await client.get(url, headers=headers)
+        resp.raise_for_status()
+        data = resp.content
+        print(f"[tracker] fetch-sheet: {len(data)} bytes, status {resp.status_code}")
         return Response(
             content=data,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={"Cache-Control": "no-store"},
         )
     except Exception as e:
+        print(f"[tracker] fetch-sheet error: {e}")
         return JSONResponse(
             {"error": f"Failed to fetch Google Sheet: {e}"}, status_code=502
         )

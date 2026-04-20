@@ -136,6 +136,41 @@
     }
     .card small { font-size: 11px; color: #888; text-align: center; }
 
+    /* Report cards grid */
+    .report-section-title {
+      text-align: center; margin-bottom: 32px;
+    }
+    .report-section-title h2 {
+      font-size: 2em; color: #fff; font-weight: 700; margin-bottom: 6px;
+    }
+    .report-section-title p { font-size: 1em; color: rgba(255,255,255,0.82); }
+    .report-cards {
+      display: flex; justify-content: center; gap: 22px; flex-wrap: wrap;
+    }
+    .report-card {
+      width: 150px; background: #fff; border-radius: 14px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.16);
+      padding: 28px 14px 22px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      cursor: pointer; transition: 0.22s; text-decoration: none; color: inherit;
+      border: 2px solid transparent;
+    }
+    .report-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+      border-color: #1F5EA8;
+    }
+    .report-card-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: #e8f0fb;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .report-card-icon i { font-size: 22px; color: #1F5EA8; }
+    .report-card span {
+      font-size: 12px; font-weight: 700; color: #1b4b8c;
+      text-align: center; letter-spacing: 0.3px;
+    }
+
     /* Coming Soon section */
     .coming-soon {
       text-align: center; padding: 60px 20px;
@@ -188,9 +223,9 @@
       </div>
     </div>
 
-    <button class="nav-btn" onclick="showSection('databases')">Databases</button>
-    <button class="nav-btn" onclick="window.location.href='/home'">Report Automation</button>
-    <button class="nav-btn" onclick="showSection('trackers')">Trackers</button>
+    <button class="nav-btn" id="btn-databases"      onclick="showSection('databases')">Databases</button>
+    <button class="nav-btn" id="btn-reports"        onclick="showSection('reports')">Report Automation</button>
+    <button class="nav-btn" id="btn-trackers"       onclick="showSection('trackers')">Trackers</button>
   </nav>
 
   <!-- Main content -->
@@ -210,17 +245,53 @@
           <small>Patient &amp; sample records</small>
         </div>
 
-        <a href="/home" class="card">
+        <div class="card" onclick="showSection('reports')">
           <div class="card-icon"><i class="fas fa-file-medical-alt"></i></div>
           <span>Report Automation</span>
           <small>TERA, PGTA, Karyotype &amp; more</small>
-        </a>
+        </div>
 
         <div class="card" onclick="showSection('trackers')">
           <div class="card-icon"><i class="fas fa-chart-line"></i></div>
           <span>Trackers</span>
           <small>Analytics &amp; dashboards</small>
         </div>
+
+      </div>
+    </div>
+
+    <!-- Report Automation -->
+    <div id="section-reports" class="section">
+      <div class="report-section-title">
+        <h2>Report Automation</h2>
+        <p>Select a report type to open the tool</p>
+      </div>
+      <div class="report-cards">
+
+        <a href="/dashboard" class="report-card">
+          <div class="report-card-icon"><i class="fas fa-dna"></i></div>
+          <span>TERA Report</span>
+        </a>
+
+        <a href="/pgta" class="report-card">
+          <div class="report-card-icon"><i class="fas fa-microscope"></i></div>
+          <span>PGTA Report</span>
+        </a>
+
+        <a href="/karyotype" class="report-card">
+          <div class="report-card-icon"><i class="fas fa-project-diagram"></i></div>
+          <span>Karyotype Report</span>
+        </a>
+
+        <a href="nips.html" class="report-card">
+          <div class="report-card-icon"><i class="fas fa-baby"></i></div>
+          <span>NIPS Report</span>
+        </a>
+
+        <a href="hla.html" class="report-card">
+          <div class="report-card-icon"><i class="fas fa-flask"></i></div>
+          <span>HLA Typing Report</span>
+        </a>
 
       </div>
     </div>
@@ -253,10 +324,12 @@
 
   <script>
     // Section switching
+    const NAV_MAP = { databases: 'btn-databases', reports: 'btn-reports', trackers: 'btn-trackers' };
     function showSection(id) {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById('section-' + id).classList.add('active');
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      if (NAV_MAP[id]) document.getElementById(NAV_MAP[id]).classList.add('active');
     }
 
     // User dropdown

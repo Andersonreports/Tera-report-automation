@@ -159,9 +159,9 @@
 
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
 
-    // If already logged in, redirect to home
+    // If already logged in, redirect to landing
     sb.auth.getSession().then(({ data }) => {
-        if (data.session) window.location.href = "/home"
+        if (data.session) window.location.href = "/landing"
     })
 
     async function handleLogin() {
@@ -200,7 +200,7 @@
             localStorage.setItem("tera_user_name", profile.full_name || email)
         }
 
-        window.location.href = "/home"
+        window.location.href = "/landing"
     }
 
     function showError(msg) {

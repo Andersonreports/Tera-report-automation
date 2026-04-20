@@ -32,6 +32,12 @@ except ImportError:
     upload_pdf = None
     save_report = None
 
+try:
+    from tracker_auth import router as tracker_router
+    _tracker_available = True
+except Exception as _te:
+    _tracker_available = False
+    print(f"Tracker router not loaded: {_te}")
 
 app = FastAPI()
 
@@ -42,6 +48,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+if _tracker_available:
+    app.include_router(tracker_router)
 
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(os.path.dirname(BASE_DIR), "front end")

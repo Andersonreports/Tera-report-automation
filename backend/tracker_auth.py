@@ -214,7 +214,7 @@ def fetch_sheet(tracker_session: str | None = Cookie(default=None)):
 
     url = (
         f"https://docs.google.com/spreadsheets/d/{GSHEET_ID}"
-        f"/export?format=xlsx&gid={GSHEET_GID}"
+        f"/export?format=xlsx"
     )
     try:
         ssl_ctx = ssl.create_default_context(cafile=certifi.where())

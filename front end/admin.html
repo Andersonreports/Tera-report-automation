@@ -456,13 +456,12 @@
 
     async function loadUsers() {
       const { data, error } = await sb
-        .from('app_users')
-        .select('*')
+        .from('profiles')
+        .select('id, full_name, email, role, created_at')
         .order('created_at', { ascending: false });
 
       if (error) {
-        showError('Could not load users: ' + error.message +
-          '<br><small>Make sure the <code>app_users</code> table exists in Supabase.</small>');
+        showError('Could not load users: ' + error.message);
         document.getElementById('users-tbody').innerHTML =
           '<tr><td colspan="5" class="um-empty">Failed to load users.</td></tr>';
         return;
@@ -480,13 +479,13 @@
       }
       tbody.innerHTML = data.map(u => `
         <tr>
-          <td><strong>${esc(u.name || '—')}</strong></td>
-          <td style="color:#64748b">${esc(u.email)}</td>
+          <td><strong>${esc(u.full_name || '—')}</strong></td>
+          <td style="color:#64748b">${esc(u.email || '—')}</td>
           <td><span class="role-badge role-${esc(u.role)}">${esc(u.role)}</span></td>
           <td style="color:#94a3b8;font-size:13px">${fmtDate(u.created_at)}</td>
           <td>
-            <button class="btn-action btn-edit"   onclick="openModal(${u.id})">Edit</button>
-            <button class="btn-action btn-delete" onclick="deleteUser(${u.id}, '${esc(u.name||u.email)}')">Remove</button>
+            <button class="btn-action btn-edit"   onclick="openModal('${esc(u.id)}')">Edit</button>
+            <button class="btn-action btn-delete" onclick="deleteUser('${esc(u.id)}', '${esc(u.full_name||u.email||'')}')">Remove</button>
           </td>
         </tr>`).join('');
     }
@@ -495,9 +494,9 @@
       const q = document.getElementById('user-search').value.toLowerCase();
       if (!q) { renderTable(allUsers); return; }
       renderTable(allUsers.filter(u =>
-        (u.name  || '').toLowerCase().includes(q) ||
-        (u.email || '').toLowerCase().includes(q) ||
-        (u.role  || '').toLowerCase().includes(q)
+        (u.full_name || '').toLowerCase().includes(q) ||
+        (u.email     || '').toLowerCase().includes(q) ||
+        (u.role      || '').toLowerCase().includes(q)
       ));
     }
 
@@ -517,10 +516,10 @@
         if (!u) return;
         title.textContent = 'Edit User';
         idField.value = userId;
-        document.getElementById('modal-name').value  = u.name  || '';
-        document.getElementById('modal-email').value = u.email || '';
-        document.getElementById('modal-role').value  = u.role  || 'user';
-        document.getElementById('modal-email').disabled = true; // email is the key, don't allow change
+        document.getElementById('modal-name').value  = u.full_name || '';
+        document.getElementById('modal-email').value = u.email     || '';
+        document.getElementById('modal-role').value  = u.role      || 'user';
+        document.getElementById('modal-email').disabled = true;
       } else {
         title.textContent = 'Add User';
         idField.value = '';
@@ -552,18 +551,18 @@
       btn.textContent = 'Saving…';
 
       if (userId) {
-        // Update existing
+        // Update existing profile
         const { error } = await sb
-          .from('app_users')
-          .update({ name, role })
-          .eq('id', parseInt(userId));
+          .from('profiles')
+          .update({ full_name: name, role })
+          .eq('id', userId);
         if (error) { showToast('Update failed: ' + error.message, 'err'); }
         else        { showToast('User updated.', 'ok'); closeModal(); await loadUsers(); }
       } else {
-        // Insert new
+        // Insert new profile row
         const { error } = await sb
-          .from('app_users')
-          .insert({ email, name, role });
+          .from('profiles')
+          .insert({ email, full_name: name, role });
         if (error) { showToast('Add failed: ' + error.message, 'err'); }
         else        { showToast('User added.', 'ok'); closeModal(); await loadUsers(); }
       }
@@ -575,7 +574,7 @@
     async function deleteUser(userId, label) {
       if (!confirm(`Remove "${label}" from the user list?`)) return;
       const { error } = await sb
-        .from('app_users')
+        .from('profiles')
         .delete()
         .eq('id', userId);
       if (error) { showToast('Delete failed: ' + error.message, 'err'); return; }

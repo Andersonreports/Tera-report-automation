@@ -127,11 +127,11 @@
         return;
       }
 
-      // Check admin role in app_users table
+      // Check admin role in profiles table
       const { data: profile, error: profileErr } = await sb
-        .from('app_users')
-        .select('role, name')
-        .eq('email', email)
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', data.user.id)
         .single();
 
       if (profileErr || !profile || profile.role !== 'admin') {
@@ -144,7 +144,7 @@
       }
 
       localStorage.setItem('tera_role', 'admin');
-      localStorage.setItem('tera_user_name', profile.name || email);
+      localStorage.setItem('tera_user_name', profile.full_name || email);
       window.location.href = '/admin';
     }
   </script>

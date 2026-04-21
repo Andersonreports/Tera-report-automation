@@ -120,6 +120,20 @@ def landing():
         return FileResponse(p, media_type="text/html")
     return {"status": "not found"}
 
+@app.get("/admin/login")
+def admin_login():
+    p = os.path.join(FRONTEND_DIR, "admin_login.html")
+    if os.path.exists(p):
+        return FileResponse(p, media_type="text/html")
+    return {"status": "not found"}
+
+@app.get("/admin")
+def admin_dashboard():
+    p = os.path.join(FRONTEND_DIR, "admin.html")
+    if os.path.exists(p):
+        return FileResponse(p, media_type="text/html")
+    return {"status": "not found"}
+
 @app.get("/home")
 def home():
     p = os.path.join(FRONTEND_DIR, "home page.html")

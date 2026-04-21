@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — Anderson Diagnostics</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,600,700&display=swap">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Lato', sans-serif;
+      background: #F58220;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .logo-area { text-align: center; margin-bottom: 32px; }
+    .logo-area .shield {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: #e8f0fb;
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-bottom: 12px;
+    }
+    .logo-area .shield svg { color: #1F5EA8; }
+    .logo-area h1 { font-size: 1.3em; font-weight: 700; color: #1b4b8c; }
+    .logo-area p  { font-size: 13px; color: #888; margin-top: 4px; }
+    label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: #333; margin-bottom: 6px;
+    }
+    input[type="email"], input[type="password"] {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid #ddd; border-radius: 8px;
+      font-size: 14px; font-family: inherit;
+      outline: none; transition: border-color 0.2s;
+      margin-bottom: 18px;
+    }
+    input:focus { border-color: #1F5EA8; }
+    .btn-login {
+      width: 100%; padding: 13px;
+      background: #1F5EA8; color: #fff;
+      border: none; border-radius: 8px;
+      font-size: 15px; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn-login:hover  { background: #1b4b8c; }
+    .btn-login:disabled { background: #93b4d9; cursor: not-allowed; }
+    .error-msg {
+      background: #fee2e2; color: #dc2626;
+      border-radius: 8px; padding: 10px 14px;
+      font-size: 13px; margin-bottom: 16px; display: none;
+    }
+    .back-link {
+      display: block; text-align: center;
+      margin-top: 20px; font-size: 13px; color: #888;
+      text-decoration: none;
+    }
+    .back-link:hover { color: #1F5EA8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo-area">
+      <div class="shield">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F5EA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <h1>Anderson Diagnostics</h1>
+      <p>Administrator Login</p>
+    </div>
+
+    <div class="error-msg" id="err"></div>
+
+    <label for="email">Email</label>
+    <input type="email" id="email" placeholder="admin@example.com" />
+
+    <label for="password">Password</label>
+    <input type="password" id="password" placeholder="••••••••"
+           onkeydown="if(event.key==='Enter') doLogin()" />
+
+    <button class="btn-login" id="login-btn" onclick="doLogin()">Sign In</button>
+    <a href="/landing" class="back-link">← Back to Home</a>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL  = "https://wriaonorqjhmofwrhqlp.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // If already logged in as admin, skip login
+    sb.auth.getSession().then(({ data }) => {
+      if (data.session && localStorage.getItem('tera_role') === 'admin')
+        window.location.href = '/admin';
+    });
+
+    async function doLogin() {
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errEl    = document.getElementById('err');
+      const btn      = document.getElementById('login-btn');
+      errEl.style.display = 'none';
+
+      if (!email || !password) {
+        errEl.textContent = 'Please enter your email and password.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        errEl.textContent = error.message;
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+        return;
+      }
+
+      // Check admin role in app_users table
+      const { data: profile, error: profileErr } = await sb
+        .from('app_users')
+        .select('role, name')
+        .eq('email', email)
+        .single();
+
+      if (profileErr || !profile || profile.role !== 'admin') {
+        await sb.auth.signOut();
+        errEl.textContent = 'Access denied. Admin privileges required.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+        return;
+      }
+
+      localStorage.setItem('tera_role', 'admin');
+      localStorage.setItem('tera_user_name', profile.name || email);
+      window.location.href = '/admin';
+    }
+  </script>
+</body>
+</html>

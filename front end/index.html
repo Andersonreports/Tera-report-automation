@@ -227,6 +227,7 @@
     <button class="nav-btn" id="btn-databases"      onclick="showSection('databases')">Databases</button>
     <button class="nav-btn" id="btn-reports"        onclick="showSection('reports')">Report Automation</button>
     <button class="nav-btn" id="btn-trackers"       onclick="showSection('trackers')">Inhouse Tools</button>
+    <a href="/admin/login" class="nav-btn" style="text-align:center;text-decoration:none;display:block;margin-top:auto;background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.4)">Admin Login</a>
   </nav>
 
   <!-- Main content -->
@@ -335,17 +336,19 @@
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
     sb.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        window.location.href = "/";
-      } else {
+      if (data.session) {
         const role = localStorage.getItem("tera_role") || "user";
-        const name = localStorage.getItem("tera_user_name") || data.session.user.email;
         const label = document.getElementById("sidebarUserLabel");
         if (label) label.textContent = role.charAt(0).toUpperCase() + role.slice(1);
         const roleLabel = document.getElementById("userRoleLabel");
         if (roleLabel) roleLabel.textContent = role.charAt(0).toUpperCase() + role.slice(1);
         if (role !== "admin")
           document.querySelectorAll(".admin-only").forEach(el => el.style.display = "none");
+      } else {
+        // Not logged in — hide user dropdown, show guest label
+        const label = document.getElementById("sidebarUserLabel");
+        if (label) label.textContent = "Guest";
+        document.querySelectorAll(".admin-only").forEach(el => el.style.display = "none");
       }
     });
 

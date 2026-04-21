@@ -691,6 +691,10 @@
           <span class="tc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
           <span class="tc-title">TAT Overdue — Not Released</span>
           <span class="tc-count" id="tat-over-count">0</span>
+          <button class="btn btn-sm btn-out" onclick="downloadOverdueExcel()" style="margin-left:auto;border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.08);color:#059669;flex-shrink:0" title="Download overdue list as Excel">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Excel
+          </button>
         </div>
         <div class="tat-list" id="tat-over-list"><div class="empty" style="padding:16px 0;font-size:13px">All good!</div></div>
       </div>
@@ -2342,6 +2346,48 @@ function toast(msg, type) {
   el.textContent=msg;
   document.getElementById('tc').appendChild(el);
   setTimeout(()=>{el.style.animation='tIn .25s reverse forwards';setTimeout(()=>el.remove(),260)},3500);
+}
+
+// ================================================================
+//  EXCEL EXPORT — TAT Overdue
+// ================================================================
+function downloadOverdueExcel() {
+  const { overdue } = getTatAlerts();
+  if (!overdue.length) { toast('No overdue samples to export', 'warn'); return; }
+
+  const headers = ['Sample Name','Test','Gen ID','Anderson ID','Client','TAT','Days Overdue','Primary Reviewer','Analyst'];
+  const wsData  = [headers];
+  overdue.forEach(r => {
+    wsData.push([
+      r.name      || '',
+      r.test      || '',
+      r.gen_id    || '',
+      r.and_id    || '',
+      r.client    || '',
+      fmtDate(r.tat),
+      Math.abs(r.diff),
+      r.pri_rev   || '',
+      r.analyst   || '',
+    ]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Auto-fit column widths
+  const colWidths = headers.map((h, ci) => ({
+    wch: Math.max(h.length, ...wsData.slice(1).map(row => String(row[ci]||'').length)) + 2
+  }));
+  ws['!cols'] = colWidths;
+
+  XLSX.utils.book_append_sheet(wb, ws, 'TAT Overdue');
+
+  const now = new Date();
+  const dd  = String(now.getDate()).padStart(2,'0');
+  const mm  = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+  XLSX.writeFile(wb, `TAT_Overdue_${dd}-${mm}-${yyyy}.xlsx`);
+  toast(`Downloaded: TAT_Overdue_${dd}-${mm}-${yyyy}.xlsx`);
 }
 
 // Keyboard shortcut: Ctrl/Cmd+R → force refresh from Google Sheet

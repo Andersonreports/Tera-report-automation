@@ -2260,7 +2260,16 @@ function downloadOverdueExcel() {
 
   const today = new Date();
   const fname = `TAT_Overdue_${today.getDate().toString().padStart(2,'0')}-${(today.getMonth()+1).toString().padStart(2,'0')}-${today.getFullYear()}.xlsx`;
-  XLSX.writeFile(wb, fname);
+
+  // Use blob + anchor — more reliable than XLSX.writeFile in server-authenticated contexts
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob  = new Blob([wbout], { type: 'application/octet-stream' });
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement('a');
+  a.href = url; a.download = fname; a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
   toast('Excel downloaded: ' + fname, 'ok');
 }
 
@@ -2346,48 +2355,6 @@ function toast(msg, type) {
   el.textContent=msg;
   document.getElementById('tc').appendChild(el);
   setTimeout(()=>{el.style.animation='tIn .25s reverse forwards';setTimeout(()=>el.remove(),260)},3500);
-}
-
-// ================================================================
-//  EXCEL EXPORT — TAT Overdue
-// ================================================================
-function downloadOverdueExcel() {
-  const { overdue } = getTatAlerts();
-  if (!overdue.length) { toast('No overdue samples to export', 'warn'); return; }
-
-  const headers = ['Sample Name','Test','Gen ID','Anderson ID','Client','TAT','Days Overdue','Primary Reviewer','Analyst'];
-  const wsData  = [headers];
-  overdue.forEach(r => {
-    wsData.push([
-      r.name      || '',
-      r.test      || '',
-      r.gen_id    || '',
-      r.and_id    || '',
-      r.client    || '',
-      fmtDate(r.tat),
-      Math.abs(r.diff),
-      r.pri_rev   || '',
-      r.analyst   || '',
-    ]);
-  });
-
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // Auto-fit column widths
-  const colWidths = headers.map((h, ci) => ({
-    wch: Math.max(h.length, ...wsData.slice(1).map(row => String(row[ci]||'').length)) + 2
-  }));
-  ws['!cols'] = colWidths;
-
-  XLSX.utils.book_append_sheet(wb, ws, 'TAT Overdue');
-
-  const now = new Date();
-  const dd  = String(now.getDate()).padStart(2,'0');
-  const mm  = String(now.getMonth()+1).padStart(2,'0');
-  const yyyy = now.getFullYear();
-  XLSX.writeFile(wb, `TAT_Overdue_${dd}-${mm}-${yyyy}.xlsx`);
-  toast(`Downloaded: TAT_Overdue_${dd}-${mm}-${yyyy}.xlsx`);
 }
 
 // Keyboard shortcut: Ctrl/Cmd+R → force refresh from Google Sheet

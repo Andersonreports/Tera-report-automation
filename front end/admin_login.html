@@ -127,19 +127,38 @@
         return;
       }
 
-      // Check admin role in profiles table
-      const { data: profile, error: profileErr } = await sb
-        .from('profiles')
-        .select('role, full_name')
-        .eq('id', data.user.id)
-        .single();
+      // Check admin role — try by auth user id first, then fall back to email
+      let profile = null;
+      let profileErr = null;
 
-      if (profileErr || !profile || profile.role !== 'admin') {
+      const byId = await sb.from('profiles').select('role, full_name').eq('id', data.user.id).single();
+      if (!byId.error && byId.data) {
+        profile = byId.data;
+      } else {
+        // Fallback: some profiles tables store email separately
+        const byEmail = await sb.from('profiles').select('role, full_name').eq('email', email).single();
+        if (!byEmail.error && byEmail.data) {
+          profile = byEmail.data;
+        } else {
+          profileErr = byId.error || byEmail.error;
+        }
+      }
+
+      if (!profile) {
         await sb.auth.signOut();
-        errEl.textContent = 'Access denied. Admin privileges required.';
+        errEl.textContent = profileErr
+          ? 'Profile lookup failed: ' + profileErr.message
+          : 'No profile found for this account.';
         errEl.style.display = 'block';
-        btn.disabled = false;
-        btn.textContent = 'Sign In';
+        btn.disabled = false; btn.textContent = 'Sign In';
+        return;
+      }
+
+      if (profile.role !== 'admin') {
+        await sb.auth.signOut();
+        errEl.textContent = 'Access denied. This account has role "' + profile.role + '", not "admin".';
+        errEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Sign In';
         return;
       }
 

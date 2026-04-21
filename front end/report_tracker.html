@@ -871,6 +871,10 @@
           <label>No of days</label>
           <input type="number" class="sel" id="f-overdue-days" min="1" placeholder="Days…" oninput="renderOverdue()" />
         </div>
+        <div class="rel-panel-item">
+          <label>Reviewer</label>
+          <select class="sel" id="f-overdue-reviewer" onchange="renderOverdue()"><option value="">All Reviewers</option></select>
+        </div>
       </div>
       <div class="rel-panel-actions">
         <button class="rel-clear-btn" onclick="clearOverdueFilters()">Clear All Filters</button>
@@ -2157,18 +2161,20 @@ function getOverdueRows() {
 }
 
 function getFilteredOverdue() {
-  const q       = (document.getElementById('q-overdue')?.value||'').toLowerCase();
-  const test    = document.getElementById('f-overdue-test')?.value||'';
-  const clientF = document.getElementById('f-overdue-client')?.value||'';
-  const status  = document.getElementById('f-overdue-status')?.value||'';
-  const numDays = parseInt(document.getElementById('f-overdue-days')?.value||'0',10)||0;
+  const q        = (document.getElementById('q-overdue')?.value||'').toLowerCase();
+  const test     = document.getElementById('f-overdue-test')?.value||'';
+  const clientF  = document.getElementById('f-overdue-client')?.value||'';
+  const status   = document.getElementById('f-overdue-status')?.value||'';
+  const numDays  = parseInt(document.getElementById('f-overdue-days')?.value||'0',10)||0;
+  const reviewer = document.getElementById('f-overdue-reviewer')?.value||'';
 
   let data = getOverdueRows();
-  if (test)    data = data.filter(r=>r.test===test);
-  if (clientF) data = data.filter(r=>r.client===clientF);
-  if (status)  data = data.filter(r=>getStatus(r)===status);
-  if (numDays) data = data.filter(r=>r._overdue_days===numDays);
-  if (q)       data = data.filter(r=>
+  if (test)     data = data.filter(r=>r.test===test);
+  if (clientF)  data = data.filter(r=>r.client===clientF);
+  if (status)   data = data.filter(r=>getStatus(r)===status);
+  if (numDays)  data = data.filter(r=>r._overdue_days===numDays);
+  if (reviewer) data = data.filter(r=>r.pri_rev===reviewer);
+  if (q)        data = data.filter(r=>
     (r.name||'').toLowerCase().includes(q)||(r.test||'').toLowerCase().includes(q)||
     (r.gen_id||'').toLowerCase().includes(q)||(r.and_id||'').toLowerCase().includes(q)||
     (r.client||'').toLowerCase().includes(q)||(r.pri_rev||'').toLowerCase().includes(q)
@@ -2182,9 +2188,19 @@ function renderOverdue() {
   // Update count
   document.getElementById('overdue-count-num').textContent = data.length;
 
+  // Populate reviewer dropdown (preserve selection)
+  const revSel = document.getElementById('f-overdue-reviewer');
+  if (revSel) {
+    const curRev = revSel.value;
+    const revVals = [...new Set(getOverdueRows().map(r=>r.pri_rev).filter(Boolean))].sort();
+    revSel.innerHTML = '<option value="">All Reviewers</option>';
+    revVals.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; revSel.appendChild(o); });
+    if (revVals.includes(curRev)) revSel.value=curRev;
+  }
+
   // Update active filter badge count
   let active = 0;
-  ['f-overdue-test','f-overdue-client','f-overdue-status'].forEach(id => {
+  ['f-overdue-test','f-overdue-client','f-overdue-status','f-overdue-reviewer'].forEach(id => {
     if (document.getElementById(id)?.value) active++;
   });
   if (document.getElementById('f-overdue-days')?.value) active++;
@@ -2225,7 +2241,7 @@ function toggleOverdueFilters() {
 }
 
 function clearOverdueFilters() {
-  ['f-overdue-test','f-overdue-client','f-overdue-status'].forEach(id => {
+  ['f-overdue-test','f-overdue-client','f-overdue-status','f-overdue-reviewer'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const daysEl = document.getElementById('f-overdue-days'); if (daysEl) daysEl.value = '';
@@ -2258,8 +2274,10 @@ function downloadOverdueExcel() {
     });
     XLSX.utils.book_append_sheet(wb, ws, 'TAT Overdue');
 
-    const today = new Date();
-    const fname = `TAT_Overdue_${today.getDate().toString().padStart(2,'0')}-${(today.getMonth()+1).toString().padStart(2,'0')}-${today.getFullYear()}.xlsx`;
+    const today    = new Date();
+    const reviewer = document.getElementById('f-overdue-reviewer')?.value || '';
+    const namePart = reviewer ? `_${reviewer.replace(/\s+/g,'_')}` : '';
+    const fname    = `TAT_Overdue${namePart}_${today.getDate().toString().padStart(2,'0')}-${(today.getMonth()+1).toString().padStart(2,'0')}-${today.getFullYear()}.xlsx`;
 
     // binary string → ArrayBuffer → Blob → anchor download
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });

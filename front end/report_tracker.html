@@ -6,7 +6,7 @@
   <title>Anderson Lab — Report Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- SheetJS served through authenticated backend endpoint — not publicly accessible -->
-  <script src="/tracker/xlsx.min.js"></script>
+  <script src="xlsx.full.min.js"></script>
 
   <style>
     /* ── TOKENS ── */
@@ -930,7 +930,7 @@ const GSHEET_GID = '1126267100'; // Sheet1 (3rd tab)
 
 async function fetchGoogleSheet(silent) {
   try {
-    const url = '/tracker/fetch-sheet';
+    const url = `https://docs.google.com/spreadsheets/d/${GSHEET_ID}/export?format=xlsx&gid=${GSHEET_GID}`;
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const ab = await resp.arrayBuffer();

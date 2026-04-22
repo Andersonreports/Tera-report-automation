@@ -482,11 +482,11 @@ class TERAReportGenerator:
     def _page1(self, c):
         self._header(c)
         self._footer(c)
-        self._draw_qr(c)
         self._title_block(c)
         self._field_table(c)
         self._status_section(c)
         self._recom_section(c)
+        self._draw_qr(c)
 
     def _title_block(self, c):
         """Centred two-line title (GillSansMT-Bold 18pt, blue).
@@ -714,7 +714,6 @@ class TERAReportGenerator:
     def _page2(self, c):
         self._header(c)
         self._footer(c)
-        self._draw_qr(c)
 
         # Page content width: from x=72 to divider end x=554.65 = 482.65 pt
         CONTENT_W = DIV_X1 - 72
@@ -749,6 +748,7 @@ class TERAReportGenerator:
             c.circle(92.5, y + 4, 2.5, fill=1, stroke=0)
             y = _justified_block(c, bullet, 108, y, CONTENT_W - 36, F_BODY, 11, 22)
             y -= 10
+        self._draw_qr(c)
 
     # ═══════════════════════════════════════════════════════════════════════════
     # PAGE 3 – References + Signatures
@@ -763,7 +763,6 @@ class TERAReportGenerator:
     def _page3(self, c):
         self._header(c)
         self._footer(c)
-        self._draw_qr(c)
 
         # "References" heading
         # pdfplumber: x=78.9, top=75.2 → RL baseline = H-89.2 = 702.8
@@ -824,6 +823,7 @@ class TERAReportGenerator:
         c.drawString(72.0,  role_y, "Molecular Biologist")
         c.drawString(208.0, role_y, "Head -Scientific Operations")
         c.drawString(395.0, role_y, "Head- Clinical Genetics")
+        self._draw_qr(c)
 
     # ═══════════════════════════════════════════════════════════════════════════
     # Data helpers

@@ -1311,8 +1311,8 @@
   <script>
     let selectedPatientIndex = null;
 
-    function saveChanges() {
-        if (selectedPatientIndex === null || selectedPatientIndex < 0) return;
+    function _readEditorIntoPatient() {
+        if (selectedPatientIndex === null || selectedPatientIndex < 0) return null;
         const p = patients[selectedPatientIndex];
         p["Patient Name"] = document.getElementById("edit_patient_name").value;
         p["Age"] = document.getElementById("edit_age").value;
@@ -1330,9 +1330,18 @@
         p["TERA result"] = document.getElementById("edit_result").value;
         p["Time for report"] = document.getElementById("edit_time_report").value;
         p["Date of Received"] = document.getElementById("edit_date_received").value;
+        return p;
+    }
+
+    function saveChanges() {
+        const p = _readEditorIntoPatient();
+        if (!p) return;
+        // Re-render list and re-highlight active row
         renderPatientTable(patients);
+        const activeRow = document.querySelector(`#patientTableBody tr[data-index="${selectedPatientIndex}"]`);
+        if (activeRow) activeRow.classList.add("active-row");
         updateBulkPreview(p);
-        showToast("Changes saved temporarily.");
+        showToast("Changes saved.");
     }
   </script>
 
@@ -1663,7 +1672,8 @@
         const signal = _bulkPreviewCtrl.signal;
         try {
             const logoOption = document.querySelector('#bulk input[name="logoOption"]:checked')?.value || "without_logo";
-            const bodyData = { ...data, logo_option: logoOption };
+            const qrOption   = document.querySelector('#bulk input[name="bulkQrOption"]:checked')?.value || "without_qr";
+            const bodyData = { ...data, logo_option: logoOption, qr_option: qrOption };
             const res = await fetch(API + "/preview", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1790,18 +1800,18 @@
             field.addEventListener("change", triggerPreview);
         });
 
-        // Bulk tab — auto-refresh preview when editor fields change (debounced)
+        // Bulk tab — auto-refresh preview when editor fields change (debounced, silent)
         document.querySelectorAll(".bulk-editor-scroll input, .bulk-editor-scroll select").forEach(field => {
-            field.addEventListener("input", () => {
+            const handler = () => {
                 if (selectedPatientIndex === null) return;
                 clearTimeout(window.bulkPreviewTimer);
-                window.bulkPreviewTimer = setTimeout(() => saveChanges(), 400);
-            });
-            field.addEventListener("change", () => {
-                if (selectedPatientIndex === null) return;
-                clearTimeout(window.bulkPreviewTimer);
-                window.bulkPreviewTimer = setTimeout(() => saveChanges(), 400);
-            });
+                window.bulkPreviewTimer = setTimeout(() => {
+                    const p = _readEditorIntoPatient();
+                    if (p) updateBulkPreview(p);
+                }, 400);
+            };
+            field.addEventListener("input", handler);
+            field.addEventListener("change", handler);
         });
 
         // Compare tab — auto-run compare when both files are chosen

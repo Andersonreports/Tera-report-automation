@@ -457,9 +457,9 @@ class TERAReportGenerator:
             qr_img.save(buf, format="PNG")
             buf.seek(0)
 
-            QR_SIZE = 52          # points – compact, above footer
-            QR_X    = W - QR_SIZE - 28   # right-aligned, 28pt margin
-            QR_Y    = FTR_Y + FTR_H + 6  # just above footer
+            QR_SIZE = 46          # points – compact, above footer
+            QR_X    = W - QR_SIZE - 70   # shifted left from right edge
+            QR_Y    = FTR_Y + FTR_H + 14  # lifted above footer
 
             # White background box so QR is legible over any content
             c.setFillColor(white)

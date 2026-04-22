@@ -67,6 +67,9 @@ os.makedirs(PGTA_REPORT_DIR, exist_ok=True)
 PGTA_CNV_DIR   = os.path.join(BASE_DIR, "uploads", "pgta_cnv")
 PGTA_DRAFT_DIR = os.path.join(BASE_DIR, "drafts", "PGTA")
 os.makedirs(PGTA_CNV_DIR, exist_ok=True)
+
+# Maps QR UUID → Supabase storage path (in-memory; survives for the life of the process)
+_qr_uuid_map: dict[str, str] = {}
 os.makedirs(PGTA_DRAFT_DIR, exist_ok=True)
 
 app.mount("/reports", StaticFiles(directory=REPORT_DIR), name="reports")
@@ -180,8 +183,10 @@ def report_by_uuid(report_uuid: str):
     SUPABASE_URL = os.getenv("SUPABASE_URL", "")
     if not SUPABASE_URL:
         return {"error": "Report not found"}
-    storage_path = f"TERA/qr_{report_uuid}.pdf"
-    public_url   = f"{SUPABASE_URL}/storage/v1/object/public/reports/{storage_path}"
+    storage_path = _qr_uuid_map.get(report_uuid)
+    if not storage_path:
+        return {"error": "Report not found"}
+    public_url = f"{SUPABASE_URL}/storage/v1/object/public/reports/{storage_path}"
     return RedirectResponse(url=public_url, status_code=302)
     
 
@@ -264,6 +269,10 @@ async def generate_report(data: dict):
         # upload to Supabase
         file_url = upload_pdf(pdf_path, file_name)
 
+        # register QR UUID → storage path so /report/{uuid} can redirect
+        if with_qr and qr_uuid:
+            _qr_uuid_map[qr_uuid] = file_name
+
         # save to DB (non-fatal if table missing)
         try:
             doc_folder = data.get("doctor_name") or data.get("center_name") or "Unknown"
@@ -320,6 +329,10 @@ async def generate_bulk(request: Request):
             # upload to Supabase if client available
             file_url = upload_pdf(pdf_path, file_name) if upload_pdf else f"/reports/{file_name}"
 
+            # register QR UUID → storage path so /report/{uuid} can redirect
+            if with_qr and qr_uuid:
+                _qr_uuid_map[qr_uuid] = file_name
+
             try:
                 doc_folder = row.get("doctor_name") or row.get("center_name") or "Unknown"
                 if save_report:
@@ -373,8 +386,6 @@ def _build_file_name(row: dict, with_logo: bool, with_qr: bool = False, qr_uuid:
     patient = _safe_name(row.get("Patient Name", "Unknown"))
     biopsy  = _biopsy_ordinal(row.get("Biopsy No.", "1"))
     logo    = "with_logo" if with_logo else "without_logo"
-    if with_qr and qr_uuid:
-        return f"TERA/qr_{qr_uuid}.pdf"
     return f"TERA/{patient}_{biopsy}_TERA_report_{logo}.pdf"
 
 def _norm(s: str) -> str:

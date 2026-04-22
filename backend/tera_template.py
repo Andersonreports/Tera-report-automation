@@ -457,9 +457,9 @@ class TERAReportGenerator:
             qr_img.save(buf, format="PNG")
             buf.seek(0)
 
-            QR_SIZE = 78          # points
+            QR_SIZE = 52          # points – compact, above footer
             QR_X    = W - QR_SIZE - 28   # right-aligned, 28pt margin
-            QR_Y    = FTR_Y + FTR_H + 8  # just above footer
+            QR_Y    = FTR_Y + FTR_H + 6  # just above footer
 
             # White background box so QR is legible over any content
             c.setFillColor(white)
@@ -482,7 +482,6 @@ class TERAReportGenerator:
     def _page1(self, c):
         self._header(c)
         self._footer(c)
-        self._draw_qr(c)
         self._title_block(c)
         self._field_table(c)
         self._status_section(c)
@@ -762,6 +761,7 @@ class TERAReportGenerator:
     def _page3(self, c):
         self._header(c)
         self._footer(c)
+        self._draw_qr(c)
 
         # "References" heading
         # pdfplumber: x=78.9, top=75.2 → RL baseline = H-89.2 = 702.8

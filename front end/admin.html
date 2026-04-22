@@ -176,9 +176,9 @@
       display: inline-block; padding: 3px 10px; border-radius: 20px;
       font-size: 11px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase;
     }
-    .role-admin   { background: #dbeafe; color: #1d4ed8; }
-    .role-analyst { background: #d1fae5; color: #065f46; }
-    .role-user    { background: #f1f5f9; color: #475569; }
+    .role-admin      { background: #dbeafe; color: #1d4ed8; }
+    .role-supervisor { background: #d1fae5; color: #065f46; }
+    .role-technician { background: #fef3c7; color: #92400e; }
 
     .btn-action {
       padding: 5px 12px; border-radius: 6px;
@@ -320,12 +320,12 @@
           <div class="stat-lbl">Admins</div>
         </div>
         <div class="stat-card">
-          <div class="stat-num" id="stat-analysts">—</div>
-          <div class="stat-lbl">Analysts</div>
+          <div class="stat-num" id="stat-supervisors">—</div>
+          <div class="stat-lbl">Supervisors</div>
         </div>
         <div class="stat-card">
-          <div class="stat-num" id="stat-users">—</div>
-          <div class="stat-lbl">Users</div>
+          <div class="stat-num" id="stat-technicians">—</div>
+          <div class="stat-lbl">Technicians</div>
         </div>
       </div>
 
@@ -422,9 +422,9 @@
 
       <label for="modal-role">Role</label>
       <select id="modal-role">
-        <option value="user">User</option>
-        <option value="analyst">Analyst</option>
         <option value="admin">Admin</option>
+        <option value="supervisor">Supervisor</option>
+        <option value="technician">Technician</option>
       </select>
 
       <div class="modal-actions">
@@ -491,10 +491,10 @@
     function renderStats(data) {
       const statsEl = document.getElementById('um-stats');
       statsEl.style.display = 'flex';
-      document.getElementById('stat-total').textContent   = data.length;
-      document.getElementById('stat-admins').textContent  = data.filter(u => u.role === 'admin').length;
-      document.getElementById('stat-analysts').textContent= data.filter(u => u.role === 'analyst').length;
-      document.getElementById('stat-users').textContent   = data.filter(u => u.role === 'user' || !u.role).length;
+      document.getElementById('stat-total').textContent      = data.length;
+      document.getElementById('stat-admins').textContent     = data.filter(u => u.role === 'admin').length;
+      document.getElementById('stat-supervisors').textContent= data.filter(u => u.role === 'supervisor').length;
+      document.getElementById('stat-technicians').textContent= data.filter(u => u.role === 'technician').length;
     }
 
     function renderTable(data) {

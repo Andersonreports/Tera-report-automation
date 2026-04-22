@@ -127,43 +127,39 @@
         return;
       }
 
-      // Check admin role — try by auth user id first, then fall back to email
-      let profile = null;
-      let profileErr = null;
+      const userId   = data.user.id;
+      const userEmail = data.user.email;
 
-      const byId = await sb.from('profiles').select('role, full_name').eq('id', data.user.id).single();
-      if (!byId.error && byId.data) {
-        profile = byId.data;
-      } else {
-        // Fallback: some profiles tables store email separately
-        const byEmail = await sb.from('profiles').select('role, full_name').eq('email', email).single();
-        if (!byEmail.error && byEmail.data) {
-          profile = byEmail.data;
-        } else {
-          profileErr = byId.error || byEmail.error;
-        }
+      // 1. Check user_metadata / app_metadata in the auth token directly
+      let role     = data.user.user_metadata?.role || data.user.app_metadata?.role || null;
+      let fullName = data.user.user_metadata?.full_name || data.user.user_metadata?.name || null;
+
+      // 2. If not in token, query profiles table by id
+      if (!role) {
+        const { data: p1 } = await sb.from('profiles').select('role, full_name').eq('id', userId).maybeSingle();
+        if (p1) { role = p1.role; fullName = fullName || p1.full_name; }
       }
 
-      if (!profile) {
-        await sb.auth.signOut();
-        errEl.textContent = profileErr
-          ? 'Profile lookup failed: ' + profileErr.message
-          : 'No profile found for this account.';
-        errEl.style.display = 'block';
-        btn.disabled = false; btn.textContent = 'Sign In';
-        return;
+      // 3. Fallback: query profiles by email column (if it exists)
+      if (!role) {
+        const { data: p2 } = await sb.from('profiles').select('role, full_name').eq('email', userEmail).maybeSingle();
+        if (p2) { role = p2.role; fullName = fullName || p2.full_name; }
       }
 
-      if (profile.role !== 'admin') {
+      console.log('[admin-login] userId:', userId, 'role found:', role);
+
+      if (role !== 'admin') {
         await sb.auth.signOut();
-        errEl.textContent = 'Access denied. This account has role "' + profile.role + '", not "admin".';
+        errEl.textContent = role
+          ? `Access denied — role is "${role}", not "admin".`
+          : 'No admin role found. Check Supabase profiles table for id: ' + userId;
         errEl.style.display = 'block';
         btn.disabled = false; btn.textContent = 'Sign In';
         return;
       }
 
       localStorage.setItem('tera_role', 'admin');
-      localStorage.setItem('tera_user_name', profile.full_name || email);
+      localStorage.setItem('tera_user_name', fullName || userEmail);
       window.location.href = '/admin';
     }
   </script>

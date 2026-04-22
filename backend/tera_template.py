@@ -471,7 +471,7 @@ class TERAReportGenerator:
             # "Scan to download" label below QR
             c.setFont("Helvetica", 6)
             c.setFillColor(HexColor("#64748b"))
-            c.drawCentredString(QR_X + QR_SIZE / 2, QR_Y - 9, "Scan to download")
+            c.drawCentredString(QR_X + QR_SIZE / 2, QR_Y + QR_SIZE + 4, "Scan to download")
         except Exception as e:
             print(f"[TERA] QR draw error: {e}")
         c.restoreState()

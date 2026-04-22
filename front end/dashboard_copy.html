@@ -881,6 +881,13 @@
                 <label class="fr-radio">
                   <input type="radio" name="logoOption" value="with_logo"> With Logo
                 </label>
+                <span class="fr-label" style="margin-left:12px">QR Code:</span>
+                <label class="fr-radio">
+                  <input type="radio" name="qrOption" id="qr-manual-without" value="without_qr" checked> Without QR
+                </label>
+                <label class="fr-radio">
+                  <input type="radio" name="qrOption" id="qr-manual-with" value="with_qr"> With QR
+                </label>
                 <button class="btn-generate-fast" onclick="downloadReport()">&#9654; Generate Report</button>
               </div>
             </div>
@@ -1015,6 +1022,14 @@
               </label>
               <label class="fr-radio">
                 <input type="radio" name="logoOption" value="with_logo" checked> With Logo
+              </label>
+              <div class="bulk-bottom-divider"></div>
+              <span class="fr-label">QR Code:</span>
+              <label class="fr-radio">
+                <input type="radio" name="bulkQrOption" value="without_qr" checked> Without QR
+              </label>
+              <label class="fr-radio">
+                <input type="radio" name="bulkQrOption" value="with_qr"> With QR
               </label>
               <div class="bulk-bottom-divider"></div>
               <button class="btn-gen-all" onclick="generateAllReports()">Generate All</button>
@@ -1269,7 +1284,9 @@
     async function downloadReport() {
         const data = collectManualData();
         const logoOption = document.querySelector('#manual input[name="logoOption"]:checked')?.value || "without_logo";
+        const qrOption = document.querySelector('#manual input[name="qrOption"]:checked')?.value || "without_qr";
         data["logo_option"] = logoOption;
+        data["qr_option"] = qrOption;
         try {
             const res = await fetch(API + "/generate", {
                 method: "POST",
@@ -1328,7 +1345,9 @@
         const signal = _manualPreviewCtrl.signal;
         const data = collectManualData();
         const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
+        const qrOption = document.querySelector('input[name="qrOption"]:checked')?.value || "without_qr";
         data["logo_option"] = logoOption;
+        data["qr_option"] = qrOption;
         try {
             const res = await fetch(API + "/preview", {
                 method: "POST",
@@ -1350,7 +1369,8 @@
     async function generateSelected(rows) {
         if (!rows || rows.length === 0) { showToast("No patients selected.", "error"); return; }
         const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
-        const rowsWithLogo = rows.map(r => ({ ...r, logo_option: logoOption }));
+        const qrOption = document.querySelector('input[name="bulkQrOption"]:checked')?.value || "without_qr";
+        const rowsWithLogo = rows.map(r => ({ ...r, logo_option: logoOption, qr_option: qrOption }));
         try {
             const res = await fetch(API + "/generate-bulk", {
                 method: "POST",
@@ -1486,7 +1506,8 @@
 
     async function generateAllReports() {
         const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
-        const rows = patients.map(r => ({ ...r, logo_option: logoOption }));
+        const qrOption = document.querySelector('input[name="bulkQrOption"]:checked')?.value || "without_qr";
+        const rows = patients.map(r => ({ ...r, logo_option: logoOption, qr_option: qrOption }));
         try {
             const res = await fetch(API + "/generate-bulk", {
                 method: "POST",

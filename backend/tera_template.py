@@ -458,8 +458,8 @@ class TERAReportGenerator:
             buf.seek(0)
 
             QR_SIZE = 36          # points – compact, above footer
-            QR_X    = 440         # center ~458pt, above "POC Analysis" in footer
-            QR_Y    = FTR_Y + FTR_H + 10  # lifted above footer
+            QR_X    = FTR_X       # left-aligned with footer bar
+            QR_Y    = FTR_Y + FTR_H + 8  # just above footer
 
             # White background box so QR is legible over any content
             c.setFillColor(white)
@@ -482,6 +482,7 @@ class TERAReportGenerator:
     def _page1(self, c):
         self._header(c)
         self._footer(c)
+        self._draw_qr(c)
         self._title_block(c)
         self._field_table(c)
         self._status_section(c)
@@ -713,6 +714,7 @@ class TERAReportGenerator:
     def _page2(self, c):
         self._header(c)
         self._footer(c)
+        self._draw_qr(c)
 
         # Page content width: from x=72 to divider end x=554.65 = 482.65 pt
         CONTENT_W = DIV_X1 - 72

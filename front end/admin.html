@@ -38,57 +38,67 @@
       width: 220px; height: 100vh;
       background: #1F5EA8;
       display: flex; flex-direction: column; align-items: center;
-      padding-top: 130px; gap: 14px;
+      padding-top: 100px; gap: 10px;
       z-index: 100;
     }
 
     .admin-badge {
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.35);
-      border-radius: 8px;
-      padding: 8px 14px;
-      width: 80%;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 12px;
+      padding: 12px 14px;
+      width: 84%;
       text-align: center;
       color: #fff;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
+      margin-bottom: 10px;
     }
-    .admin-badge span { display: block; font-size: 11px; opacity: 0.75; font-weight: 400; margin-top: 2px; }
+    .admin-badge .badge-icon {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 8px;
+    }
+    .admin-badge .badge-icon i { font-size: 18px; color: #fff; }
+    .admin-badge .badge-name  { font-size: 13px; font-weight: 700; letter-spacing: 0.3px; }
+    .admin-badge .badge-email { font-size: 11px; opacity: 0.7; margin-top: 2px; word-break: break-all; }
+    .admin-badge .badge-role  {
+      display: inline-block; margin-top: 6px;
+      background: rgba(255,255,255,0.2); border-radius: 20px;
+      padding: 2px 10px; font-size: 10px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase;
+    }
 
     /* ── Nav buttons ── */
     .nav-btn {
-      width: 180px; padding: 14px;
+      width: 180px; padding: 12px;
       border: 2px solid #1b4b8c;
       background: #fff; border-radius: 8px;
-      font-size: 12px; letter-spacing: 2px; font-weight: 700;
+      font-size: 11px; letter-spacing: 1.5px; font-weight: 700;
       color: #1b4b8c; cursor: pointer; transition: 0.3s;
       text-transform: uppercase; text-decoration: none;
       display: block; text-align: center;
     }
-    .nav-btn:hover, .nav-btn.active {
-      background: #1b4b8c; color: #fff;
-    }
+    .nav-btn:hover, .nav-btn.active { background: #1b4b8c; color: #fff; }
     .nav-btn.danger {
-      background: rgba(255,255,255,0.1);
-      color: #fff; border-color: rgba(255,255,255,0.3);
+      background: transparent; color: #fff;
+      border-color: rgba(255,255,255,0.3);
       margin-top: auto; margin-bottom: 24px;
     }
-    .nav-btn.danger:hover { background: rgba(239,68,68,0.3); border-color: #ef4444; }
+    .nav-btn.danger:hover { background: rgba(239,68,68,0.25); border-color: #ef4444; }
 
     /* ── Main content ── */
     .main {
       margin-left: 220px;
-      padding-top: 100px;
+      padding-top: 96px;
       min-height: 100vh;
       display: flex; align-items: flex-start; justify-content: center;
     }
 
     /* ── Sections ── */
-    .section { display: none; width: 100%; max-width: 900px; padding: 40px 20px; }
+    .section { display: none; width: 100%; max-width: 960px; padding: 36px 28px; }
     .section.active { display: block; }
 
-    /* ── Section headers (non-user-management) ── */
+    /* ── Section headers ── */
     .report-section-title { text-align: center; margin-bottom: 32px; }
     .report-section-title h2 { font-size: 2em; color: #fff; font-weight: 700; margin-bottom: 6px; }
     .report-section-title p  { font-size: 1em; color: rgba(255,255,255,0.82); }
@@ -103,16 +113,8 @@
       cursor: pointer; transition: 0.22s; text-decoration: none; color: inherit;
       border: 2px solid transparent;
     }
-    .report-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 24px rgba(0,0,0,0.22);
-      border-color: #1F5EA8;
-    }
-    .report-card-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      background: #e8f0fb;
-      display: flex; align-items: center; justify-content: center;
-    }
+    .report-card:hover { transform: translateY(-5px); box-shadow: 0 10px 24px rgba(0,0,0,0.22); border-color: #1F5EA8; }
+    .report-card-icon { width: 48px; height: 48px; border-radius: 12px; background: #e8f0fb; display: flex; align-items: center; justify-content: center; }
     .report-card-icon i { font-size: 22px; color: #1F5EA8; }
     .report-card span { font-size: 12px; font-weight: 700; color: #1b4b8c; text-align: center; }
 
@@ -120,11 +122,9 @@
     .coming-soon { text-align: center; padding: 60px 20px; }
     .coming-soon-badge {
       display: inline-flex; align-items: center; gap: 10px;
-      background: rgba(255,255,255,0.15);
-      border: 2px solid rgba(255,255,255,0.4);
-      border-radius: 50px; padding: 8px 22px;
-      color: #fff; font-size: 12px; font-weight: 700;
-      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px;
+      background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.4);
+      border-radius: 50px; padding: 8px 22px; color: #fff;
+      font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px;
     }
     .coming-soon h2 { font-size: 2.2em; color: #fff; font-weight: 700; margin-bottom: 12px; }
     .coming-soon p  { font-size: 1em; color: rgba(255,255,255,0.82); }
@@ -133,11 +133,11 @@
        USER MANAGEMENT
     ═══════════════════════════════════ */
     .um-header {
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex; align-items: flex-start; justify-content: space-between;
       margin-bottom: 20px;
     }
-    .um-header h2 { font-size: 1.8em; font-weight: 700; color: #fff; }
-    .um-header p  { color: rgba(255,255,255,0.82); font-size: 13px; margin-top: 2px; }
+    .um-header h2 { font-size: 1.9em; font-weight: 700; color: #fff; }
+    .um-header p  { color: rgba(255,255,255,0.78); font-size: 13px; margin-top: 3px; }
 
     .btn-add {
       display: inline-flex; align-items: center; gap: 8px;
@@ -145,46 +145,55 @@
       border: none; border-radius: 8px;
       font-size: 13px; font-weight: 700; font-family: inherit;
       cursor: pointer; transition: 0.2s; white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     }
     .btn-add:hover { background: #e8f0fb; }
 
-    .um-search {
-      margin-bottom: 16px;
+    /* Stats row */
+    .um-stats {
+      display: flex; gap: 14px; margin-bottom: 18px; flex-wrap: wrap;
     }
+    .stat-card {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 10px; padding: 12px 20px;
+      flex: 1; min-width: 100px; text-align: center;
+    }
+    .stat-card .stat-num { font-size: 1.7em; font-weight: 700; color: #fff; line-height: 1; }
+    .stat-card .stat-lbl { font-size: 11px; color: rgba(255,255,255,0.72); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .um-search { margin-bottom: 14px; }
     .um-search input {
-      width: 100%; padding: 10px 16px;
+      width: 100%; padding: 11px 16px;
       border: none; border-radius: 8px;
       font-size: 14px; font-family: inherit; outline: none;
-      background: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.95);
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
     .um-table-wrap {
-      background: #fff;
-      border-radius: 14px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.14);
-      overflow: hidden;
+      background: #fff; border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.14); overflow: hidden;
     }
     table { width: 100%; border-collapse: collapse; }
     thead { background: #1F5EA8; }
     thead th {
       padding: 14px 16px; text-align: left;
-      font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
       color: #fff; text-transform: uppercase;
     }
     tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: #f8fafc; }
-    tbody td { padding: 13px 16px; font-size: 14px; color: #1e293b; }
+    tbody td { padding: 13px 16px; font-size: 14px; color: #1e293b; vertical-align: middle; }
 
     .role-badge {
       display: inline-block; padding: 3px 10px; border-radius: 20px;
-      font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
-      text-transform: uppercase;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase;
     }
-    .role-admin    { background: #dbeafe; color: #1d4ed8; }
-    .role-analyst  { background: #d1fae5; color: #065f46; }
-    .role-user     { background: #f1f5f9; color: #475569; }
+    .role-admin   { background: #dbeafe; color: #1d4ed8; }
+    .role-analyst { background: #d1fae5; color: #065f46; }
+    .role-user    { background: #f1f5f9; color: #475569; }
 
     .btn-action {
       padding: 5px 12px; border-radius: 6px;
@@ -203,8 +212,17 @@
     .um-error {
       background: #fee2e2; color: #dc2626;
       border-radius: 10px; padding: 14px 18px;
-      font-size: 13px; margin-bottom: 16px; display: none;
+      font-size: 13px; margin-bottom: 14px; display: none;
     }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid #e2e8f0; border-top-color: #1F5EA8;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ─── Modal ─── */
     .modal-backdrop {
@@ -218,7 +236,6 @@
       background: #fff; border-radius: 16px;
       padding: 36px 32px; width: 100%; max-width: 420px;
       box-shadow: 0 16px 48px rgba(0,0,0,0.2);
-      position: relative;
     }
     .modal-card h3 { font-size: 1.2em; font-weight: 700; color: #1b4b8c; margin-bottom: 22px; }
     .modal-card label {
@@ -233,22 +250,20 @@
       transition: border-color 0.2s;
     }
     .modal-card input:focus, .modal-card select:focus { border-color: #1F5EA8; }
+    .modal-card input:disabled { background: #f8fafc; color: #94a3b8; cursor: not-allowed; }
     .modal-actions {
-      display: flex; justify-content: flex-end; gap: 10px;
-      margin-top: 24px;
+      display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;
     }
     .btn-cancel {
       padding: 10px 20px; border-radius: 8px;
       background: #f1f5f9; color: #475569;
-      border: none; font-family: inherit;
-      font-size: 14px; font-weight: 600; cursor: pointer;
+      border: none; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
     }
     .btn-cancel:hover { background: #e2e8f0; }
     .btn-save {
       padding: 10px 22px; border-radius: 8px;
       background: #1F5EA8; color: #fff;
-      border: none; font-family: inherit;
-      font-size: 14px; font-weight: 700; cursor: pointer;
+      border: none; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
     }
     .btn-save:hover { background: #1b4b8c; }
     .btn-save:disabled { background: #93b4d9; cursor: not-allowed; }
@@ -281,16 +296,20 @@
   <!-- Sidebar -->
   <nav class="sidebar">
     <div class="admin-badge">
-      <i class="fas fa-shield-alt" style="margin-right:6px"></i>Admin
-      <span id="admin-name-label">Administrator</span>
+      <div class="badge-icon"><i class="fas fa-shield-alt"></i></div>
+      <div class="badge-name" id="admin-name-label">Administrator</div>
+      <div class="badge-email" id="admin-email-label"></div>
+      <div class="badge-role">Admin</div>
     </div>
 
-    <button class="nav-btn active" id="btn-users"     onclick="showSection('users')">User Management</button>
-    <button class="nav-btn" id="btn-databases"        onclick="showSection('databases')">Databases</button>
-    <button class="nav-btn" id="btn-reports"          onclick="showSection('reports')">Report Automation</button>
-    <button class="nav-btn" id="btn-trackers"         onclick="showSection('trackers')">Inhouse Tools</button>
+    <button class="nav-btn active" id="btn-users"    onclick="showSection('users')">User Management</button>
+    <button class="nav-btn"        id="btn-databases" onclick="showSection('databases')">Databases</button>
+    <button class="nav-btn"        id="btn-reports"   onclick="showSection('reports')">Report Automation</button>
+    <button class="nav-btn"        id="btn-trackers"  onclick="showSection('trackers')">Inhouse Tools</button>
 
-    <button class="nav-btn danger" onclick="signOut()">Sign Out</button>
+    <button class="nav-btn danger" onclick="signOut()">
+      <i class="fas fa-sign-out-alt" style="margin-right:6px;"></i>Sign Out
+    </button>
   </nav>
 
   <!-- Main -->
@@ -308,11 +327,30 @@
         </button>
       </div>
 
+      <!-- Stats -->
+      <div class="um-stats" id="um-stats" style="display:none">
+        <div class="stat-card">
+          <div class="stat-num" id="stat-total">—</div>
+          <div class="stat-lbl">Total Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-admins">—</div>
+          <div class="stat-lbl">Admins</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-analysts">—</div>
+          <div class="stat-lbl">Analysts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-users">—</div>
+          <div class="stat-lbl">Users</div>
+        </div>
+      </div>
+
       <div class="um-error" id="um-error"></div>
 
       <div class="um-search">
-        <input type="text" id="user-search" placeholder="Search by name, email or role…"
-               oninput="filterTable()" />
+        <input type="text" id="user-search" placeholder="Search by name, email or role…" oninput="filterTable()" />
       </div>
 
       <div class="um-table-wrap">
@@ -327,7 +365,7 @@
             </tr>
           </thead>
           <tbody id="users-tbody">
-            <tr><td colspan="5" class="um-empty">Loading users…</td></tr>
+            <tr><td colspan="5" class="um-empty"><span class="spinner"></span>Loading users…</td></tr>
           </tbody>
         </table>
       </div>
@@ -394,7 +432,7 @@
       <h3 id="modal-title">Add User</h3>
       <input type="hidden" id="modal-user-id" />
 
-      <label for="modal-name">Name</label>
+      <label for="modal-name">Full Name</label>
       <input type="text" id="modal-name" placeholder="Full name" />
 
       <label for="modal-email">Email</label>
@@ -414,7 +452,6 @@
     </div>
   </div>
 
-  <!-- Toast container -->
   <div id="toast-container"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -423,7 +460,6 @@
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc";
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    // ── Section switching ──
     const NAV_MAP = { users:'btn-users', databases:'btn-databases', reports:'btn-reports', trackers:'btn-trackers' };
     function showSection(id) {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -438,8 +474,11 @@
         window.location.href = '/admin/login';
         return;
       }
-      const name = localStorage.getItem('tera_user_name') || data.session.user.email;
-      document.getElementById('admin-name-label').textContent = name;
+      const user  = data.session.user;
+      const stored = localStorage.getItem('tera_user_name') || '';
+      const name  = (stored && stored !== user.email) ? stored : 'Admin';
+      document.getElementById('admin-name-label').textContent  = name;
+      document.getElementById('admin-email-label').textContent = user.email || '';
       document.body.classList.add('loaded');
       loadUsers();
     });
@@ -448,7 +487,7 @@
       await sb.auth.signOut();
       localStorage.removeItem('tera_role');
       localStorage.removeItem('tera_user_name');
-      window.location.href = '/landing';
+      window.location.href = '/';
     }
 
     // ── User data ──
@@ -468,7 +507,17 @@
       }
 
       allUsers = data || [];
+      renderStats(allUsers);
       renderTable(allUsers);
+    }
+
+    function renderStats(data) {
+      const statsEl = document.getElementById('um-stats');
+      statsEl.style.display = 'flex';
+      document.getElementById('stat-total').textContent   = data.length;
+      document.getElementById('stat-admins').textContent  = data.filter(u => u.role === 'admin').length;
+      document.getElementById('stat-analysts').textContent= data.filter(u => u.role === 'analyst').length;
+      document.getElementById('stat-users').textContent   = data.filter(u => u.role === 'user' || !u.role).length;
     }
 
     function renderTable(data) {
@@ -481,7 +530,7 @@
         <tr>
           <td><strong>${esc(u.full_name || '—')}</strong></td>
           <td style="color:#64748b">${esc(u.email || '—')}</td>
-          <td><span class="role-badge role-${esc(u.role)}">${esc(u.role)}</span></td>
+          <td><span class="role-badge role-${esc(u.role || 'user')}">${esc(u.role || 'user')}</span></td>
           <td style="color:#94a3b8;font-size:13px">${fmtDate(u.created_at)}</td>
           <td>
             <button class="btn-action btn-edit"   onclick="openModal('${esc(u.id)}')">Edit</button>
@@ -502,35 +551,31 @@
 
     // ── Modal ──
     function openModal(userId) {
-      const modal   = document.getElementById('user-modal');
-      const title   = document.getElementById('modal-title');
-      const idField = document.getElementById('modal-user-id');
-
       document.getElementById('modal-name').value  = '';
       document.getElementById('modal-email').value = '';
       document.getElementById('modal-role').value  = 'user';
       document.getElementById('modal-email').disabled = false;
+      document.getElementById('modal-user-id').value  = '';
 
       if (userId) {
         const u = allUsers.find(x => x.id === userId);
         if (!u) return;
-        title.textContent = 'Edit User';
-        idField.value = userId;
-        document.getElementById('modal-name').value  = u.full_name || '';
-        document.getElementById('modal-email').value = u.email     || '';
-        document.getElementById('modal-role').value  = u.role      || 'user';
-        document.getElementById('modal-email').disabled = true;
+        document.getElementById('modal-title').textContent     = 'Edit User';
+        document.getElementById('modal-user-id').value         = userId;
+        document.getElementById('modal-name').value            = u.full_name || '';
+        document.getElementById('modal-email').value           = u.email     || '';
+        document.getElementById('modal-role').value            = u.role      || 'user';
+        document.getElementById('modal-email').disabled        = true;
       } else {
-        title.textContent = 'Add User';
-        idField.value = '';
+        document.getElementById('modal-title').textContent = 'Add User';
       }
 
-      modal.classList.add('open');
+      document.getElementById('user-modal').classList.add('open');
     }
 
     function closeModal() {
       document.getElementById('user-modal').classList.remove('open');
-      document.getElementById('modal-save-btn').disabled = false;
+      document.getElementById('modal-save-btn').disabled    = false;
       document.getElementById('modal-save-btn').textContent = 'Save';
     }
 
@@ -547,36 +592,24 @@
 
       if (!name || !email) { showToast('Name and email are required.', 'err'); return; }
 
-      btn.disabled = true;
-      btn.textContent = 'Saving…';
+      btn.disabled = true; btn.textContent = 'Saving…';
 
       if (userId) {
-        // Update existing profile
-        const { error } = await sb
-          .from('profiles')
-          .update({ full_name: name, role })
-          .eq('id', userId);
-        if (error) { showToast('Update failed: ' + error.message, 'err'); }
-        else        { showToast('User updated.', 'ok'); closeModal(); await loadUsers(); }
+        const { error } = await sb.from('profiles').update({ full_name: name, role }).eq('id', userId);
+        if (error) showToast('Update failed: ' + error.message, 'err');
+        else { showToast('User updated.', 'ok'); closeModal(); await loadUsers(); }
       } else {
-        // Insert new profile row
-        const { error } = await sb
-          .from('profiles')
-          .insert({ email, full_name: name, role });
-        if (error) { showToast('Add failed: ' + error.message, 'err'); }
-        else        { showToast('User added.', 'ok'); closeModal(); await loadUsers(); }
+        const { error } = await sb.from('profiles').insert({ email, full_name: name, role });
+        if (error) showToast('Add failed: ' + error.message, 'err');
+        else { showToast('User added.', 'ok'); closeModal(); await loadUsers(); }
       }
 
-      btn.disabled = false;
-      btn.textContent = 'Save';
+      btn.disabled = false; btn.textContent = 'Save';
     }
 
     async function deleteUser(userId, label) {
       if (!confirm(`Remove "${label}" from the user list?`)) return;
-      const { error } = await sb
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
+      const { error } = await sb.from('profiles').delete().eq('id', userId);
       if (error) { showToast('Delete failed: ' + error.message, 'err'); return; }
       showToast('User removed.', 'ok');
       await loadUsers();
@@ -586,19 +619,15 @@
     function esc(s) {
       return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
-
     function fmtDate(iso) {
       if (!iso) return '—';
       const d = new Date(iso);
       return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
     }
-
     function showError(html) {
       const el = document.getElementById('um-error');
-      el.innerHTML = html;
-      el.style.display = 'block';
+      el.innerHTML = html; el.style.display = 'block';
     }
-
     function showToast(msg, type) {
       const el = document.createElement('div');
       el.className = 'toast' + (type ? ' ' + type : '');
@@ -606,8 +635,6 @@
       document.getElementById('toast-container').appendChild(el);
       setTimeout(() => { el.style.animation = 'slideIn 0.25s reverse forwards'; setTimeout(() => el.remove(), 260); }, 3200);
     }
-
-    window.onload = () => { /* body fade handled by auth check */ };
   </script>
 </body>
 </html>

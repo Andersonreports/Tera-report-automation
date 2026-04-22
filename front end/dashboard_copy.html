@@ -79,6 +79,15 @@
       white-space: nowrap;
     }
     .home-btn:hover { background: var(--primary-hover); }
+    .signout-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 14px; background: transparent;
+      color: #fff; border: 1.5px solid rgba(255,255,255,0.5);
+      border-radius: 7px; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: 0.15s; white-space: nowrap;
+      font-family: inherit;
+    }
+    .signout-btn:hover { background: rgba(255,255,255,0.15); border-color: #fff; }
 
     /* ── Tab Bar ── */
     .tab-bar {
@@ -738,9 +747,10 @@
     <!-- ── Page Header ── -->
     <div class="page-hdr">
       <div class="page-hdr-left">
-        <a href="/landing" class="home-btn">&#8592; Home</a>
+        <a href="/" class="home-btn">&#8592; Home</a>
         <h1>TERA Report Generator</h1>
       </div>
+      <button class="signout-btn" onclick="teraSignOut()">&#x2192; Sign Out</button>
     </div>
 
     <!-- ── Tab Bar ── -->
@@ -1190,10 +1200,38 @@
   <div id="toast-container"></div>
 
   <!---- Scripts ---->
+
+  <!-- Auth guard: redirect to login if no active session -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    (function() {
+      const _sb = supabase.createClient(
+        "https://wriaonorqjhmofwrhqlp.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc"
+      );
+      _sb.auth.getSession().then(({ data }) => {
+        if (!data.session) {
+          window.location.href = '/login?redirect=/dashboard';
+        }
+      });
+    })();
+  </script>
+
   <script>
     const API = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
         ? "http://127.0.0.1:8000"
         : "https://tera-report-automation.onrender.com";
+
+    async function teraSignOut() {
+      const _sb = supabase.createClient(
+        "https://wriaonorqjhmofwrhqlp.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc"
+      );
+      await _sb.auth.signOut();
+      localStorage.removeItem('tera_role');
+      localStorage.removeItem('tera_user_name');
+      window.location.href = '/login';
+    }
 
     function showToast(message, type = "success") {
         let container = document.getElementById("toast-container");

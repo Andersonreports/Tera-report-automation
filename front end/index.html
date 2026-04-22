@@ -42,32 +42,17 @@
       z-index: 100;
     }
 
-    /* ── User dropdown ── */
-    .dropdown {
-      position: relative; width: 100%;
-      display: flex; justify-content: center;
-    }
-    .user-button {
+    /* ── Admin login button ── */
+    .admin-login-btn {
       background: rgba(255,255,255,0.2);
       padding: 10px 20px; border-radius: 30px;
       border: 2px solid rgba(255,255,255,0.6);
       display: inline-flex; align-items: center; gap: 8px;
       text-decoration: none; transition: 0.2s;
       width: 80%; justify-content: center;
+      color: #fff; font-size: 13px; font-weight: 600;
     }
-    .user-button:hover { background: rgba(255,255,255,0.35); }
-    .dropdown-content {
-      display: none; position: absolute; top: 100%; left: 50%;
-      transform: translateX(-50%); margin-top: 8px;
-      background: #fff; min-width: 140px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      border-radius: 8px; overflow: hidden; text-align: center; z-index: 300;
-    }
-    .dropdown-content a {
-      display: block; padding: 10px 15px;
-      text-decoration: none; color: #111; transition: background 0.2s;
-    }
-    .dropdown-content a:hover { background: #1F5EA8; color: #fff; }
+    .admin-login-btn:hover { background: rgba(255,255,255,0.35); }
 
     /* ── Nav buttons ── */
     .nav-btn {
@@ -209,25 +194,15 @@
 
   <!-- Sidebar -->
   <nav class="sidebar">
-    <div class="dropdown">
-      <a href="#" id="userButton" class="user-button">
-        <i class="fas fa-user-circle" style="font-size:22px;color:#fff;"></i>
-        <span id="sidebarUserLabel" style="color:#fff;font-size:13px;font-weight:600;">User</span>
-        <i class="fas fa-caret-down" style="color:#fff;font-size:11px;"></i>
-      </a>
-      <div class="dropdown-content">
-        <a id="userRoleLabel" style="font-weight:bold;color:#1F5EA8;cursor:default;"></a>
-        <a class="admin-only" style="font-size:11px;color:#888;cursor:default;">Manage Users</a>
-        <hr style="margin:4px 0;border:none;border-top:1px solid #eee;">
-        <a href="#" onclick="signOut()">Sign Out</a>
-      </div>
-    </div>
+    <a href="/admin/login" class="admin-login-btn">
+      <i class="fas fa-shield-alt" style="font-size:18px;"></i>
+      <span>Admin Login</span>
+    </a>
 
     <button class="nav-btn active" id="btn-home"     onclick="showSection('home')">Welcome</button>
     <button class="nav-btn" id="btn-databases"      onclick="showSection('databases')">Databases</button>
     <button class="nav-btn" id="btn-reports"        onclick="showSection('reports')">Report Automation</button>
     <button class="nav-btn" id="btn-trackers"       onclick="showSection('trackers')">Inhouse Tools</button>
-    <a href="/admin/login" class="nav-btn" style="text-align:center;text-decoration:none;display:block;margin-top:auto;background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.4)">Admin Login</a>
   </nav>
 
   <!-- Main content -->
@@ -314,50 +289,7 @@
       if (NAV_MAP[id]) document.getElementById(NAV_MAP[id]).classList.add('active');
     }
 
-    // User dropdown
-    const userBtn = document.getElementById('userButton');
-    const dropContent = document.querySelector('.dropdown-content');
-    userBtn.addEventListener('click', e => {
-      e.preventDefault();
-      dropContent.style.display = dropContent.style.display === 'block' ? 'none' : 'block';
-    });
-    window.addEventListener('click', e => {
-      if (!userBtn.contains(e.target) && !dropContent.contains(e.target))
-        dropContent.style.display = 'none';
-    });
-
     window.onload = () => document.body.classList.add('loaded');
-  </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const SUPABASE_URL  = "https://wriaonorqjhmofwrhqlp.supabase.co";
-    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc";
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-
-    sb.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        const role = localStorage.getItem("tera_role") || "user";
-        const label = document.getElementById("sidebarUserLabel");
-        if (label) label.textContent = role.charAt(0).toUpperCase() + role.slice(1);
-        const roleLabel = document.getElementById("userRoleLabel");
-        if (roleLabel) roleLabel.textContent = role.charAt(0).toUpperCase() + role.slice(1);
-        if (role !== "admin")
-          document.querySelectorAll(".admin-only").forEach(el => el.style.display = "none");
-      } else {
-        // Not logged in — hide user dropdown, show guest label
-        const label = document.getElementById("sidebarUserLabel");
-        if (label) label.textContent = "Guest";
-        document.querySelectorAll(".admin-only").forEach(el => el.style.display = "none");
-      }
-    });
-
-    async function signOut() {
-      await sb.auth.signOut();
-      localStorage.removeItem("tera_role");
-      localStorage.removeItem("tera_user_name");
-      window.location.href = "/";
-    }
   </script>
 </body>
 </html>

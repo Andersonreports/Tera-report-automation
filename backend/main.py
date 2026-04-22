@@ -113,7 +113,7 @@ def _resolve_cnv_images(embryos: list) -> tuple:
 
 @app.api_route("/", methods=["GET", "HEAD"])
 def root():
-    p = os.path.join(FRONTEND_DIR, "login.html")
+    p = os.path.join(FRONTEND_DIR, "index.html")
     if os.path.exists(p):
         return FileResponse(p, media_type="text/html")
     return {"status": "TERA backend running"}

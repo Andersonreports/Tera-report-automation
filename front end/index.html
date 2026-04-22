@@ -38,7 +38,7 @@
       width: 220px; height: 100vh;
       background: #1F5EA8;
       display: flex; flex-direction: column; align-items: center;
-      padding-top: 130px; gap: 20px;
+      padding-top: 130px; gap: 12px;
       z-index: 100;
     }
 
@@ -53,6 +53,35 @@
       color: #fff; font-size: 13px; font-weight: 600;
     }
     .admin-login-btn:hover { background: rgba(255,255,255,0.35); }
+
+    /* ── User pill (shown when logged in) ── */
+    .user-pill {
+      display: none;
+      background: rgba(255,255,255,0.15);
+      border: 1.5px solid rgba(255,255,255,0.4);
+      border-radius: 10px;
+      padding: 10px 14px;
+      width: 80%;
+      flex-direction: column; gap: 4px;
+    }
+    .user-pill.visible { display: flex; }
+    .user-pill-name {
+      font-size: 12px; font-weight: 700; color: #fff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .user-pill-role {
+      font-size: 10px; color: rgba(255,255,255,0.65);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .btn-signout {
+      margin-top: 6px;
+      background: transparent; border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 6px; padding: 5px 10px;
+      color: rgba(255,255,255,0.75); font-size: 11px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: 0.2s;
+      align-self: flex-start;
+    }
+    .btn-signout:hover { background: rgba(239,68,68,0.25); border-color: #ef4444; color: #fff; }
 
     /* ── Nav buttons ── */
     .nav-btn {
@@ -137,13 +166,20 @@
       box-shadow: 0 4px 14px rgba(0,0,0,0.16);
       padding: 28px 14px 22px;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
-      cursor: pointer; transition: 0.22s; text-decoration: none; color: inherit;
+      cursor: pointer; transition: 0.22s; color: inherit;
       border: 2px solid transparent;
+      position: relative; overflow: hidden;
+      user-select: none;
     }
     .report-card:hover {
       transform: translateY(-5px);
       box-shadow: 0 10px 24px rgba(0,0,0,0.22);
       border-color: #1F5EA8;
+    }
+    .report-card.locked:hover {
+      transform: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.16);
+      border-color: #e2e8f0;
     }
     .report-card-icon {
       width: 48px; height: 48px; border-radius: 12px;
@@ -155,6 +191,18 @@
       font-size: 12px; font-weight: 700; color: #1b4b8c;
       text-align: center; letter-spacing: 0.3px;
     }
+    /* Lock overlay on report cards */
+    .report-card .lock-overlay {
+      display: none;
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.88);
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 6px;
+      border-radius: 12px;
+    }
+    .report-card.locked .lock-overlay { display: flex; }
+    .lock-overlay i { font-size: 20px; color: #94a3b8; }
+    .lock-overlay span { font-size: 10px; font-weight: 700; color: #94a3b8; text-align: center; }
 
     /* Coming Soon section */
     .coming-soon {
@@ -172,17 +220,90 @@
       font-size: 2.2em; color: #fff; font-weight: 700; margin-bottom: 12px;
     }
     .coming-soon p { font-size: 1em; color: rgba(255,255,255,0.82); }
-    .btn-back-home {
-      display: inline-flex; align-items: center; gap: 8px;
-      margin-top: 32px; padding: 12px 26px;
-      background: #fff; color: #1F5EA8;
-      border-radius: 8px; font-weight: 700; font-size: 13px;
-      text-decoration: none; letter-spacing: 0.5px;
-      transition: 0.2s; border: 2px solid transparent;
+
+    /* No-access notice inside a section */
+    .no-access-notice {
+      display: none;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.35);
+      border-radius: 14px;
+      padding: 40px 24px;
+      text-align: center;
+      margin-top: 20px;
     }
-    .btn-back-home:hover {
-      background: #1F5EA8; color: #fff; border-color: #fff;
+    .no-access-notice.visible { display: block; }
+    .no-access-notice i { font-size: 32px; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+    .no-access-notice h3 { font-size: 1.3em; color: #fff; margin-bottom: 8px; }
+    .no-access-notice p { color: rgba(255,255,255,0.75); font-size: 14px; }
+
+    /* ── Auth Modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none; align-items: center; justify-content: center;
+      z-index: 500;
     }
+    .modal-backdrop.open { display: flex; }
+    .auth-card {
+      background: #fff; border-radius: 16px;
+      padding: 40px 36px; width: 100%; max-width: 380px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+    }
+    .auth-logo { text-align: center; margin-bottom: 28px; }
+    .auth-logo img { max-height: 52px; object-fit: contain; }
+    .auth-logo h2 { font-size: 1.3em; font-weight: 700; color: #1b4b8c; margin-top: 10px; }
+    .auth-logo p  { font-size: 12px; color: #888; margin-top: 4px; }
+    .auth-error {
+      background: #fee2e2; color: #dc2626;
+      border-radius: 8px; padding: 10px 14px;
+      font-size: 13px; margin-bottom: 14px; display: none;
+    }
+    .auth-card label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: #333; margin-bottom: 5px;
+    }
+    .auth-card input {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid #ddd; border-radius: 8px;
+      font-size: 14px; font-family: inherit;
+      outline: none; transition: border-color 0.2s;
+      margin-bottom: 14px;
+    }
+    .auth-card input:focus { border-color: #1F5EA8; }
+    .btn-auth-login {
+      width: 100%; padding: 13px;
+      background: #1F5EA8; color: #fff;
+      border: none; border-radius: 8px;
+      font-size: 15px; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: background 0.2s; margin-bottom: 10px;
+    }
+    .btn-auth-login:hover    { background: #1b4b8c; }
+    .btn-auth-login:disabled { background: #93b4d9; cursor: not-allowed; }
+    .btn-auth-cancel {
+      width: 100%; padding: 11px;
+      background: #f1f5f9; color: #475569;
+      border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn-auth-cancel:hover { background: #e2e8f0; }
+
+    /* ── Toast ── */
+    #toast-container {
+      position: fixed; bottom: 24px; right: 24px;
+      display: flex; flex-direction: column; gap: 8px; z-index: 9999;
+    }
+    .toast {
+      background: #1e293b; color: #fff;
+      padding: 12px 18px; border-radius: 10px;
+      font-size: 13px; font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      opacity: 0; transform: translateX(120%);
+      animation: slideIn 0.3s cubic-bezier(.175,.885,.32,1.275) forwards;
+    }
+    .toast.warn { background: #92400e; }
+    .toast.err  { background: #dc2626; }
+    @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
   </style>
 </head>
 <body>
@@ -199,10 +320,19 @@
       <span>Admin Login</span>
     </a>
 
-    <button class="nav-btn active" id="btn-home"     onclick="showSection('home')">Welcome</button>
-    <button class="nav-btn" id="btn-databases"      onclick="showSection('databases')">Databases</button>
-    <button class="nav-btn" id="btn-reports"        onclick="showSection('reports')">Report Automation</button>
-    <button class="nav-btn" id="btn-trackers"       onclick="showSection('trackers')">Inhouse Tools</button>
+    <!-- Shown when logged in -->
+    <div class="user-pill" id="user-pill">
+      <div class="user-pill-name" id="user-pill-name"></div>
+      <div class="user-pill-role" id="user-pill-role"></div>
+      <button class="btn-signout" onclick="doSignOut()">
+        <i class="fas fa-sign-out-alt"></i> Sign Out
+      </button>
+    </div>
+
+    <button class="nav-btn active" id="btn-home"      onclick="handleNavClick('home')">Welcome</button>
+    <button class="nav-btn"        id="btn-databases" onclick="handleNavClick('databases')">Databases</button>
+    <button class="nav-btn"        id="btn-reports"   onclick="handleNavClick('reports')">Report Automation</button>
+    <button class="nav-btn"        id="btn-trackers"  onclick="handleNavClick('trackers')">Inhouse Tools</button>
   </nav>
 
   <!-- Main content -->
@@ -222,42 +352,57 @@
         <h2>Report Automation</h2>
         <p>Select a report type to open the tool</p>
       </div>
-      <div class="report-cards">
+      <div class="report-cards" id="report-cards-grid">
 
-        <a href="/dashboard" class="report-card">
+        <div class="report-card" data-report-id="tera" data-url="/dashboard" onclick="handleReportClick(this)">
           <div class="report-card-icon"><i class="fas fa-dna"></i></div>
           <span>TERA Report</span>
-        </a>
+          <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+        </div>
 
-        <a href="/pgta" class="report-card">
+        <div class="report-card" data-report-id="pgta" data-url="/pgta" onclick="handleReportClick(this)">
           <div class="report-card-icon"><i class="fas fa-microscope"></i></div>
           <span>PGTA Report</span>
-        </a>
+          <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+        </div>
 
-        <a href="/karyotype" class="report-card">
+        <div class="report-card" data-report-id="karyotype" data-url="/karyotype" onclick="handleReportClick(this)">
           <div class="report-card-icon"><i class="fas fa-project-diagram"></i></div>
           <span>Karyotype Report</span>
-        </a>
+          <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+        </div>
 
-        <a href="nips.html" class="report-card">
+        <div class="report-card" data-report-id="nips" data-url="nips.html" onclick="handleReportClick(this)">
           <div class="report-card-icon"><i class="fas fa-baby"></i></div>
           <span>NIPS Report</span>
-        </a>
+          <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+        </div>
 
-        <a href="hla.html" class="report-card">
+        <div class="report-card" data-report-id="hla" data-url="hla.html" onclick="handleReportClick(this)">
           <div class="report-card-icon"><i class="fas fa-flask"></i></div>
           <span>HLA Typing Report</span>
-        </a>
+          <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+        </div>
 
+      </div>
+      <div class="no-access-notice" id="reports-no-access">
+        <i class="fas fa-lock"></i>
+        <h3>Access Restricted</h3>
+        <p>You don't have permission to access Report Automation.</p>
       </div>
     </div>
 
-    <!-- Databases – Coming Soon -->
+    <!-- Databases -->
     <div id="section-databases" class="section">
       <div class="coming-soon">
         <div class="coming-soon-badge"><i class="fas fa-hourglass-half"></i> Coming Soon</div>
         <h2>Databases</h2>
         <p>Patient records, sample management, and laboratory databases<br>will be available here.</p>
+      </div>
+      <div class="no-access-notice" id="databases-no-access">
+        <i class="fas fa-lock"></i>
+        <h3>Access Restricted</h3>
+        <p>You don't have permission to access Databases.</p>
       </div>
     </div>
 
@@ -267,21 +412,57 @@
         <h2>Inhouse Tools</h2>
         <p>Internal tools and utilities</p>
       </div>
-      <div class="report-cards">
+      <div class="report-cards" id="trackers-cards-grid">
 
-        <a href="/tracker/" class="report-card">
+        <div class="report-card" data-report-id="tracker" data-url="/tracker/" onclick="handleToolClick(this)">
           <div class="report-card-icon"><i class="fas fa-clipboard-list"></i></div>
           <span>Sample Tracker</span>
-        </a>
+          <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+        </div>
 
+      </div>
+      <div class="no-access-notice" id="trackers-no-access">
+        <i class="fas fa-lock"></i>
+        <h3>Access Restricted</h3>
+        <p>You don't have permission to access Inhouse Tools.</p>
       </div>
     </div>
 
   </main>
 
+  <!-- ── Login Modal ── -->
+  <div id="auth-modal" class="modal-backdrop" onclick="onAuthBackdropClick(event)">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <img src="/static/backend/logo.png" alt="Anderson Diagnostics" onerror="this.style.display='none'">
+        <h2>Sign In</h2>
+        <p>Sign in to access this module</p>
+      </div>
+      <div class="auth-error" id="auth-error"></div>
+      <label for="auth-email">Email</label>
+      <input type="email" id="auth-email" placeholder="you@anderson.com" autocomplete="username" />
+      <label for="auth-password">Password</label>
+      <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') doModalLogin()" />
+      <button class="btn-auth-login" id="auth-login-btn" onclick="doModalLogin()">Sign In</button>
+      <button class="btn-auth-cancel" onclick="closeAuthModal()">Cancel</button>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Section switching
-    const NAV_MAP = { home: 'btn-home', databases: 'btn-databases', reports: 'btn-reports', trackers: 'btn-trackers' };
+    const SUPABASE_URL  = "https://wriaonorqjhmofwrhqlp.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // ── State ──
+    let currentUser = null;  // { role, section, report_id, full_name }
+    let pendingAction = null; // { type: 'section'|'report'|'tool', payload }
+
+    // ── Section switching ──
+    const NAV_MAP = { home:'btn-home', databases:'btn-databases', reports:'btn-reports', trackers:'btn-trackers' };
     function showSection(id) {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById('section-' + id).classList.add('active');
@@ -289,7 +470,255 @@
       if (NAV_MAP[id]) document.getElementById(NAV_MAP[id]).classList.add('active');
     }
 
-    window.onload = () => document.body.classList.add('loaded');
+    // ── Access checks ──
+    function canAccessSection(sectionId) {
+      if (!currentUser) return false;
+      if (currentUser.role === 'admin' || currentUser.section === 'all') return true;
+      if (sectionId === 'databases' || sectionId === 'trackers') {
+        return currentUser.section === 'general';
+      }
+      if (sectionId === 'reports') {
+        return currentUser.section === 'reports';
+      }
+      return false;
+    }
+
+    function canAccessReport(reportId) {
+      if (!currentUser) return false;
+      if (currentUser.role === 'admin' || currentUser.section === 'all') return true;
+      if (currentUser.section === 'reports') {
+        return !currentUser.report_id || currentUser.report_id === reportId;
+      }
+      return false;
+    }
+
+    function canAccessTool() {
+      if (!currentUser) return false;
+      if (currentUser.role === 'admin' || currentUser.section === 'all') return true;
+      return currentUser.section === 'general';
+    }
+
+    // ── Nav click handler ──
+    function handleNavClick(sectionId) {
+      if (sectionId === 'home') { showSection('home'); return; }
+
+      if (!currentUser) {
+        pendingAction = { type: 'section', payload: sectionId };
+        openAuthModal();
+        return;
+      }
+
+      showSection(sectionId);
+
+      // Show/hide no-access notice and content
+      const noAccess = document.getElementById(sectionId + '-no-access');
+      if (!canAccessSection(sectionId)) {
+        if (noAccess) noAccess.classList.add('visible');
+        // Hide the actual content grid
+        const grid = document.getElementById(sectionId === 'reports' ? 'report-cards-grid' : 'trackers-cards-grid');
+        if (grid) grid.style.display = 'none';
+        const title = document.querySelector('#section-' + sectionId + ' .report-section-title, #section-' + sectionId + ' .coming-soon');
+        if (title) title.style.display = 'none';
+      } else {
+        if (noAccess) noAccess.classList.remove('visible');
+        const grid = document.getElementById(sectionId === 'reports' ? 'report-cards-grid' : 'trackers-cards-grid');
+        if (grid) grid.style.display = '';
+        const title = document.querySelector('#section-' + sectionId + ' .report-section-title, #section-' + sectionId + ' .coming-soon');
+        if (title) title.style.display = '';
+        if (sectionId === 'reports') updateReportCards();
+      }
+    }
+
+    // ── Report card click handler ──
+    function handleReportClick(el) {
+      const reportId = el.dataset.reportId;
+      const url      = el.dataset.url;
+
+      if (!currentUser) {
+        pendingAction = { type: 'report', payload: { reportId, url } };
+        openAuthModal();
+        return;
+      }
+
+      if (!canAccessReport(reportId)) {
+        showToast('You don\'t have access to this report.', 'warn');
+        return;
+      }
+
+      window.location.href = url;
+    }
+
+    // ── Tool card click handler ──
+    function handleToolClick(el) {
+      const url = el.dataset.url;
+
+      if (!currentUser) {
+        pendingAction = { type: 'tool', payload: { url } };
+        openAuthModal();
+        return;
+      }
+
+      if (!canAccessTool()) {
+        showToast('You don\'t have access to this tool.', 'warn');
+        return;
+      }
+
+      window.location.href = url;
+    }
+
+    // ── Update report card locked state ──
+    function updateReportCards() {
+      document.querySelectorAll('#report-cards-grid .report-card').forEach(card => {
+        const rid = card.dataset.reportId;
+        if (canAccessReport(rid)) {
+          card.classList.remove('locked');
+        } else {
+          card.classList.add('locked');
+        }
+      });
+      document.querySelectorAll('#trackers-cards-grid .report-card').forEach(card => {
+        if (canAccessTool()) {
+          card.classList.remove('locked');
+        } else {
+          card.classList.add('locked');
+        }
+      });
+    }
+
+    // ── Auth modal ──
+    function openAuthModal() {
+      document.getElementById('auth-email').value    = '';
+      document.getElementById('auth-password').value = '';
+      document.getElementById('auth-error').style.display = 'none';
+      document.getElementById('auth-login-btn').disabled    = false;
+      document.getElementById('auth-login-btn').textContent = 'Sign In';
+      document.getElementById('auth-modal').classList.add('open');
+      setTimeout(() => document.getElementById('auth-email').focus(), 100);
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.remove('open');
+      pendingAction = null;
+    }
+
+    function onAuthBackdropClick(e) {
+      if (e.target === document.getElementById('auth-modal')) closeAuthModal();
+    }
+
+    async function doModalLogin() {
+      const email    = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const errEl    = document.getElementById('auth-error');
+      const btn      = document.getElementById('auth-login-btn');
+
+      errEl.style.display = 'none';
+      if (!email || !password) {
+        errEl.textContent = 'Please enter your email and password.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true; btn.textContent = 'Signing in…';
+
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        errEl.textContent = 'Invalid email or password.';
+        errEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Sign In';
+        return;
+      }
+
+      await loadUserProfile(data.user);
+      updateAuthUI();
+      document.getElementById('auth-modal').classList.remove('open');
+
+      // Execute pending action
+      if (pendingAction) {
+        const action = pendingAction;
+        pendingAction = null;
+        if (action.type === 'section') {
+          handleNavClick(action.payload);
+        } else if (action.type === 'report') {
+          handleReportClick({ dataset: { reportId: action.payload.reportId, url: action.payload.url } });
+        } else if (action.type === 'tool') {
+          handleToolClick({ dataset: { url: action.payload.url } });
+        }
+      }
+    }
+
+    // ── Load user profile from Supabase ──
+    async function loadUserProfile(user) {
+      let role = user.user_metadata?.role || user.app_metadata?.role || null;
+      let section = null, report_id = null, full_name = null;
+
+      const { data: profile } = await sb.from('profiles')
+        .select('role, section, report_id, full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile) {
+        role      = role || profile.role;
+        section   = profile.section;
+        report_id = profile.report_id;
+        full_name = profile.full_name;
+      }
+
+      currentUser = {
+        role:      role      || 'user',
+        section:   section   || 'all',
+        report_id: report_id || null,
+        full_name: full_name || user.email,
+      };
+    }
+
+    // ── Update sidebar UI ──
+    function updateAuthUI() {
+      const pill     = document.getElementById('user-pill');
+      const pillName = document.getElementById('user-pill-name');
+      const pillRole = document.getElementById('user-pill-role');
+
+      if (currentUser) {
+        pill.classList.add('visible');
+        pillName.textContent = currentUser.full_name;
+        pillRole.textContent = currentUser.role;
+        updateReportCards();
+      } else {
+        pill.classList.remove('visible');
+      }
+    }
+
+    async function doSignOut() {
+      await sb.auth.signOut();
+      currentUser = null;
+      pendingAction = null;
+      updateAuthUI();
+      showSection('home');
+      // Remove any lock state
+      document.querySelectorAll('.report-card.locked').forEach(c => c.classList.remove('locked'));
+      document.querySelectorAll('.no-access-notice.visible').forEach(n => n.classList.remove('visible'));
+    }
+
+    // ── Init: check existing session ──
+    sb.auth.getSession().then(async ({ data }) => {
+      if (data.session) {
+        await loadUserProfile(data.session.user);
+        updateAuthUI();
+      }
+      document.body.classList.add('loaded');
+    });
+
+    // ── Toast ──
+    function showToast(msg, type) {
+      const el = document.createElement('div');
+      el.className = 'toast' + (type ? ' ' + type : '');
+      el.textContent = msg;
+      document.getElementById('toast-container').appendChild(el);
+      setTimeout(() => {
+        el.style.animation = 'slideIn 0.25s reverse forwards';
+        setTimeout(() => el.remove(), 260);
+      }, 3200);
+    }
   </script>
 </body>
 </html>

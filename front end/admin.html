@@ -342,12 +342,14 @@
               <th>Name</th>
               <th>Email</th>
               <th>Role</th>
+              <th>Section</th>
+              <th>Report</th>
               <th>Joined</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody id="users-tbody">
-            <tr><td colspan="5" class="um-empty"><span class="spinner"></span>Loading users…</td></tr>
+            <tr><td colspan="7" class="um-empty"><span class="spinner"></span>Loading users…</td></tr>
           </tbody>
         </table>
       </div>
@@ -427,6 +429,25 @@
         <option value="technician">Technician</option>
       </select>
 
+      <label for="modal-section">Section Access</label>
+      <select id="modal-section" onchange="onSectionChange()">
+        <option value="all">All Access</option>
+        <option value="reports">Report Automation</option>
+        <option value="general">Databases &amp; Tools</option>
+      </select>
+
+      <div id="modal-report-row" style="display:none">
+        <label for="modal-report-id">Report Access</label>
+        <select id="modal-report-id">
+          <option value="">All Reports</option>
+          <option value="tera">TERA Report</option>
+          <option value="pgta">PGTA Report</option>
+          <option value="karyotype">Karyotype Report</option>
+          <option value="nips">NIPS Report</option>
+          <option value="hla">HLA Typing Report</option>
+        </select>
+      </div>
+
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeModal()">Cancel</button>
         <button class="btn-save" id="modal-save-btn" onclick="saveUser()">Save</button>
@@ -473,13 +494,13 @@
     async function loadUsers() {
       const { data, error } = await sb
         .from('profiles')
-        .select('id, full_name, email, role, created_at')
+        .select('id, full_name, email, role, section, report_id, created_at')
         .order('created_at', { ascending: false });
 
       if (error) {
         showError('Could not load users: ' + error.message);
         document.getElementById('users-tbody').innerHTML =
-          '<tr><td colspan="5" class="um-empty">Failed to load users.</td></tr>';
+          '<tr><td colspan="7" class="um-empty">Failed to load users.</td></tr>';
         return;
       }
 
@@ -497,10 +518,13 @@
       document.getElementById('stat-technicians').textContent= data.filter(u => u.role === 'technician').length;
     }
 
+    const SECTION_LABELS = { all: 'All', reports: 'Reports', general: 'DB & Tools' };
+    const REPORT_LABELS  = { tera: 'TERA', pgta: 'PGTA', karyotype: 'Karyotype', nips: 'NIPS', hla: 'HLA' };
+
     function renderTable(data) {
       const tbody = document.getElementById('users-tbody');
       if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="um-empty">No users found. Click <strong>Add User</strong> to get started.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="um-empty">No users found. Click <strong>Add User</strong> to get started.</td></tr>';
         return;
       }
       tbody.innerHTML = data.map(u => `
@@ -508,6 +532,8 @@
           <td><strong>${esc(u.full_name || '—')}</strong></td>
           <td style="color:#64748b">${esc(u.email || '—')}</td>
           <td><span class="role-badge role-${esc(u.role || 'user')}">${esc(u.role || 'user')}</span></td>
+          <td style="color:#64748b;font-size:13px">${esc(SECTION_LABELS[u.section] || u.section || 'All')}</td>
+          <td style="color:#64748b;font-size:13px">${u.section === 'reports' && u.report_id ? esc(REPORT_LABELS[u.report_id] || u.report_id) : '—'}</td>
           <td style="color:#94a3b8;font-size:13px">${fmtDate(u.created_at)}</td>
           <td>
             <button class="btn-action btn-edit"   onclick="openModal('${esc(u.id)}')">Edit</button>
@@ -522,27 +548,39 @@
       renderTable(allUsers.filter(u =>
         (u.full_name || '').toLowerCase().includes(q) ||
         (u.email     || '').toLowerCase().includes(q) ||
-        (u.role      || '').toLowerCase().includes(q)
+        (u.role      || '').toLowerCase().includes(q) ||
+        (u.section   || '').toLowerCase().includes(q)
       ));
     }
 
     // ── Modal ──
+    function onSectionChange() {
+      const sec = document.getElementById('modal-section').value;
+      document.getElementById('modal-report-row').style.display = sec === 'reports' ? 'block' : 'none';
+    }
+
     function openModal(userId) {
-      document.getElementById('modal-name').value  = '';
-      document.getElementById('modal-email').value = '';
-      document.getElementById('modal-role').value  = 'user';
-      document.getElementById('modal-email').disabled = false;
-      document.getElementById('modal-user-id').value  = '';
+      document.getElementById('modal-name').value      = '';
+      document.getElementById('modal-email').value     = '';
+      document.getElementById('modal-role').value      = 'technician';
+      document.getElementById('modal-section').value   = 'all';
+      document.getElementById('modal-report-id').value = '';
+      document.getElementById('modal-report-row').style.display = 'none';
+      document.getElementById('modal-email').disabled  = false;
+      document.getElementById('modal-user-id').value   = '';
 
       if (userId) {
         const u = allUsers.find(x => x.id === userId);
         if (!u) return;
         document.getElementById('modal-title').textContent     = 'Edit User';
         document.getElementById('modal-user-id').value         = userId;
-        document.getElementById('modal-name').value            = u.full_name || '';
-        document.getElementById('modal-email').value           = u.email     || '';
-        document.getElementById('modal-role').value            = u.role      || 'user';
+        document.getElementById('modal-name').value            = u.full_name  || '';
+        document.getElementById('modal-email').value           = u.email      || '';
+        document.getElementById('modal-role').value            = u.role       || 'technician';
+        document.getElementById('modal-section').value         = u.section    || 'all';
+        document.getElementById('modal-report-id').value       = u.report_id  || '';
         document.getElementById('modal-email').disabled        = true;
+        onSectionChange();
       } else {
         document.getElementById('modal-title').textContent = 'Add User';
       }
@@ -561,22 +599,27 @@
     }
 
     async function saveUser() {
-      const userId = document.getElementById('modal-user-id').value;
-      const name   = document.getElementById('modal-name').value.trim();
-      const email  = document.getElementById('modal-email').value.trim();
-      const role   = document.getElementById('modal-role').value;
-      const btn    = document.getElementById('modal-save-btn');
+      const userId   = document.getElementById('modal-user-id').value;
+      const name     = document.getElementById('modal-name').value.trim();
+      const email    = document.getElementById('modal-email').value.trim();
+      const role     = document.getElementById('modal-role').value;
+      const section  = document.getElementById('modal-section').value;
+      const reportId = section === 'reports' ? (document.getElementById('modal-report-id').value || null) : null;
+      const btn      = document.getElementById('modal-save-btn');
 
       if (!name || !email) { showToast('Name and email are required.', 'err'); return; }
 
       btn.disabled = true; btn.textContent = 'Saving…';
 
       if (userId) {
-        const { error } = await sb.from('profiles').update({ full_name: name, role }).eq('id', userId);
+        const { error } = await sb.from('profiles')
+          .update({ full_name: name, role, section, report_id: reportId })
+          .eq('id', userId);
         if (error) showToast('Update failed: ' + error.message, 'err');
         else { showToast('User updated.', 'ok'); closeModal(); await loadUsers(); }
       } else {
-        const { error } = await sb.from('profiles').insert({ email, full_name: name, role });
+        const { error } = await sb.from('profiles')
+          .insert({ email, full_name: name, role, section, report_id: reportId });
         if (error) showToast('Add failed: ' + error.message, 'err');
         else { showToast('User added.', 'ok'); closeModal(); await loadUsers(); }
       }

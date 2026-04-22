@@ -68,8 +68,10 @@ PGTA_CNV_DIR   = os.path.join(BASE_DIR, "uploads", "pgta_cnv")
 PGTA_DRAFT_DIR = os.path.join(BASE_DIR, "drafts", "PGTA")
 os.makedirs(PGTA_CNV_DIR, exist_ok=True)
 
-# Maps QR UUID → Supabase storage path (in-memory; survives for the life of the process)
-_qr_uuid_map: dict[str, str] = {}
+SUPABASE_STORAGE_BASE = (
+    os.getenv("SUPABASE_URL", "").rstrip("/")
+    + "/storage/v1/object/public/reports/"
+)
 os.makedirs(PGTA_DRAFT_DIR, exist_ok=True)
 
 app.mount("/reports", StaticFiles(directory=REPORT_DIR), name="reports")
@@ -176,18 +178,6 @@ async def preview_report(data: dict):
 
 
 # -------- Report download by UUID (QR target) --------
-@app.get("/report/{report_uuid}")
-def report_by_uuid(report_uuid: str):
-    """Redirect QR scans to the Supabase public URL for the report."""
-    from fastapi.responses import RedirectResponse
-    SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-    if not SUPABASE_URL:
-        return {"error": "Report not found"}
-    storage_path = _qr_uuid_map.get(report_uuid)
-    if not storage_path:
-        return {"error": "Report not found"}
-    public_url = f"{SUPABASE_URL}/storage/v1/object/public/reports/{storage_path}"
-    return RedirectResponse(url=public_url, status_code=302)
     
 
 @app.get("/preview-file/{filename}")
@@ -238,22 +228,16 @@ async def generate_report(data: dict):
         with_logo = data.get("logo_option", "without_logo") == "with_logo"
         with_qr   = data.get("qr_option",   "without_qr")  == "with_qr"
 
-        qr_uuid = ""
-        qr_url  = ""
-        if with_qr:
-            qr_uuid  = str(uuid.uuid4())
-            SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-            qr_url = f"{os.getenv('RENDER_URL', 'https://tera-report-automation.onrender.com')}/report/{qr_uuid}"
+        # Pre-compute filename so QR URL can reference it before generation
+        file_name = _build_file_name(data, with_logo)
+        qr_url = (SUPABASE_STORAGE_BASE + file_name) if with_qr else ""
 
         generator = TERAReportGenerator(data, REPORT_DIR, with_logo=with_logo,
                                         with_qr=with_qr, qr_url=qr_url)
         pdf_path = generator.generate()
 
-        # check if file exists
         if not pdf_path or not os.path.exists(pdf_path):
             return {"error": "PDF not generated"}
-
-        file_name = _build_file_name(data, with_logo, with_qr=with_qr, qr_uuid=qr_uuid)
 
         # Copy to custom output_dir if provided
         custom_dir = (data.get("output_dir") or "").strip()
@@ -268,10 +252,6 @@ async def generate_report(data: dict):
 
         # upload to Supabase
         file_url = upload_pdf(pdf_path, file_name)
-
-        # register QR UUID → storage path so /report/{uuid} can redirect
-        if with_qr and qr_uuid:
-            _qr_uuid_map[qr_uuid] = file_name
 
         # save to DB (non-fatal if table missing)
         try:
@@ -303,17 +283,13 @@ async def generate_bulk(request: Request):
             with_logo = row.get("logo_option", "without_logo") == "with_logo"
             with_qr   = row.get("qr_option",   "without_qr")  == "with_qr"
 
-            qr_uuid = ""
-            qr_url  = ""
-            if with_qr:
-                qr_uuid = str(uuid.uuid4())
-                qr_url  = f"{os.getenv('RENDER_URL', 'https://tera-report-automation.onrender.com')}/report/{qr_uuid}"
+            # Pre-compute filename so QR URL can reference it before generation
+            file_name = _build_file_name(row, with_logo)
+            qr_url = (SUPABASE_STORAGE_BASE + file_name) if with_qr else ""
 
             generator = TERAReportGenerator(row, REPORT_DIR, with_logo=with_logo,
                                             with_qr=with_qr, qr_url=qr_url)
             pdf_path = generator.generate()
-
-            file_name = _build_file_name(row, with_logo, with_qr=with_qr, qr_uuid=qr_uuid)
 
             # Copy to custom output_dir if provided
             custom_dir = (row.get("output_dir") or "").strip()
@@ -328,10 +304,6 @@ async def generate_bulk(request: Request):
 
             # upload to Supabase if client available
             file_url = upload_pdf(pdf_path, file_name) if upload_pdf else f"/reports/{file_name}"
-
-            # register QR UUID → storage path so /report/{uuid} can redirect
-            if with_qr and qr_uuid:
-                _qr_uuid_map[qr_uuid] = file_name
 
             try:
                 doc_folder = row.get("doctor_name") or row.get("center_name") or "Unknown"
@@ -382,7 +354,7 @@ def _biopsy_ordinal(biopsy_no: str) -> str:
 def _safe_name(name: str) -> str:
     return re.sub(r'[^a-zA-Z0-9 ]', '', str(name).strip()).replace(' ', '_')
 
-def _build_file_name(row: dict, with_logo: bool, with_qr: bool = False, qr_uuid: str = "") -> str:
+def _build_file_name(row: dict, with_logo: bool) -> str:
     patient = _safe_name(row.get("Patient Name", "Unknown"))
     biopsy  = _biopsy_ordinal(row.get("Biopsy No.", "1"))
     logo    = "with_logo" if with_logo else "without_logo"

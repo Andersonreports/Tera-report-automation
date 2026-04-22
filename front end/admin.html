@@ -43,29 +43,14 @@
     }
 
     .admin-badge {
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 12px;
-      padding: 12px 14px;
-      width: 84%;
-      text-align: center;
-      color: #fff;
-      margin-bottom: 10px;
-    }
-    .admin-badge .badge-icon {
-      width: 40px; height: 40px; border-radius: 50%;
       background: rgba(255,255,255,0.2);
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 8px;
-    }
-    .admin-badge .badge-icon i { font-size: 18px; color: #fff; }
-    .admin-badge .badge-name  { font-size: 13px; font-weight: 700; letter-spacing: 0.3px; }
-    .admin-badge .badge-email { font-size: 11px; opacity: 0.7; margin-top: 2px; word-break: break-all; }
-    .admin-badge .badge-role  {
-      display: inline-block; margin-top: 6px;
-      background: rgba(255,255,255,0.2); border-radius: 20px;
-      padding: 2px 10px; font-size: 10px; font-weight: 700;
-      letter-spacing: 1px; text-transform: uppercase;
+      border: 2px solid rgba(255,255,255,0.6);
+      border-radius: 30px;
+      padding: 10px 20px;
+      width: 80%;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      color: #fff; font-size: 13px; font-weight: 700;
+      margin-bottom: 10px;
     }
 
     /* ── Nav buttons ── */
@@ -296,10 +281,7 @@
   <!-- Sidebar -->
   <nav class="sidebar">
     <div class="admin-badge">
-      <div class="badge-icon"><i class="fas fa-shield-alt"></i></div>
-      <div class="badge-name" id="admin-name-label">Administrator</div>
-      <div class="badge-email" id="admin-email-label"></div>
-      <div class="badge-role">Admin</div>
+      <i class="fas fa-shield-alt"></i> Admin
     </div>
 
     <button class="nav-btn active" id="btn-users"    onclick="showSection('users')">User Management</button>
@@ -474,11 +456,6 @@
         window.location.href = '/admin/login';
         return;
       }
-      const user  = data.session.user;
-      const stored = localStorage.getItem('tera_user_name') || '';
-      const name  = (stored && stored !== user.email) ? stored : 'Admin';
-      document.getElementById('admin-name-label').textContent  = name;
-      document.getElementById('admin-email-label').textContent = user.email || '';
       document.body.classList.add('loaded');
       loadUsers();
     });

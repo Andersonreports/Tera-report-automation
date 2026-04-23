@@ -6,6 +6,7 @@ Secure router for the Anderson Lab Report Tracker.
 Endpoints mounted at /tracker by backend.py
   GET  /tracker/login      → serve login page HTML
   POST /tracker/login      → validate credentials, set HttpOnly cookie
+  POST /tracker/auth-sso   → issue tracker cookie via Supabase JWT (SSO)
   GET  /tracker/           → serve tracker dashboard (auth required)
   GET  /tracker/xlsx.min.js → serve bundled SheetJS (auth required)
   POST /tracker/logout     → clear session cookie
@@ -105,6 +106,54 @@ def _secure_cookie(response, token: str):
         secure=False,         # set True when served over HTTPS
         max_age=TOKEN_EXPIRE_H * 3600,
     )
+
+
+# ── SSO: issue tracker cookie via Supabase JWT ────────────────
+
+@router.post("/auth-sso")
+async def sso_auth(request: Request):
+    """
+    Accept a Supabase access_token (Bearer), verify it against Supabase,
+    check that the user's profile section allows tracker access,
+    then issue a tracker_session cookie so the user skips the manual login.
+    """
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return JSONResponse({"error": "Missing token"}, status_code=401)
+
+    access_token = auth_header[7:]
+
+    try:
+        from supabase_client import _get_client
+        client = _get_client()
+
+        user_resp = client.auth.get_user(access_token)
+        if not user_resp or not user_resp.user:
+            return JSONResponse({"error": "Invalid token"}, status_code=401)
+
+        user_id = user_resp.user.id
+
+        profile_resp = (
+            client.table("profiles")
+            .select("section, role")
+            .eq("id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        profile  = profile_resp.data or {}
+        section  = profile.get("section") or "all"
+        role     = profile.get("role")    or "user"
+
+        if role == "admin" or section in ("all", "general"):
+            token    = make_token()
+            response = JSONResponse({"ok": True})
+            _secure_cookie(response, token)
+            return response
+
+        return JSONResponse({"error": "Access denied"}, status_code=403)
+
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
 
 
 # ── Login page ────────────────────────────────────────────────

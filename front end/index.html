@@ -508,25 +508,13 @@
         return;
       }
 
-      showSection(sectionId);
-
-      // Show/hide no-access notice and content
-      const noAccess = document.getElementById(sectionId + '-no-access');
       if (!canAccessSection(sectionId)) {
-        if (noAccess) noAccess.classList.add('visible');
-        // Hide the actual content grid
-        const grid = document.getElementById(sectionId === 'reports' ? 'report-cards-grid' : 'trackers-cards-grid');
-        if (grid) grid.style.display = 'none';
-        const title = document.querySelector('#section-' + sectionId + ' .report-section-title, #section-' + sectionId + ' .coming-soon');
-        if (title) title.style.display = 'none';
-      } else {
-        if (noAccess) noAccess.classList.remove('visible');
-        const grid = document.getElementById(sectionId === 'reports' ? 'report-cards-grid' : 'trackers-cards-grid');
-        if (grid) grid.style.display = '';
-        const title = document.querySelector('#section-' + sectionId + ' .report-section-title, #section-' + sectionId + ' .coming-soon');
-        if (title) title.style.display = '';
-        if (sectionId === 'reports') updateReportCards();
+        showToast('You don\'t have access to this section.', 'warn');
+        return;
       }
+
+      showSection(sectionId);
+      if (sectionId === 'reports') updateReportCards();
     }
 
     // ── Report card click handler ──
@@ -549,7 +537,7 @@
     }
 
     // ── Tool card click handler ──
-    function handleToolClick(el) {
+    async function handleToolClick(el) {
       const url = el.dataset.url;
 
       if (!currentUser) {
@@ -561,6 +549,21 @@
       if (!canAccessTool()) {
         showToast('You don\'t have access to this tool.', 'warn');
         return;
+      }
+
+      // SSO: exchange the active Supabase token for a tracker session cookie
+      // so the user doesn't hit a second username/password login
+      if (url.includes('/tracker')) {
+        try {
+          const { data: sd } = await sb.auth.getSession();
+          if (sd && sd.session) {
+            await fetch('/tracker/auth-sso', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Authorization': 'Bearer ' + sd.session.access_token },
+            });
+          }
+        } catch (_) { /* fallback: tracker will show its own login */ }
       }
 
       window.location.href = url;
@@ -642,7 +645,7 @@
         } else if (action.type === 'report') {
           handleReportClick({ dataset: { reportId: action.payload.reportId, url: action.payload.url } });
         } else if (action.type === 'tool') {
-          handleToolClick({ dataset: { url: action.payload.url } });
+          await handleToolClick({ dataset: { url: action.payload.url } });
         }
       }
     }

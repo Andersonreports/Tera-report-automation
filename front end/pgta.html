@@ -3456,12 +3456,16 @@
       const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyaWFvbm9ycWpobW9md3JocWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDM4MDAsImV4cCI6MjA4OTMxOTgwMH0.t6sS4orzoQmaVpEo84I0E2Ds3jDjDHNnfE4ZYPaPrfc";
       sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-      sb.auth.getSession().then(({ data }) => {
+      sb.auth.getSession().then(async ({ data }) => {
         if (!data.session) { window.location.href = "/"; return; }
-        const role = localStorage.getItem("tera_role") || "user";
+        const { data: p } = await sb.from('profiles').select('section,report_id,role').eq('id', data.session.user.id).maybeSingle();
+        const section = p?.section || 'all', rid = p?.report_id || null, role = p?.role || 'user';
+        if (role !== 'admin' && section !== 'all') {
+          if (section !== 'reports' || (rid && rid !== 'pgta')) { window.location.href = '/'; return; }
+        }
         const name = localStorage.getItem("tera_user_name") || data.session.user.email;
         document.getElementById("userLabel").textContent = name.split("@")[0];
-        document.getElementById("roleLabel").textContent = role.charAt(0).toUpperCase() + role.slice(1);
+        document.getElementById("roleLabel").textContent = (p?.role || 'user');
       });
     } catch (e) {
       console.error("Supabase init failed:", e);

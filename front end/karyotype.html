@@ -3640,15 +3640,16 @@ if(userBtn && userDrop) {
     const sb = window.supabase ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON) : null;
 
     if (sb) {
-        sb.auth.getSession().then(({ data }) => {
-            if (!data.session) {
-                window.location.href = "/"
-            } else {
-                const role = localStorage.getItem("tera_role") || "user";
-                const name = localStorage.getItem("tera_user_name") || data.session.user.email;
-                const utxt = document.getElementById("topbarUserText");
-                if (utxt) utxt.textContent = name;
+        sb.auth.getSession().then(async ({ data }) => {
+            if (!data.session) { window.location.href = "/"; return; }
+            const { data: p } = await sb.from('profiles').select('section,report_id,role').eq('id', data.session.user.id).maybeSingle();
+            const section = p?.section || 'all', rid = p?.report_id || null, role = p?.role || 'user';
+            if (role !== 'admin' && section !== 'all') {
+                if (section !== 'reports' || (rid && rid !== 'karyotype')) { window.location.href = '/'; return; }
             }
+            const name = localStorage.getItem("tera_user_name") || data.session.user.email;
+            const utxt = document.getElementById("topbarUserText");
+            if (utxt) utxt.textContent = name;
         });
     }
 

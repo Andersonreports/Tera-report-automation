@@ -667,10 +667,13 @@
         full_name = profile.full_name;
       }
 
+      const resolvedRole = role || 'user';
       currentUser = {
-        role:      role      || 'user',
-        section:   section   || 'all',
-        report_id: report_id || null,
+        role:      resolvedRole,
+        // Fail-secure: if profile missing/columns missing → 'none' (deny all).
+        // Admins always get 'all' via JWT role; everyone else needs an explicit DB value.
+        section:   resolvedRole === 'admin' ? 'all' : (section ?? 'none'),
+        report_id: report_id ?? null,
         full_name: full_name || user.email,
       };
     }

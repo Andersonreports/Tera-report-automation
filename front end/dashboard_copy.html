@@ -1212,9 +1212,13 @@
       _sb.auth.getSession().then(async ({ data }) => {
         if (!data.session) { window.location.href = '/login?redirect=/dashboard'; return; }
         const { data: p } = await _sb.from('profiles').select('section,report_id,role').eq('id', data.session.user.id).maybeSingle();
-        const section = p?.section || 'all', rid = p?.report_id || null, role = p?.role || 'user';
+        const jwtRole = data.session.user.user_metadata?.role ?? null;
+        const role    = jwtRole || p?.role || 'user';
+        const section = p?.section ?? null;
+        const rid     = p?.report_id ?? null;
         if (role === 'admin' || section === 'all') return;
-        if (section !== 'reports' || (rid && rid !== 'tera')) window.location.href = '/';
+        if (section === 'reports' && (!rid || rid === 'tera')) return;
+        window.location.href = '/';
       });
     })();
   </script>

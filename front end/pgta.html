@@ -3459,7 +3459,10 @@
       sb.auth.getSession().then(async ({ data }) => {
         if (!data.session) { window.location.href = "/"; return; }
         const { data: p } = await sb.from('profiles').select('section,report_id,role').eq('id', data.session.user.id).maybeSingle();
-        const section = p?.section || 'all', rid = p?.report_id || null, role = p?.role || 'user';
+        const jwtRole = data.session.user.user_metadata?.role ?? null;
+        const role    = jwtRole || p?.role || 'user';
+        const section = p?.section ?? null;
+        const rid     = p?.report_id ?? null;
         if (role !== 'admin' && section !== 'all') {
           if (section !== 'reports' || (rid && rid !== 'pgta')) { window.location.href = '/'; return; }
         }

@@ -304,6 +304,67 @@
     .toast.warn { background: #92400e; }
     .toast.err  { background: #dc2626; }
     @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+    /* ── Access Denied overlay ── */
+    #access-denied-overlay {
+      position: fixed; inset: 0; z-index: 800;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    #access-denied-overlay.show {
+      opacity: 1; pointer-events: auto;
+    }
+    .ad-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 44px 40px 36px;
+      text-align: center;
+      max-width: 340px; width: 90%;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+      transform: scale(0.85);
+      transition: transform 0.3s cubic-bezier(.175,.885,.32,1.275);
+      position: relative; overflow: hidden;
+    }
+    #access-denied-overlay.show .ad-card { transform: scale(1); }
+    .ad-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 5px;
+      background: linear-gradient(90deg, #ef4444, #f59e0b, #ef4444);
+      background-size: 200% 100%;
+      animation: shimmer 2s linear infinite;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    .ad-icon-wrap {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, #fee2e2, #fecaca);
+      border: 3px solid #fca5a5;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      animation: pulse-ring 1.8s ease-out infinite;
+    }
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.35); }
+      70%  { box-shadow: 0 0 0 14px rgba(239,68,68,0); }
+      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+    }
+    .ad-icon-wrap i { font-size: 30px; color: #dc2626; }
+    .ad-title {
+      font-size: 1.25em; font-weight: 800;
+      color: #1b4b8c; margin-bottom: 8px; letter-spacing: -0.3px;
+    }
+    .ad-msg {
+      font-size: 13px; color: #64748b; line-height: 1.55; margin-bottom: 24px;
+    }
+    .ad-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #f1f5f9; border: 1.5px solid #e2e8f0;
+      border-radius: 30px; padding: 5px 14px;
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
   </style>
 </head>
 <body>
@@ -451,6 +512,18 @@
 
   <div id="toast-container"></div>
 
+  <!-- Access Denied overlay -->
+  <div id="access-denied-overlay" onclick="closeAccessDenied()">
+    <div class="ad-card" onclick="event.stopPropagation()">
+      <div class="ad-icon-wrap">
+        <i class="fas fa-lock"></i>
+      </div>
+      <div class="ad-title">Access Denied</div>
+      <p class="ad-msg" id="ad-msg-text">You don't have permission to access this section.</p>
+      <div class="ad-badge"><i class="fas fa-shield-alt" style="font-size:10px"></i> Contact your administrator</div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL  = "https://wriaonorqjhmofwrhqlp.supabase.co";
@@ -509,7 +582,7 @@
       }
 
       if (!canAccessSection(sectionId)) {
-        showToast('You don\'t have access to this section.', 'warn');
+        showAccessDenied('You don\'t have permission to access this section.');
         return;
       }
 
@@ -529,7 +602,7 @@
       }
 
       if (!canAccessReport(reportId)) {
-        showToast('You don\'t have access to this report.', 'warn');
+        showAccessDenied('You don\'t have permission to access this report.');
         return;
       }
 
@@ -547,7 +620,7 @@
       }
 
       if (!canAccessTool()) {
-        showToast('You don\'t have access to this tool.', 'warn');
+        showAccessDenied('You don\'t have permission to access this tool.');
         return;
       }
 
@@ -713,6 +786,19 @@
       }
       document.body.classList.add('loaded');
     });
+
+    // ── Access Denied overlay ──
+    let _adTimer = null;
+    function showAccessDenied(msg) {
+      document.getElementById('ad-msg-text').textContent = msg || 'You don\'t have permission to access this.';
+      const overlay = document.getElementById('access-denied-overlay');
+      overlay.classList.add('show');
+      clearTimeout(_adTimer);
+      _adTimer = setTimeout(closeAccessDenied, 3000);
+    }
+    function closeAccessDenied() {
+      document.getElementById('access-denied-overlay').classList.remove('show');
+    }
 
     // ── Toast ──
     function showToast(msg, type) {

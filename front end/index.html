@@ -856,9 +856,14 @@
       document.body.classList.add('loaded');
 
       // Auto-open section from ?section= URL param (e.g. back button from a tracker)
-      const autoSection = new URLSearchParams(window.location.search).get('section');
+      const _params     = new URLSearchParams(window.location.search);
+      const autoSection = _params.get('section');
+      const autoTeam    = _params.get('team');
       if (autoSection && autoSection !== 'home') {
         handleNavClick(autoSection);
+        if (autoSection === 'trackers' && autoTeam) {
+          showTrackerTeam(autoTeam);
+        }
       }
     });
 

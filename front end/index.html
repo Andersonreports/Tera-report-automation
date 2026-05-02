@@ -797,6 +797,12 @@
         updateAuthUI();
       }
       document.body.classList.add('loaded');
+
+      // Auto-open section from ?section= URL param (e.g. back button from a tracker)
+      const autoSection = new URLSearchParams(window.location.search).get('section');
+      if (autoSection && autoSection !== 'home') {
+        handleNavClick(autoSection);
+      }
     });
 
     // ── Access Denied overlay ──

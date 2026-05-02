@@ -50,6 +50,16 @@
     .w-logo svg{width:50px;height:50px;stroke:var(--pri)}
     .glass{background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--pb);box-shadow:var(--sh);border-radius:var(--r)}
 
+    /* ── Back button ── */
+    .back-to-home{
+      display:inline-flex;align-items:center;justify-content:center;
+      width:32px;height:32px;border-radius:50%;
+      background:rgba(79,70,229,.1);border:1.5px solid rgba(79,70,229,.2);
+      color:var(--pri);text-decoration:none;flex-shrink:0;
+      transition:all .2s ease;margin-right:10px;
+    }
+    .back-to-home:hover{background:var(--pri);color:#fff;border-color:var(--pri);transform:translateX(-2px);}
+
     /* ── HEADER ── */
     .hdr{
       display:flex;align-items:center;justify-content:space-between;
@@ -608,6 +618,9 @@
 
 <!-- ╔═ HEADER ═╗ -->
 <header class="hdr">
+  <a href="/?section=trackers" class="back-to-home" title="Back to Inhouse Tools">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </a>
   <span class="hdr-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="M17 6l-2.5-2.5"/><path d="M14 8l-1-1"/><path d="M7 18l2.5 2.5"/><path d="M3.5 14.5l.5.5"/><path d="M20 9l.5.5"/><path d="M6.5 12.5l1 1"/><path d="M16.5 10.5l1 1"/><path d="M10 16l1.5 1.5"/></svg> Anderson Lab Report Tracker</span>
   <div class="hdr-actions">
     <!-- Live-sync indicator -->

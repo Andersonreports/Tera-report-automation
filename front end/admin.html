@@ -416,18 +416,18 @@
       <!-- Level 2: Bioinfo Team tools -->
       <div id="admin-trackers-bioinfo" style="display:none">
         <div class="report-cards">
-          <a href="/tracker/" class="report-card">
+          <div class="report-card" style="cursor:pointer" onclick="openTool('/tracker/')">
             <div class="report-card-icon"><i class="fas fa-clipboard-list"></i></div>
             <span>Sample Tracker</span>
-          </a>
-          <a href="https://andersonreports.github.io/Clinical-history/" target="_blank" class="report-card">
+          </div>
+          <div class="report-card" style="cursor:pointer" onclick="openTool('https://andersonreports.github.io/Clinical-history/')">
             <div class="report-card-icon"><i class="fas fa-notes-medical"></i></div>
             <span>Clinical History Tracker</span>
-          </a>
-          <a href="https://andersonbioinfo.github.io/CMC__Sample_Tracking/" target="_blank" class="report-card">
+          </div>
+          <div class="report-card" style="cursor:pointer" onclick="openTool('https://andersonbioinfo.github.io/CMC__Sample_Tracking/')">
             <div class="report-card-icon"><i class="fas fa-vials"></i></div>
             <span>CMC Tracker</span>
-          </a>
+          </div>
         </div>
       </div>
 
@@ -504,6 +504,23 @@
       if (NAV_MAP[id]) document.getElementById(NAV_MAP[id]).classList.add('active');
       if (id !== 'trackers') adminShowSubnav();
     }
+    async function openTool(url) {
+      // SSO: exchange Supabase session for tracker cookie so admins skip the separate login
+      if (url.includes('/tracker')) {
+        try {
+          const { data: sd } = await sb.auth.getSession();
+          if (sd && sd.session) {
+            await fetch('/tracker/auth-sso', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Authorization': 'Bearer ' + sd.session.access_token },
+            });
+          }
+        } catch (_) {}
+      }
+      window.location.href = url;
+    }
+
     function adminShowTeam(team) {
       document.getElementById('admin-trackers-subnav').style.display  = 'none';
       document.getElementById('admin-trackers-bioinfo').style.display = team === 'bioinfo' ? 'block' : 'none';

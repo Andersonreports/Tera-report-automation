@@ -641,11 +641,11 @@
     }
 
     // ── Nav click handler ──
-    function handleNavClick(sectionId) {
+    function handleNavClick(sectionId, team) {
       if (sectionId === 'home') { showSection('home'); return; }
 
       if (!currentUser) {
-        pendingAction = { type: 'section', payload: sectionId };
+        pendingAction = { type: 'section', payload: sectionId, team: team || null };
         openAuthModal();
         return;
       }
@@ -657,6 +657,7 @@
 
       showSection(sectionId);
       if (sectionId === 'reports') updateReportCards();
+      if (sectionId === 'trackers' && team) showTrackerTeam(team);
     }
 
     // ── Report card click handler ──
@@ -783,7 +784,7 @@
         const action = pendingAction;
         pendingAction = null;
         if (action.type === 'section') {
-          handleNavClick(action.payload);
+          handleNavClick(action.payload, action.team);
         } else if (action.type === 'report') {
           handleReportClick({ dataset: { reportId: action.payload.reportId, url: action.payload.url } });
         } else if (action.type === 'tool') {
@@ -860,10 +861,7 @@
       const autoSection = _params.get('section');
       const autoTeam    = _params.get('team');
       if (autoSection && autoSection !== 'home') {
-        handleNavClick(autoSection);
-        if (autoSection === 'trackers' && autoTeam) {
-          showTrackerTeam(autoTeam);
-        }
+        handleNavClick(autoSection, autoTeam || null);
       }
     });
 

@@ -3642,13 +3642,17 @@ if(userBtn && userDrop) {
     if (sb) {
         sb.auth.getSession().then(async ({ data }) => {
             if (!data.session) { window.location.href = "/"; return; }
-            const { data: p } = await sb.from('profiles').select('section,report_id,role').eq('id', data.session.user.id).maybeSingle();
+            const uid     = data.session.user.id;
             const jwtRole = data.session.user.user_metadata?.role ?? null;
-            const role    = jwtRole || p?.role || 'user';
-            const section = p?.section ?? null;
-            const rid     = p?.report_id ?? null;
-            if (role !== 'admin' && section !== 'all') {
+            const { data: pRole } = await sb.from('profiles').select('role').eq('id', uid).maybeSingle();
+            const role = jwtRole || pRole?.role || 'user';
+            if (role !== 'admin') {
+              const { data: pAccess } = await sb.from('profiles').select('section,report_id').eq('id', uid).maybeSingle();
+              const section = pAccess?.section ?? null;
+              const rid     = pAccess?.report_id ?? null;
+              if (section !== 'all') {
                 if (section !== 'reports' || (rid && rid !== 'karyotype')) { window.location.href = '/'; return; }
+              }
             }
             const name = localStorage.getItem("tera_user_name") || data.session.user.email;
             const utxt = document.getElementById("topbarUserText");

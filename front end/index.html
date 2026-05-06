@@ -481,10 +481,18 @@
 
     <!-- Databases -->
     <div id="section-databases" class="section">
-      <div class="coming-soon">
-        <div class="coming-soon-badge"><i class="fas fa-hourglass-half"></i> Coming Soon</div>
+      <div class="report-section-title">
         <h2>Databases</h2>
-        <p>Patient records, sample management, and laboratory databases<br>will be available here.</p>
+        <p>Select a database to view records</p>
+      </div>
+      <div class="report-cards" id="databases-cards-grid">
+
+        <div class="report-card" data-report-id="germline" data-url="https://andersonbioinfo.github.io/Germlinepanel/generic.html" onclick="handleToolClick(this)">
+          <div class="report-card-icon"><i class="fas fa-database"></i></div>
+          <span>Germline Panel</span>
+          <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+        </div>
+
       </div>
       <div class="no-access-notice" id="databases-no-access">
         <i class="fas fa-lock"></i>
@@ -722,7 +730,7 @@
           card.classList.add('locked');
         }
       });
-      document.querySelectorAll('#trackers-cards-grid .report-card').forEach(card => {
+      document.querySelectorAll('#trackers-cards-grid .report-card, #databases-cards-grid .report-card').forEach(card => {
         if (canAccessTool()) {
           card.classList.remove('locked');
         } else {
@@ -795,29 +803,34 @@
 
     // ── Load user profile from Supabase ──
     async function loadUserProfile(user) {
-      let role = user.user_metadata?.role || user.app_metadata?.role || null;
-      let section = null, report_id = null, full_name = null;
+      const jwtRole = user.user_metadata?.role || user.app_metadata?.role || null;
 
-      const { data: profile } = await sb.from('profiles')
-        .select('role, section, report_id, full_name')
+      // Query role + full_name first — these columns always exist
+      const { data: pRole } = await sb.from('profiles')
+        .select('role, full_name')
         .eq('id', user.id)
         .maybeSingle();
 
-      if (profile) {
-        role      = role || profile.role;
-        section   = profile.section;
-        report_id = profile.report_id;
-        full_name = profile.full_name;
+      const resolvedRole = jwtRole || pRole?.role || 'user';
+      const full_name    = pRole?.full_name || user.email;
+
+      // Admins get full access immediately — no need to check section/report_id
+      if (resolvedRole === 'admin') {
+        currentUser = { role: 'admin', section: 'all', report_id: null, full_name };
+        return;
       }
 
-      const resolvedRole = role || 'user';
+      // Non-admins: check section/report_id (requires SQL columns to exist)
+      const { data: pAccess } = await sb.from('profiles')
+        .select('section, report_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
       currentUser = {
         role:      resolvedRole,
-        // Fail-secure: if profile missing/columns missing → 'none' (deny all).
-        // Admins always get 'all' via JWT role; everyone else needs an explicit DB value.
-        section:   resolvedRole === 'admin' ? 'all' : (section ?? 'none'),
-        report_id: report_id ?? null,
-        full_name: full_name || user.email,
+        section:   pAccess?.section ?? 'none',  // fail-secure if columns missing
+        report_id: pAccess?.report_id ?? null,
+        full_name,
       };
     }
 

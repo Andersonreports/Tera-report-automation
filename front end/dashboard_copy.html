@@ -1211,12 +1211,17 @@
       );
       _sb.auth.getSession().then(async ({ data }) => {
         if (!data.session) { window.location.href = '/login?redirect=/dashboard'; return; }
-        const { data: p } = await _sb.from('profiles').select('section,report_id,role').eq('id', data.session.user.id).maybeSingle();
+        const uid     = data.session.user.id;
         const jwtRole = data.session.user.user_metadata?.role ?? null;
-        const role    = jwtRole || p?.role || 'user';
-        const section = p?.section ?? null;
-        const rid     = p?.report_id ?? null;
-        if (role === 'admin' || section === 'all') return;
+        // Query role first — this column always exists
+        const { data: pRole } = await _sb.from('profiles').select('role').eq('id', uid).maybeSingle();
+        const role = jwtRole || pRole?.role || 'user';
+        if (role === 'admin') return; // admin: full access, no further checks
+        // Non-admin: check section/report_id (requires SQL columns to exist)
+        const { data: pAccess } = await _sb.from('profiles').select('section,report_id').eq('id', uid).maybeSingle();
+        const section = pAccess?.section ?? null;
+        const rid     = pAccess?.report_id ?? null;
+        if (section === 'all') return;
         if (section === 'reports' && (!rid || rid === 'tera')) return;
         window.location.href = '/';
       });

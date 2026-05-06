@@ -664,7 +664,7 @@
       }
 
       showSection(sectionId);
-      if (sectionId === 'reports') updateReportCards();
+      if (sectionId === 'reports' || sectionId === 'databases' || sectionId === 'trackers') updateReportCards();
       if (sectionId === 'trackers' && team) showTrackerTeam(team);
     }
 

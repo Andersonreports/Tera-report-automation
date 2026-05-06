@@ -550,10 +550,18 @@
 
       <!-- Level 2: Others -->
       <div id="trackers-others" style="display:none">
-        <div class="coming-soon">
-          <div class="coming-soon-badge"><i class="fas fa-hourglass-half"></i> Coming Soon</div>
-          <h2>More Tools</h2>
-          <p>Additional tools will be added here.</p>
+        <div class="subnav-breadcrumb">
+          <button onclick="showTrackerSubnav()"><i class="fas fa-arrow-left"></i> Back</button>
+          <span>Others</span>
+        </div>
+        <div class="report-cards">
+
+          <div class="report-card" data-report-id="ngs-run" data-url="https://andersonreports.github.io/NGS-run-tracker/" onclick="handleToolClick(this)">
+            <div class="report-card-icon"><i class="fas fa-chart-bar"></i></div>
+            <span>NGS Run</span>
+            <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+          </div>
+
         </div>
       </div>
 

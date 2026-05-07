@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- SheetJS served through authenticated backend endpoint — not publicly accessible -->
   <script src="/tracker/xlsx.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     /* ── TOKENS ── */
@@ -612,6 +613,30 @@
       .emp-grid{grid-template-columns:1fr}
       .tab{padding:6px 8px;font-size:10px}
     }
+    /* ── ANALYTICS TAB ── */
+    .an-header{display:flex;align-items:center;justify-content:space-between;padding:20px 0 14px}
+    .an-title{font-size:18px;font-weight:800;background:linear-gradient(135deg,#4f46e5,#8b5cf6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    .an-sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .an-layout{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
+    .an-sidebar{padding:18px;overflow-y:auto;max-height:calc(100vh - 220px)}
+    .an-canvas-wrap{padding:24px;min-height:420px;display:flex;flex-direction:column;align-items:stretch}
+    .an-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:8px}
+    .an-chart-types{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+    .an-ct{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:10px;cursor:pointer;border:1.5px solid var(--bdr);background:var(--ib);color:var(--muted);font-size:10px;font-weight:600;transition:var(--tr)}
+    .an-ct:hover{border-color:var(--pri);color:var(--pri);background:rgba(79,70,229,.06)}
+    .an-ct.active{border-color:var(--pri);color:var(--pri);background:rgba(79,70,229,.1)}
+    .an-fields{display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto;padding-right:2px}
+    .an-field{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:8px;background:var(--pb);border:1px solid var(--bdr);font-size:12px;font-weight:600;cursor:grab;transition:var(--tr);user-select:none}
+    .an-field:hover{border-color:var(--pri);background:rgba(79,70,229,.07);color:var(--pri)}
+    .an-field:active{cursor:grabbing;opacity:.7}
+    .an-field .af-icon{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;background:rgba(79,70,229,.1);color:var(--pri);flex-shrink:0}
+    .an-drop-zone{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:2px dashed var(--bdr);background:rgba(79,70,229,.03);font-size:12px;color:var(--muted);cursor:default;transition:var(--tr);min-height:42px}
+    .an-drop-zone.has-field{border-style:solid;border-color:var(--pri);background:rgba(79,70,229,.08);color:var(--pri);font-weight:600}
+    .an-drop-zone.drag-over{border-color:var(--pri);background:rgba(79,70,229,.12);transform:scale(1.01)}
+    .an-empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;opacity:.75}
+    .an-summary-strip{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+    .an-chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(79,70,229,.1);color:var(--pri);border:1px solid rgba(79,70,229,.2)}
+    @media(max-width:900px){.an-layout{grid-template-columns:1fr;}.an-sidebar{max-height:none}.an-chart-types{grid-template-columns:repeat(6,1fr)}}
   </style>
 </head>
 <body>
@@ -654,6 +679,7 @@
   <button class="tab" onclick="switchTab('yet',this)" id="t-yet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1a2 2 0 000-4H8a2 2 0 000 4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24z"/></svg> Yet to Start <span class="tbadge" id="b-yet">0</span></button>
   <button class="tab" onclick="switchTab('released',this)" id="t-rel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg> Released <span class="tbadge" id="b-rel">0</span></button>
   <button class="tab" onclick="switchTab('overdue',this)" id="t-overdue"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Overdue <span class="tbadge" id="b-overdue" style="background:rgba(239,68,68,.18);color:#dc2626">0</span></button>
+  <button class="tab" onclick="switchTab('analytics',this)" id="t-analytics"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Analytics</button>
 </nav>
 
 <!-- ╔═ MAIN ═╗ -->
@@ -896,6 +922,107 @@
       </div>
     </div>
     <div class="tbl-wrap glass"><div id="tbl-overdue"></div></div>
+  </div>
+
+  <!-- ══ ANALYTICS ══ -->
+  <div id="page-analytics" class="page">
+    <div class="an-header">
+      <div>
+        <h2 class="an-title">Analytics Studio</h2>
+        <p class="an-sub">Drag fields to configure your chart — like Power BI</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-out btn-sm" onclick="anExportPNG()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export PNG
+        </button>
+        <button class="btn btn-pri btn-sm" onclick="anDraw()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Draw Chart
+        </button>
+      </div>
+    </div>
+
+    <div class="an-layout">
+      <!-- LEFT: field list + chart options -->
+      <div class="an-sidebar glass">
+        <div class="an-section-label">Chart Type</div>
+        <div class="an-chart-types" id="an-chart-types">
+          <div class="an-ct active" data-type="bar" onclick="anSelectChart(this)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Bar</span>
+          </div>
+          <div class="an-ct" data-type="horizontalBar" onclick="anSelectChart(this)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="17" y2="18"/></svg>
+            <span>Horiz.</span>
+          </div>
+          <div class="an-ct" data-type="line" onclick="anSelectChart(this)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Line</span>
+          </div>
+          <div class="an-ct" data-type="area" onclick="anSelectChart(this)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M3 15l5-5 4 4 5-6 4 4"/></svg>
+            <span>Area</span>
+          </div>
+          <div class="an-ct" data-type="pie" onclick="anSelectChart(this)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
+            <span>Pie</span>
+          </div>
+          <div class="an-ct" data-type="doughnut" onclick="anSelectChart(this)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+            <span>Donut</span>
+          </div>
+        </div>
+
+        <div class="an-section-label" style="margin-top:18px">Available Fields</div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Drag a field into a zone below</p>
+        <div class="an-fields" id="an-fields"></div>
+
+        <div class="an-section-label" style="margin-top:18px">Configuration</div>
+        <div class="an-drop-zone" id="an-zone-x" ondragover="event.preventDefault()" ondrop="anDrop(event,'x')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span id="an-zone-x-label">Drop X-Axis / Category field here</span>
+        </div>
+        <div class="an-drop-zone" id="an-zone-y" ondragover="event.preventDefault()" ondrop="anDrop(event,'y')" style="margin-top:8px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+          <span id="an-zone-y-label">Drop Y-Axis / Value field here</span>
+        </div>
+        <div class="an-drop-zone" id="an-zone-filter" ondragover="event.preventDefault()" ondrop="anDrop(event,'filter')" style="margin-top:8px;border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.04)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          <span id="an-zone-filter-label" style="color:#059669">Drop Filter field here (optional)</span>
+        </div>
+        <div id="an-filter-val-wrap" style="display:none;margin-top:8px">
+          <select class="sel" id="an-filter-val" style="width:100%;font-size:12px" onchange="anDraw()"><option value="">All values</option></select>
+        </div>
+
+        <div style="margin-top:14px">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);display:block;margin-bottom:5px">Y-Axis Aggregation</label>
+          <select class="sel" id="an-agg" style="width:100%;font-size:12px" onchange="anDraw()">
+            <option value="count">Count of records</option>
+            <option value="sum">Sum (if numeric)</option>
+          </select>
+        </div>
+        <div style="margin-top:10px">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);display:block;margin-bottom:5px">Top N results</label>
+          <select class="sel" id="an-topn" style="width:100%;font-size:12px" onchange="anDraw()">
+            <option value="0">Show all</option>
+            <option value="5">Top 5</option>
+            <option value="10">Top 10</option>
+            <option value="15">Top 15</option>
+            <option value="20">Top 20</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- RIGHT: chart canvas -->
+      <div class="an-canvas-wrap glass">
+        <div id="an-empty-state" class="an-empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <p style="font-size:14px;font-weight:600;color:var(--muted);margin-top:12px">Select a chart type and drag fields to draw a chart</p>
+          <p style="font-size:12px;color:var(--muted);margin-top:4px">X-Axis is required. Y-Axis defaults to Count.</p>
+        </div>
+        <canvas id="an-chart" style="display:none;max-height:480px"></canvas>
+        <div id="an-summary-strip" style="display:none;margin-top:16px;display:none;flex-wrap:wrap;gap:10px" class="an-summary-strip"></div>
+      </div>
+    </div>
   </div>
 
 </main>
@@ -1405,7 +1532,7 @@ function dismissWelcome() { document.getElementById('welcome').classList.remove(
 // ================================================================
 //  TAB ROUTING
 // ================================================================
-const PAGE_MAP = { dashboard:'page-dashboard', yet:'page-yet', assigned:'page-assigned', released:'page-released', overdue:'page-overdue' };
+const PAGE_MAP = { dashboard:'page-dashboard', yet:'page-yet', assigned:'page-assigned', released:'page-released', overdue:'page-overdue', analytics:'page-analytics' };
 
 function switchTab(id, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1413,6 +1540,7 @@ function switchTab(id, btn) {
   document.getElementById(PAGE_MAP[id]).classList.add('active');
   btn.classList.add('active');
   if (id==='overdue') renderOverdue();
+  else if (id==='analytics') { anPopulateFields(); anDraw(); }
   else if (id!=='dashboard') renderTable(id);
 }
 
@@ -2478,6 +2606,202 @@ function filterPriority(month) {
   document.getElementById('pm-table').innerHTML = buildModalTable(filtered, PRIORITY_COLS);
 }
 
+
+
+// ================================================================
+//  ANALYTICS STUDIO (Power BI Style)
+// ================================================================
+let anChart = null;
+let anState = {
+  type: 'bar',
+  x: null,
+  y: null,
+  filter: null,
+  filterVal: '',
+  agg: 'count',
+  topn: 0
+};
+
+const AN_FIELDS = [
+  { id: 'test',    label: 'Test',      icon: 'T' },
+  { id: 'client',  label: 'Client',    icon: 'C' },
+  { id: 'status',  label: 'Status',    icon: 'S' },
+  { id: 'analyst', label: 'Analyst',   icon: 'A' },
+  { id: 'pri_rev', label: 'Reviewer',  icon: 'R' },
+  { id: 'run_txt', label: 'Run',       icon: '# ' },
+  { id: 'tat_m',   label: 'TAT Month', icon: 'M' },
+  { id: 'tat_y',   label: 'TAT Year',  icon: 'Y' },
+  { id: 'rel_m',   label: 'Rel Month', icon: 'M' },
+  { id: 'rel_y',   label: 'Rel Year',  icon: 'Y' }
+];
+
+function anPopulateFields() {
+  const container = document.getElementById('an-fields');
+  if (!container || container.children.length > 0) return;
+  
+  container.innerHTML = AN_FIELDS.map(f => `
+    <div class="an-field" draggable="true" ondragstart="anDragStart(event, '${f.id}', '${f.label}')">
+      <span class="af-icon">${f.icon}</span>
+      <span>${f.label}</span>
+    </div>
+  `).join('');
+}
+
+function anDragStart(e, id, label) {
+  e.dataTransfer.setData('fieldId', id);
+  e.dataTransfer.setData('fieldLabel', label);
+}
+
+function anDrop(e, zone) {
+  e.preventDefault();
+  const id = e.dataTransfer.getData('fieldId');
+  const label = e.dataTransfer.getData('fieldLabel');
+  
+  anState[zone] = id;
+  const zoneEl = document.getElementById(`an-zone-${zone}`);
+  zoneEl.classList.add('has-field');
+  document.getElementById(`an-zone-${zone}-label`).textContent = label;
+  
+  if (zone === 'filter') {
+    anPopulateFilterValues(id);
+  }
+  
+  anDraw();
+}
+
+function anPopulateFilterValues(fieldId) {
+  const wrap = document.getElementById('an-filter-val-wrap');
+  const sel = document.getElementById('an-filter-val');
+  wrap.style.display = 'block';
+  
+  const vals = [...new Set(rows.map(r => anGetVal(r, fieldId)).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All Values</option>' + vals.map(v => `<option value="${v}">${v}</option>`).join('');
+  anState.filterVal = '';
+}
+
+function anSelectChart(el) {
+  document.querySelectorAll('.an-ct').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  anState.type = el.dataset.type;
+  anDraw();
+}
+
+function anGetVal(r, fieldId) {
+  if (fieldId === 'status') return getStatus(r);
+  if (fieldId === 'tat_m') { const d = parseDate(r.tat); return d ? d.toLocaleString('default', { month: 'short' }) : 'N/A'; }
+  if (fieldId === 'tat_y') { const d = parseDate(r.tat); return d ? String(d.getFullYear()) : 'N/A'; }
+  if (fieldId === 'rel_m') { const d = parseDate(r.rel_date); return d ? d.toLocaleString('default', { month: 'short' }) : 'N/A'; }
+  if (fieldId === 'rel_y') { const d = parseDate(r.rel_date); return d ? String(d.getFullYear()) : 'N/A'; }
+  return r[fieldId] || 'N/A';
+}
+
+function anDraw() {
+  if (!anState.x) return;
+  
+  const aggType = document.getElementById('an-agg').value;
+  const topN = parseInt(document.getElementById('an-topn').value);
+  const filterVal = document.getElementById('an-filter-val').value;
+  
+  // 1. Filter
+  let data = rows;
+  if (anState.filter && filterVal) {
+    data = data.filter(r => anGetVal(r, anState.filter) === filterVal);
+  }
+  
+  // 2. Aggregate
+  const map = {};
+  data.forEach(r => {
+    const x = anGetVal(r, anState.x);
+    if (!map[x]) map[x] = 0;
+    
+    if (aggType === 'count') {
+      map[x]++;
+    } else {
+      const yVal = parseFloat(anGetVal(r, anState.y));
+      if (!isNaN(yVal)) map[x] += yVal;
+    }
+  });
+  
+  // 3. Prepare Chart Data
+  let labels = Object.keys(map);
+  let values = labels.map(l => map[l]);
+  
+  // Sort by value descending
+  const combined = labels.map((l, i) => ({ label: l, value: values[i] }));
+  combined.sort((a, b) => b.value - a.value);
+  
+  if (topN > 0) {
+    const sliced = combined.slice(0, topN);
+    labels = sliced.map(i => i.label);
+    values = sliced.map(i => i.value);
+  } else {
+    labels = combined.map(i => i.label);
+    values = combined.map(i => i.value);
+  }
+  
+  // 4. Render
+  document.getElementById('an-empty-state').style.display = 'none';
+  const canvas = document.getElementById('an-chart');
+  canvas.style.display = 'block';
+  
+  if (anChart) anChart.destroy();
+  
+  const ctx = canvas.getContext('2d');
+  const isPie = anState.type === 'pie' || anState.type === 'doughnut';
+  
+  const colors = [
+    '#4f46e5', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', 
+    '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#a855f7'
+  ];
+  
+  anChart = new Chart(ctx, {
+    type: anState.type === 'horizontalBar' ? 'bar' : anState.type,
+    data: {
+      labels: labels,
+      datasets: [{
+        label: aggType === 'count' ? 'Count of Samples' : 'Sum of ' + anState.y,
+        data: values,
+        backgroundColor: isPie ? colors : colors[0],
+        borderColor: isPie ? '#fff' : colors[0],
+        borderWidth: 1,
+        fill: anState.type === 'area',
+        tension: 0.3
+      }]
+    },
+    options: {
+      indexAxis: anState.type === 'horizontalBar' ? 'y' : 'x',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: isPie, position: 'bottom' },
+        tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12 }
+      },
+      scales: isPie ? {} : {
+        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+  
+  // 5. Summary Strip
+  const strip = document.getElementById('an-summary-strip');
+  strip.style.display = 'flex';
+  const total = values.reduce((a, b) => a + b, 0);
+  strip.innerHTML = `
+    <div class="an-chip">Total: ${total.toLocaleString()}</div>
+    <div class="an-chip">Groups: ${labels.length}</div>
+    <div class="an-chip">Avg: ${labels.length ? (total / labels.length).toFixed(1) : 0}</div>
+  `;
+}
+
+function anExportPNG() {
+  const canvas = document.getElementById('an-chart');
+  if (!canvas || canvas.style.display === 'none') { toast('Nothing to export', 'warn'); return; }
+  const link = document.createElement('a');
+  link.download = 'anderson-analytics.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
 
 // (Auth/idle-logout removed for static GitHub Pages deployment)
 

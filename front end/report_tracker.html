@@ -617,26 +617,47 @@
     .an-header{display:flex;align-items:center;justify-content:space-between;padding:20px 0 14px}
     .an-title{font-size:18px;font-weight:800;background:linear-gradient(135deg,#4f46e5,#8b5cf6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
     .an-sub{font-size:12px;color:var(--muted);margin-top:2px}
-    .an-layout{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
-    .an-sidebar{padding:18px;overflow-y:auto;max-height:calc(100vh - 220px)}
-    .an-canvas-wrap{padding:24px;min-height:420px;display:flex;flex-direction:column;align-items:stretch}
-    .an-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:8px}
-    .an-chart-types{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-    .an-ct{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:10px;cursor:pointer;border:1.5px solid var(--bdr);background:var(--ib);color:var(--muted);font-size:10px;font-weight:600;transition:var(--tr)}
-    .an-ct:hover{border-color:var(--pri);color:var(--pri);background:rgba(79,70,229,.06)}
-    .an-ct.active{border-color:var(--pri);color:var(--pri);background:rgba(79,70,229,.1)}
-    .an-fields{display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto;padding-right:2px}
-    .an-field{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:8px;background:var(--pb);border:1px solid var(--bdr);font-size:12px;font-weight:600;cursor:grab;transition:var(--tr);user-select:none}
-    .an-field:hover{border-color:var(--pri);background:rgba(79,70,229,.07);color:var(--pri)}
-    .an-field:active{cursor:grabbing;opacity:.7}
-    .an-field .af-icon{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;background:rgba(79,70,229,.1);color:var(--pri);flex-shrink:0}
-    .an-drop-zone{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:2px dashed var(--bdr);background:rgba(79,70,229,.03);font-size:12px;color:var(--muted);cursor:default;transition:var(--tr);min-height:42px}
-    .an-drop-zone.has-field{border-style:solid;border-color:var(--pri);background:rgba(79,70,229,.08);color:var(--pri);font-weight:600}
-    .an-drop-zone.drag-over{border-color:var(--pri);background:rgba(79,70,229,.12);transform:scale(1.01)}
-    .an-empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;opacity:.75}
-    .an-summary-strip{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
-    .an-chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(79,70,229,.1);color:var(--pri);border:1px solid rgba(79,70,229,.2)}
-    @media(max-width:900px){.an-layout{grid-template-columns:1fr;}.an-sidebar{max-height:none}.an-chart-types{grid-template-columns:repeat(6,1fr)}}
+    .an-layout { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; max-height: calc(100vh - 200px); }
+    .an-canvas-wrap { padding: 24px; min-height: 520px; display: flex; flex-direction: column; align-items: stretch; overflow-y: auto; }
+    .an-sidebar { padding: 0; display: flex; flex-direction: column; max-height: calc(100vh - 200px); border-left: 1px solid var(--bdr); background: rgba(255,255,255,0.4); }
+    .an-sidebar-scroll { overflow-y: auto; padding: 16px; scrollbar-width: thin; }
+    .an-sb-section { margin-bottom: 24px; }
+    .an-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .an-section-label::after { content: ''; flex: 1; height: 1px; background: var(--bdr); opacity: 0.5; }
+    
+    .an-chart-types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .an-ct { height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1.5px solid var(--bdr); background: var(--ib); color: var(--muted); cursor: pointer; transition: var(--tr); }
+    .an-ct:hover { border-color: var(--pri); color: var(--pri); background: rgba(79,70,229,.06); }
+    .an-ct.active { border-color: var(--pri); color: var(--pri); background: rgba(79,70,229,.1); }
+    
+    .an-fields { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; padding-right: 4px; }
+    .an-field { 
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; 
+      background: var(--pb); border: 1px solid var(--bdr); font-size: 12px; font-weight: 600; 
+      cursor: grab; transition: var(--tr); user-select: none;
+    }
+    .an-field:hover { border-color: var(--pri); background: rgba(79,70,229,.07); color: var(--pri); }
+    .an-field .af-icon { width: 20px; height: 20px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; background: rgba(79,70,229,.1); color: var(--pri); flex-shrink: 0; }
+    
+    .an-drop-stack { display: flex; flex-direction: column; gap: 8px; }
+    .an-drop-label { font-size: 11px; font-weight: 600; color: var(--muted); }
+    .an-drop-zone { 
+      min-height: 42px; display: flex; align-items: center; justify-content: center; 
+      padding: 8px; border-radius: 10px; border: 2px dashed var(--bdr); 
+      background: rgba(79,70,229,.03); font-size: 11px; color: var(--muted); 
+      text-align: center; transition: var(--tr);
+    }
+    .an-drop-zone.has-field { border-style: solid; border-color: var(--pri); background: rgba(79,70,229,.08); color: var(--pri); font-weight: 700; }
+    .an-drop-zone.drag-over { border-color: var(--pri); background: rgba(79,70,229,.12); transform: translateY(-2px); }
+    
+    .an-format-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .an-format-item label { font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px; }
+    
+    .an-empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 20px; opacity: .75; }
+    .an-summary-strip { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .an-chip { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; background: rgba(79,70,229,.1); color: var(--pri); border: 1px solid rgba(79,70,229,.2); }
+    
+    @media(max-width:1100px){ .an-layout { grid-template-columns: 1fr; } .an-sidebar { border-left: 0; border-top: 1px solid var(--bdr); margin-top: 16px; max-height: none; } }
   </style>
 </head>
 <body>
@@ -942,85 +963,99 @@
     </div>
 
     <div class="an-layout">
-      <!-- LEFT: field list + chart options -->
-      <div class="an-sidebar glass">
-        <div class="an-section-label">Chart Type</div>
-        <div class="an-chart-types" id="an-chart-types">
-          <div class="an-ct active" data-type="bar" onclick="anSelectChart(this)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            <span>Bar</span>
-          </div>
-          <div class="an-ct" data-type="horizontalBar" onclick="anSelectChart(this)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="17" y2="18"/></svg>
-            <span>Horiz.</span>
-          </div>
-          <div class="an-ct" data-type="line" onclick="anSelectChart(this)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            <span>Line</span>
-          </div>
-          <div class="an-ct" data-type="area" onclick="anSelectChart(this)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M3 15l5-5 4 4 5-6 4 4"/></svg>
-            <span>Area</span>
-          </div>
-          <div class="an-ct" data-type="pie" onclick="anSelectChart(this)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
-            <span>Pie</span>
-          </div>
-          <div class="an-ct" data-type="doughnut" onclick="anSelectChart(this)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
-            <span>Donut</span>
-          </div>
-        </div>
-
-        <div class="an-section-label" style="margin-top:18px">Available Fields</div>
-        <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Drag a field into a zone below</p>
-        <div class="an-fields" id="an-fields"></div>
-
-        <div class="an-section-label" style="margin-top:18px">Configuration</div>
-        <div class="an-drop-zone" id="an-zone-x" ondragover="event.preventDefault()" ondrop="anDrop(event,'x')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          <span id="an-zone-x-label">Drop X-Axis / Category field here</span>
-        </div>
-        <div class="an-drop-zone" id="an-zone-y" ondragover="event.preventDefault()" ondrop="anDrop(event,'y')" style="margin-top:8px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
-          <span id="an-zone-y-label">Drop Y-Axis / Value field here</span>
-        </div>
-        <div class="an-drop-zone" id="an-zone-filter" ondragover="event.preventDefault()" ondrop="anDrop(event,'filter')" style="margin-top:8px;border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.04)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-          <span id="an-zone-filter-label" style="color:#059669">Drop Filter field here (optional)</span>
-        </div>
-        <div id="an-filter-val-wrap" style="display:none;margin-top:8px">
-          <select class="sel" id="an-filter-val" style="width:100%;font-size:12px" onchange="anDraw()"><option value="">All values</option></select>
-        </div>
-
-        <div style="margin-top:14px">
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);display:block;margin-bottom:5px">Y-Axis Aggregation</label>
-          <select class="sel" id="an-agg" style="width:100%;font-size:12px" onchange="anDraw()">
-            <option value="count">Count of records</option>
-            <option value="sum">Sum (if numeric)</option>
-          </select>
-        </div>
-        <div style="margin-top:10px">
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);display:block;margin-bottom:5px">Top N results</label>
-          <select class="sel" id="an-topn" style="width:100%;font-size:12px" onchange="anDraw()">
-            <option value="0">Show all</option>
-            <option value="5">Top 5</option>
-            <option value="10">Top 10</option>
-            <option value="15">Top 15</option>
-            <option value="20">Top 20</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- RIGHT: chart canvas -->
+      <!-- LEFT: Chart Area -->
       <div class="an-canvas-wrap glass">
         <div id="an-empty-state" class="an-empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <p style="font-size:14px;font-weight:600;color:var(--muted);margin-top:12px">Select a chart type and drag fields to draw a chart</p>
-          <p style="font-size:12px;color:var(--muted);margin-top:4px">X-Axis is required. Y-Axis defaults to Count.</p>
+          <p style="font-size:14px;font-weight:600;color:var(--muted);margin-top:12px">Configure your visualization in the right panel</p>
+          <p style="font-size:12px;color:var(--muted);margin-top:4px">Drag fields into the Drop Zones to begin</p>
         </div>
-        <canvas id="an-chart" style="display:none;max-height:480px"></canvas>
-        <div id="an-summary-strip" style="display:none;margin-top:16px;display:none;flex-wrap:wrap;gap:10px" class="an-summary-strip"></div>
+        <canvas id="an-chart" style="display:none; max-height: 520px"></canvas>
+        <div id="an-summary-strip" class="an-summary-strip"></div>
+      </div>
+
+      <!-- RIGHT: Professional Config Sidebar -->
+      <div class="an-sidebar glass">
+        <div class="an-sidebar-scroll">
+          
+          <!-- Section 1: Chart Type -->
+          <div class="an-sb-section">
+            <div class="an-section-label">Visualizations</div>
+            <div class="an-chart-types" id="an-chart-types">
+              <div class="an-ct active" data-type="bar" onclick="anSelectChart(this)" title="Bar Chart">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              </div>
+              <div class="an-ct" data-type="horizontalBar" onclick="anSelectChart(this)" title="Horizontal Bar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="17" y2="18"/></svg>
+              </div>
+              <div class="an-ct" data-type="line" onclick="anSelectChart(this)" title="Line Chart">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <div class="an-ct" data-type="area" onclick="anSelectChart(this)" title="Area Chart">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M3 15l5-5 4 4 5-6 4 4"/></svg>
+              </div>
+              <div class="an-ct" data-type="pie" onclick="anSelectChart(this)" title="Pie Chart">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
+              </div>
+              <div class="an-ct" data-type="doughnut" onclick="anSelectChart(this)" title="Doughnut Chart">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Fields -->
+          <div class="an-sb-section">
+            <div class="an-section-label">Fields</div>
+            <div class="an-fields" id="an-fields"></div>
+          </div>
+
+          <!-- Section 3: Drop Zones -->
+          <div class="an-sb-section">
+            <div class="an-section-label">Build Visual</div>
+            <div class="an-drop-stack">
+              <div class="an-drop-label">Axis / Category</div>
+              <div class="an-drop-zone" id="an-zone-x" ondragover="event.preventDefault()" ondrop="anDrop(event,'x')">
+                <span id="an-zone-x-label">Add data field here</span>
+              </div>
+              
+              <div class="an-drop-label">Values</div>
+              <div class="an-drop-zone" id="an-zone-y" ondragover="event.preventDefault()" ondrop="anDrop(event,'y')">
+                <span id="an-zone-y-label">Add data field here</span>
+              </div>
+              
+              <div class="an-drop-label">Filters</div>
+              <div class="an-drop-zone" id="an-zone-filter" ondragover="event.preventDefault()" ondrop="anDrop(event,'filter')" style="background:rgba(16,185,129,.03)">
+                <span id="an-zone-filter-label">Add filter field here</span>
+              </div>
+              <div id="an-filter-val-wrap" style="display:none; margin-top: 4px">
+                <select class="sel" id="an-filter-val" style="width:100%;font-size:11px" onchange="anDraw()"><option value="">All values</option></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Formatting -->
+          <div class="an-sb-section">
+            <div class="an-section-label">Format & Stats</div>
+            <div class="an-format-grid">
+              <div class="an-format-item">
+                <label>Aggregation</label>
+                <select class="sel" id="an-agg" style="width:100%;font-size:11px" onchange="anDraw()">
+                  <option value="count">Count</option>
+                  <option value="sum">Sum</option>
+                </select>
+              </div>
+              <div class="an-format-item">
+                <label>Top Results</label>
+                <select class="sel" id="an-topn" style="width:100%;font-size:11px" onchange="anDraw()">
+                  <option value="0">Show All</option>
+                  <option value="10">Top 10</option>
+                  <option value="20">Top 20</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   </div>

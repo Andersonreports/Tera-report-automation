@@ -485,6 +485,8 @@
         <h2>Databases</h2>
         <p>Select a database to view records</p>
       </div>
+
+      <!-- Level 1: main database cards -->
       <div class="report-cards" id="databases-cards-grid">
 
         <div class="report-card" data-report-id="germline" data-url="https://andersonreports.github.io/Germline-Panel/" onclick="handleToolClick(this)">
@@ -493,7 +495,64 @@
           <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
         </div>
 
+        <div class="report-card team-card" onclick="showDatabasesBedFiles()">
+          <div class="report-card-icon"><i class="fas fa-file-code"></i></div>
+          <span>Bed Files</span>
+        </div>
+
       </div>
+
+      <!-- Level 2: Bed Files sub-panel -->
+      <div id="databases-bed-files" style="display:none">
+        <div class="subnav-breadcrumb">
+          <button onclick="showDatabasesMainGrid()"><i class="fas fa-arrow-left"></i> Back</button>
+          <span>Bed Files</span>
+        </div>
+        <div class="report-cards">
+
+          <div class="report-card" data-report-id="bed-twist" data-url="/bed/Twist_SpikeinV2_BED_Analysis_Report.html" onclick="handleToolClick(this)">
+            <div class="report-card-icon"><i class="fas fa-file-alt"></i></div>
+            <span>Twist</span>
+            <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+          </div>
+
+          <div class="report-card" data-report-id="bed-comparison" data-url="/bed/New/bed_comparison_report.html" onclick="handleToolClick(this)">
+            <div class="report-card-icon"><i class="fas fa-code-branch"></i></div>
+            <span>Bed file comparison</span>
+            <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+          </div>
+
+          <div class="report-card team-card" onclick="showDatabasesSnp()">
+            <div class="report-card-icon"><i class="fas fa-dna"></i></div>
+            <span>SNP</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Level 3: SNP sub-panel -->
+      <div id="databases-snp" style="display:none">
+        <div class="subnav-breadcrumb">
+          <button onclick="showDatabasesBedFiles()"><i class="fas fa-arrow-left"></i> Back</button>
+          <span>Bed Files &rsaquo; SNP</span>
+        </div>
+        <div class="report-cards">
+
+          <div class="report-card" data-report-id="snp-twist" data-url="/bed/SNP/SNP_Twist_Coverage_Report.html" onclick="handleToolClick(this)">
+            <div class="report-card-icon"><i class="fas fa-chart-area"></i></div>
+            <span>Twist Coverage</span>
+            <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+          </div>
+
+          <div class="report-card" data-report-id="snp-twist-medgenome" data-url="/bed/SNP/SNP_Twist_Medgenome_Coverage_Report.html" onclick="handleToolClick(this)">
+            <div class="report-card-icon"><i class="fas fa-chart-bar"></i></div>
+            <span>Twist Coverage Medgenome</span>
+            <div class="lock-overlay"><i class="fas fa-lock"></i><span>No Access</span></div>
+          </div>
+
+        </div>
+      </div>
+
       <div class="no-access-notice" id="databases-no-access">
         <i class="fas fa-lock"></i>
         <h3>Access Restricted</h3>
@@ -630,8 +689,9 @@
       document.getElementById('section-' + id).classList.add('active');
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       if (NAV_MAP[id]) document.getElementById(NAV_MAP[id]).classList.add('active');
-      // Reset trackers to top-level subnav whenever we enter/leave the section
-      if (id !== 'trackers') showTrackerSubnav();
+      // Reset sub-navigations whenever we enter/leave their sections
+      if (id !== 'trackers')  showTrackerSubnav();
+      if (id !== 'databases') showDatabasesMainGrid();
     }
 
     // ── Access checks ──
@@ -744,7 +804,7 @@
           card.classList.add('locked');
         }
       });
-      document.querySelectorAll('#trackers-cards-grid .report-card, #databases-cards-grid .report-card').forEach(card => {
+      document.querySelectorAll('#trackers-cards-grid .report-card, #databases-cards-grid .report-card, #databases-bed-files .report-card, #databases-snp .report-card').forEach(card => {
         if (canAccessTool()) {
           card.classList.remove('locked');
         } else {
@@ -903,6 +963,24 @@
       document.getElementById('trackers-subnav').style.display  = '';
       document.getElementById('trackers-bioinfo').style.display = 'none';
       document.getElementById('trackers-others').style.display  = 'none';
+    }
+
+    // ── Databases sub-navigation ──
+    function showDatabasesBedFiles() {
+      document.getElementById('databases-cards-grid').style.display  = 'none';
+      document.getElementById('databases-bed-files').style.display   = 'block';
+      document.getElementById('databases-snp').style.display         = 'none';
+      updateReportCards();
+    }
+    function showDatabasesSnp() {
+      document.getElementById('databases-bed-files').style.display   = 'none';
+      document.getElementById('databases-snp').style.display         = 'block';
+      updateReportCards();
+    }
+    function showDatabasesMainGrid() {
+      document.getElementById('databases-cards-grid').style.display  = '';
+      document.getElementById('databases-bed-files').style.display   = 'none';
+      document.getElementById('databases-snp').style.display         = 'none';
     }
 
     // ── Access Denied overlay ──

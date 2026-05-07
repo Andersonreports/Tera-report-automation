@@ -814,6 +814,7 @@
                     <option>HRT</option>
                     <option>Modified Natural Cycle</option>
                     <option>Natural Cycle</option>
+                    <option>Natural</option>
                     <option>Stimulated</option>
                   </select>
                 </div>
@@ -860,6 +861,10 @@
                   <label>Date Received</label>
                   <input type="text" placeholder="DD-MM-YYYY">
                 </div>
+                <div class="field">
+                  <label>Report Date</label>
+                  <input type="text" placeholder="DD-MM-YYYY">
+                </div>
               </div>
             </div>
 
@@ -867,10 +872,7 @@
             <div class="manual-action-bar">
               <button class="btn-action btn-draft" onclick="saveDraft()">Save Draft</button>
               <button class="btn-action btn-draft" onclick="openDraftPicker()">Load Draft</button>
-              <button class="btn-action btn-clear"
-                onclick="document.querySelectorAll('#manual .form-grid input').forEach(i=>i.value='');document.querySelectorAll('#manual .form-grid select').forEach(s=>s.selectedIndex=0)">
-                Clear Form
-              </button>
+              <button class="btn-action btn-clear" onclick="clearManualForm()">Clear Form</button>
             </div>
 
             <!-- Generate Report -->
@@ -886,17 +888,17 @@
               <div class="fast-report-controls-row">
                 <span class="fr-label">Branding:</span>
                 <label class="fr-radio">
-                  <input type="radio" name="logoOption" value="without_logo" checked> Without Logo
+                  <input type="radio" name="manualLogoOption" value="without_logo"> Without Logo
                 </label>
                 <label class="fr-radio">
-                  <input type="radio" name="logoOption" value="with_logo"> With Logo
+                  <input type="radio" name="manualLogoOption" value="with_logo" checked> With Logo
                 </label>
                 <span class="fr-label" style="margin-left:12px">QR Code:</span>
                 <label class="fr-radio">
-                  <input type="radio" name="qrOption" id="qr-manual-without" value="without_qr" checked> Without QR
+                  <input type="radio" name="manualQrOption" id="qr-manual-without" value="without_qr" checked> Without QR
                 </label>
                 <label class="fr-radio">
-                  <input type="radio" name="qrOption" id="qr-manual-with" value="with_qr"> With QR
+                  <input type="radio" name="manualQrOption" id="qr-manual-with" value="with_qr"> With QR
                 </label>
                 <button class="btn-generate-fast" onclick="downloadReport()">&#9654; Generate Report</button>
               </div>
@@ -975,6 +977,7 @@
                     <option>HRT</option>
                     <option>Modified Natural Cycle</option>
                     <option>Natural Cycle</option>
+                    <option>Natural</option>
                     <option>Stimulated</option>
                   </select>
                 </div>
@@ -994,6 +997,7 @@
                 </div>
                 <div class="bulk-editor-field"><label>Time for Report</label><input type="text" id="edit_time_report"></div>
                 <div class="bulk-editor-field"><label>Date Received</label><input type="text" id="edit_date_received"></div>
+                <div class="bulk-editor-field"><label>Report Date</label><input type="text" id="edit_report_date"></div>
 
                 <div class="bulk-editor-btns">
                   <button class="btn-save-changes" onclick="saveChanges()">Save Changes</button>
@@ -1028,10 +1032,10 @@
               <div class="bulk-bottom-divider"></div>
               <span class="fr-label">Branding:</span>
               <label class="fr-radio">
-                <input type="radio" name="logoOption" value="without_logo"> Without Logo
+                <input type="radio" name="bulkLogoOption" value="without_logo"> Without Logo
               </label>
               <label class="fr-radio">
-                <input type="radio" name="logoOption" value="with_logo" checked> With Logo
+                <input type="radio" name="bulkLogoOption" value="with_logo" checked> With Logo
               </label>
               <div class="bulk-bottom-divider"></div>
               <span class="fr-label">QR Code:</span>
@@ -1055,13 +1059,13 @@
           <div class="compare-tab-inner">
 
             <div class="compare-info-banner">
-              Compare two TERA PDFs: <b>Manual</b> (left) vs <b>Automated</b> (right).
-              Click <b>Compare PDFs</b> for a visual side-by-side view and an automated text-diff summary.
+              Compare two TERA PDFs &mdash; <b>Auto-generated</b> (left) vs <b>Reference / Manual</b> (right).
+              Click <b>Compare PDFs</b> for a visual side-by-side view and an automated text-diff summary that highlights every discrepancy.
             </div>
 
             <div class="compare-upload-row">
               <div class="compare-upload-box" id="cmpBoxLeft">
-                <div class="compare-upload-label">Manual PDF</div>
+                <div class="compare-upload-label">Auto-generated PDF</div>
                 <button class="btn-upload-cmp" onclick="document.getElementById('pdf1').click()">Choose File</button>
                 <input type="file" id="pdf1" accept=".pdf" style="display:none;"
                   onchange="document.getElementById('cmpFname1').textContent=this.files[0]?this.files[0].name:'';document.getElementById('cmpBoxLeft').classList.toggle('has-file',!!this.files[0])">
@@ -1069,7 +1073,7 @@
               </div>
               <div class="cmp-vs-badge">VS</div>
               <div class="compare-upload-box" id="cmpBoxRight">
-                <div class="compare-upload-label">Automated PDF</div>
+                <div class="compare-upload-label">Reference / Manual PDF</div>
                 <button class="btn-upload-cmp" onclick="document.getElementById('pdf2').click()">Choose File</button>
                 <input type="file" id="pdf2" accept=".pdf" style="display:none;"
                   onchange="document.getElementById('cmpFname2').textContent=this.files[0]?this.files[0].name:'';document.getElementById('cmpBoxRight').classList.toggle('has-file',!!this.files[0])">
@@ -1139,10 +1143,11 @@
               <div class="guide-card">
                 <h3>3. Report Comparison</h3>
                 <ul>
-                  <li>Select two PDFs — auto-generated (left) and reference (right).</li>
+                  <li>Select two PDFs — <b>auto-generated</b> (left) and <b>reference / manual</b> (right).</li>
                   <li>Click <b>Compare PDFs</b> to render both pages side by side.</li>
-                  <li>Use <b>Prev Page / Next Page</b> to navigate through report pages.</li>
-                  <li>The diff summary panel shows text-level differences automatically.</li>
+                  <li>Use <b>Prev Page / Next Page</b> to navigate through all 3 report pages.</li>
+                  <li>The <b>Auto Diff Summary</b> panel highlights every text-level discrepancy automatically.</li>
+                  <li>Click <b>Export Diff as HTML</b> to save the diff report.</li>
                 </ul>
               </div>
 
@@ -1151,9 +1156,10 @@
                 <ul>
                   <li><b>Receptive:</b> endometrium is within the window of implantation.</li>
                   <li><b>Pre-receptive:</b> biopsy too early; window not yet open.</li>
-                  <li><b>Post-receptive:</b> biopsy after the window.</li>
-                  <li><b>Time for Report example:</b> 144 + 2</li>
-                  <li>Python 3.10+, PyQt6 &ge; 6.6, ReportLab &ge; 4.0, pandas, openpyxl, Pillow.</li>
+                  <li><b>Post-receptive:</b> biopsy after the window; second biopsy strongly recommended.</li>
+                  <li><b>Time for Report</b> e.g. <code>144 + 2</code>: Blastocyst (Day 5/6) = P+144 &plusmn; 2 hrs; Cleavage (Day 3) = P+96 &plusmn; 2 hrs (blastocyst &minus; 48).</li>
+                  <li><b>Biopsy Date &amp; Time:</b> enter as <code>YYYY-MM-DD HH:MM:SS</code> or <code>DD-MM-YYYY HH:MM</code>.</li>
+                  <li><b>P+ Hours:</b> numeric hours since P4/hCG injection (e.g. <code>120</code>).</li>
                 </ul>
               </div>
 
@@ -1281,7 +1287,8 @@
             "Biopsy2 time in hrs": inputs[11] ? inputs[11].value : "",
             "TERA result": selects[1] ? selects[1].value : "",
             "Time for report": inputs[12] ? inputs[12].value : "",
-            "Date of Received": inputs[13] ? inputs[13].value : ""
+            "Date of Received": inputs[13] ? inputs[13].value : "",
+            "Report Date": inputs[14] ? inputs[14].value : ""
         };
     }
 
@@ -1304,6 +1311,17 @@
         if (selects[1]) selects[1].value = data["TERA result"] || "Receptive";
         if (inputs[12]) inputs[12].value = data["Time for report"] || "";
         if (inputs[13]) inputs[13].value = data["Date of Received"] || "";
+        if (inputs[14]) inputs[14].value = data["Report Date"] || "";
+    }
+
+    function clearManualForm() {
+        const inputs  = document.querySelectorAll("#manual .form-grid input");
+        const selects = document.querySelectorAll("#manual .form-grid select");
+        inputs.forEach(i => i.value = "");
+        selects.forEach(s => s.selectedIndex = 0);
+        // Restore defaults that match the desktop application
+        if (inputs[4]) inputs[4].value = "Endometrial Biopsy- 1";
+        if (inputs[7]) inputs[7].value = "5";
     }
 
     let patients = [];
@@ -1332,8 +1350,8 @@
 
     async function downloadReport() {
         const data = collectManualData();
-        const logoOption = document.querySelector('#manual input[name="logoOption"]:checked')?.value || "without_logo";
-        const qrOption = document.querySelector('#manual input[name="qrOption"]:checked')?.value || "without_qr";
+        const logoOption = document.querySelector('input[name="manualLogoOption"]:checked')?.value || "with_logo";
+        const qrOption = document.querySelector('input[name="manualQrOption"]:checked')?.value || "without_qr";
         data["logo_option"] = logoOption;
         data["qr_option"] = qrOption;
         try {
@@ -1379,6 +1397,7 @@
         p["TERA result"] = document.getElementById("edit_result").value;
         p["Time for report"] = document.getElementById("edit_time_report").value;
         p["Date of Received"] = document.getElementById("edit_date_received").value;
+        p["Report Date"] = document.getElementById("edit_report_date").value;
         return p;
     }
 
@@ -1402,8 +1421,8 @@
         _manualPreviewCtrl = new AbortController();
         const signal = _manualPreviewCtrl.signal;
         const data = collectManualData();
-        const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
-        const qrOption = document.querySelector('input[name="qrOption"]:checked')?.value || "without_qr";
+        const logoOption = document.querySelector('input[name="manualLogoOption"]:checked')?.value || "with_logo";
+        const qrOption = document.querySelector('input[name="manualQrOption"]:checked')?.value || "without_qr";
         data["logo_option"] = logoOption;
         data["qr_option"] = qrOption;
         try {
@@ -1426,7 +1445,7 @@
   <script>
     async function generateSelected(rows) {
         if (!rows || rows.length === 0) { showToast("No patients selected.", "error"); return; }
-        const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
+        const logoOption = document.querySelector('input[name="bulkLogoOption"]:checked')?.value || "with_logo";
         const qrOption = document.querySelector('input[name="bulkQrOption"]:checked')?.value || "without_qr";
         const rowsWithLogo = rows.map(r => ({ ...r, logo_option: logoOption, qr_option: qrOption }));
         try {
@@ -1563,7 +1582,7 @@
     }
 
     async function generateAllReports() {
-        const logoOption = document.querySelector('input[name="logoOption"]:checked')?.value || "without_logo";
+        const logoOption = document.querySelector('input[name="bulkLogoOption"]:checked')?.value || "with_logo";
         const qrOption = document.querySelector('input[name="bulkQrOption"]:checked')?.value || "without_qr";
         const rows = patients.map(r => ({ ...r, logo_option: logoOption, qr_option: qrOption }));
         try {
@@ -1709,6 +1728,7 @@
         document.getElementById("edit_result").value = p["TERA result"] || "Receptive";
         document.getElementById("edit_time_report").value = p["Time for report"] || "";
         document.getElementById("edit_date_received").value = p["Date of Received"] || "";
+        document.getElementById("edit_report_date").value = p["Report Date"] || "";
 
         updateBulkPreview(p);
     }
@@ -1720,8 +1740,8 @@
         _bulkPreviewCtrl = new AbortController();
         const signal = _bulkPreviewCtrl.signal;
         try {
-            const logoOption = document.querySelector('#bulk input[name="logoOption"]:checked')?.value || "without_logo";
-            const qrOption   = document.querySelector('#bulk input[name="bulkQrOption"]:checked')?.value || "without_qr";
+            const logoOption = document.querySelector('input[name="bulkLogoOption"]:checked')?.value || "with_logo";
+            const qrOption   = document.querySelector('input[name="bulkQrOption"]:checked')?.value || "without_qr";
             const bodyData = { ...data, logo_option: logoOption, qr_option: qrOption };
             const res = await fetch(API + "/preview", {
                 method: "POST",

@@ -79,6 +79,11 @@ app.mount("/reports-pgta", StaticFiles(directory=PGTA_REPORT_DIR), name="reports
 app.mount("/pgta-fonts", StaticFiles(directory=os.path.join(BASE_DIR, "assets", "pgta", "fonts")), name="pgta-fonts")
 app.mount("/pgta-assets", StaticFiles(directory=os.path.join(BASE_DIR, "assets", "pgta")), name="pgta-assets")
 
+# Serve BED file reports
+BED_DIR = os.path.join(ROOT_DIR, "bed")
+if os.path.exists(BED_DIR):
+    app.mount("/bed", StaticFiles(directory=BED_DIR), name="bed")
+
 # Serve root-level static assets (logo, icons, images)
 if os.path.exists(ROOT_DIR):
     app.mount("/static", StaticFiles(directory=ROOT_DIR), name="static")

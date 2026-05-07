@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anderson Lab</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://kit.fontawesome.com/c993345b5e.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div id="header">
+        <div class="container">
+    <nav>
+        <img src="./Images/pic2.png" alt="" class="logo">
+    
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="index.html #tools">Tools</a></li>
+            <li><a href="index.html #contact">Contact us</a></li>
+            
+        </ul>
+       
+    </nav>
+   
+        <div class="container">
+            <h1 class="sub-title">Tools and Softwares</h1>
+            <div class="services-list">
+                <div>
+                    <i class="fa-solid fa-code"></i>
+                    <h2>NGS</h2>
+                
+                     <a href="ngs.html">Click Here</a>
+                </div>
+                <div>
+                    <i class="fa-solid fa-code"></i>
+                    <h2>Metagenomic</h2>
+                    
+                     <a href="">Click Here</a>
+                </div>
+                <div>
+                    <i class="fa-solid fa-code"></i>
+                    <h2>Genemind</h2>
+                    
+                     <a href="genemindrawdata.html">Click Here</a>
+                </div>
+                <div>
+                    <i class="fa-solid fa-code"></i>
+                    <h2>Report</h2>
+                    
+                     <a href="">Click Here</a>
+                </div>
+                <div>
+                    <i class="fa-solid fa-code"></i>
+                    <h2>Report Template</h2>
+                    
+                     <a href="template.html">Click Here</a>
+                </div>
+                
+                
+            </div>
+        </div>
+    </div>   
+</div>
+
+
+    <script>
+
+        var tablinks=document.getElementsByClassName("tab-links");
+        var tabcontents=document.getElementsByClassName("tab-contents");
+    
+        function opentab(tabname){
+            for(tablink of tablinks){
+                tablink.classList.remove("active-links");
+            }
+        
+        
+            for(tabcontent of tabcontents){
+                tabcontent.classList.remove("active-tab");
+            }
+            event.currentTarget.classList.add("active-links");
+            document.getElementById(tabname).classList.add("active-tab")
+        }
+        
+    </script>
+    </body>
+    </html>

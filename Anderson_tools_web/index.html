@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anderson Lab</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://kit.fontawesome.com/c993345b5e.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div id="header">
+        <div class="container">
+    <nav>
+        <img src="./Images/pic2.png" alt="" class="logo">
+    
+        <ul>
+            <li><a href="#header">Home</a></li>
+            <li><a href="#tools">Tools</a></li>
+
+            
+        </ul>
+       
+    </nav>
+    <div class="header">
+        <h1>Anderson Diagnostics and Labs</h1>
+        <p>A collective database of different Tools and Software used in Anderson Diagnostic and lab</p><br>
+        <a href="#tools" class="learn-more-button">Learn More</a>
+ 
+     </div>
+</div>
+</div>
+
+<!-- Tools -->
+<div id="tools">
+    <div class="container">
+        <h1 class="sub-title">Tools and Softwares</h1>
+        <div class="services-list">
+            <div>
+                <i class="fa-solid fa-clipboard-user"></i>
+                <h2>Raw data</h2>
+                <p>Bioinformatics FASTQ files store high-throughput sequencing data, containing nucleotide sequences and corresponding quality scores, crucial for downstream analysis in genomics research. These files enable researchers to assess sequence quality, detect variations, and explore genomic information with precision and accuracy.</p>
+                 <a href="Raw.html">Click Here</a>
+            </div>
+            <div>
+                <i class="fa-solid fa-flask-vial"></i>
+                <h2>Primary Tools</h2>
+                <p>Bioinformatics primary QC tools assess raw data quality, identifying errors and inconsistencies, crucial for ensuring data integrity and reliable downstream analysis in genomics, proteomics, and other omics studies. These tools often include FastQC, Trimmomatic, and Fastp, offering functionalities such as read quality assessment, adapter trimming, and filtering.</p>
+                 <a href="primary.html">Click Here</a>
+            </div>
+            <div>
+                <i class="fa-solid fa-code"></i>
+                <h2>Secondary Tools</h2>
+                <p>Bioinformatics secondary GATK (Genome Analysis Toolkit) tools focus on variant discovery and genotyping from high-throughput sequencing data, providing advanced algorithms for accurate variant calling and filtering, essential for identifying genetic variations in large-scale genomic studies like population genetics and clinical genomics. GATK tools like HaplotypeCaller and VariantRecalibrator are widely used for their robustness in detecting variants with high sensitivity and specificity.</p>
+                 <a href="secondary.html">Click Here</a>
+            </div>
+            <div>
+                <i class="fa-solid fa-dna"></i>
+                <h2>Tertiary Tools</h2>
+                <p>Determining whether a variant is synonymous, missense, nonsense, or frameshift, and predicting its effect on the protein function. Identifying which genes the variants are located in or near, and determining their potential regulatory roles.Assessing how common the variants are in different populations using databases like 1000 Genomes, gnomAD, or ExAC.Linking variants to known clinical outcomes, diseases, or phenotypes using resources like ClinVar or OMIM.Linking variants to known clinical outcomes, diseases, or phenotypes using resources like ClinVar or OMIM.</p>
+                 <a href="tertiary.html">Click Here</a>
+            </div>
+            <div>
+                <i class="fa-solid fa-code"></i>
+                <h2>Phenotypes Panel</h2>
+                <p>Phenotypes Panel is typically used in genomic studies to identify and annotate various phenotypic traits associated with specific genes or genetic variations. This panel helps researchers and clinicians understand how genetic variations influence physical characteristics, disease predispositions, and other biological traits.</p>
+                 <a href="phenotypes.html">Click Here</a>
+            </div>
+             <div>
+                <i class="fa-solid fa-code"></i>
+                <h2>Posters</h2>
+                <p>Posters presented by Bioinfo team members</p>
+                 <a href="posters.html">Click Here</a>
+            </div>
+             <div>
+                <i class="fa-solid fa-code"></i>
+                <h2>Certificates</h2>
+                <p>Certificates earned by Bionfo team members due to their effort and hardwork from various external organization participation.</p>
+                 <a href="certificates.html">Click Here</a>
+            </div>
+             <div>
+                <i class="fa-solid fa-users-gear"></i>
+                <h2>Bioinfo Team</h2>
+                <p>Meet the Bioinformatics team — a directory of primary and secondary team members, their roles, projects, and contributions to Anderson Diagnostics & Labs.</p>
+                 <a href="bioinfo-team.html">Click Here</a>
+            </div>
+            
+        </div>
+    </div>
+</div>
+<div class="copyright">
+    <ul class="menu">
+        <li>&copy; Anderson Diagnostic and Lab</li>
+        <li>Design: BIOINFORMATIC LAB (ANDERSON DIAGNOSTIC AND LABS)</li>
+    </ul>
+</div>
+
+<script>
+
+    var tablinks=document.getElementsByClassName("tab-links");
+    var tabcontents=document.getElementsByClassName("tab-contents");
+
+    function opentab(tabname){
+        for(tablink of tablinks){
+            tablink.classList.remove("active-links");
+        }
+    
+    
+        for(tabcontent of tabcontents){
+            tabcontent.classList.remove("active-tab");
+        }
+        event.currentTarget.classList.add("active-links");
+        document.getElementById(tabname).classList.add("active-tab")
+    }
+    
+</script>
+
+</body>
+</html>

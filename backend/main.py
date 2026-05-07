@@ -84,6 +84,11 @@ BED_DIR = os.path.join(ROOT_DIR, "bed")
 if os.path.exists(BED_DIR):
     app.mount("/bed", StaticFiles(directory=BED_DIR), name="bed")
 
+# Serve Anderson Internal Tools web app
+ANDERSON_TOOLS_DIR = os.path.join(ROOT_DIR, "Anderson_tools_web")
+if os.path.exists(ANDERSON_TOOLS_DIR):
+    app.mount("/anderson-tools", StaticFiles(directory=ANDERSON_TOOLS_DIR), name="anderson-tools")
+
 # Serve root-level static assets (logo, icons, images)
 if os.path.exists(ROOT_DIR):
     app.mount("/static", StaticFiles(directory=ROOT_DIR), name="static")

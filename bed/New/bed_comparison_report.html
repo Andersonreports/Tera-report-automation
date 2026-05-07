@@ -79,6 +79,33 @@
   .def-tbl th { font-size: 12px; }
   footer{text-align:center;padding:24px;color:var(--sub);font-size:12px;
           border-top:1px solid var(--border);margin-top:40px}
+
+  /* ── Download dropdown ── */
+  .dl-wrap{position:relative;display:flex;align-items:center;margin-left:auto;padding:6px 0}
+  .dl-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:7px 14px;background:#2196F3;color:#fff;
+    border:none;border-radius:6px;font-size:13px;font-weight:600;
+    cursor:pointer;white-space:nowrap;font-family:inherit;transition:.15s;
+  }
+  .dl-btn:hover{background:#1976D2}
+  .dl-menu{
+    display:none;position:absolute;top:calc(100% + 2px);right:0;
+    background:#fff;border:1px solid var(--border);border-radius:8px;
+    box-shadow:0 6px 20px rgba(0,0,0,.12);min-width:320px;z-index:500;
+    overflow:hidden;
+  }
+  .dl-menu.open{display:block}
+  .dl-menu a{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 16px;font-size:13px;color:var(--text);
+    text-decoration:none;transition:.15s;border-bottom:1px solid var(--border);
+  }
+  .dl-menu a:last-child{border-bottom:none}
+  .dl-menu a:hover{background:#eef4ff;color:#2196F3}
+  .dl-menu a .file-icon{font-size:15px;flex-shrink:0}
+  .dl-menu a .file-name{font-weight:600}
+  .dl-menu a .file-size{margin-left:auto;font-size:11px;color:var(--sub)}
 </style>
 </head>
 <body>
@@ -98,6 +125,35 @@
   <a href="#chromosome">Per Chromosome</a>
   <a href="#f8">F8 Gene</a>
   <a href="#definitions">Definitions</a>
+
+  <div class="dl-wrap">
+    <button class="dl-btn" onclick="toggleDlMenu(event)">
+      &#11123; Download File &#9660;
+    </button>
+    <div class="dl-menu" id="dlMenu">
+      <a href="/bed/New/Spiken.bed" download="Spiken.bed">
+        <span class="file-icon">&#128196;</span>
+        <span class="file-name">Spiken.bed</span>
+      </a>
+      <a href="/bed/New/ROCHE.bed" download="ROCHE.bed">
+        <span class="file-icon">&#128196;</span>
+        <span class="file-name">ROCHE.bed</span>
+      </a>
+      <a href="/bed/New/Nonacus.bed" download="Nonacus.bed">
+        <span class="file-icon">&#128196;</span>
+        <span class="file-name">Nonacus.bed</span>
+      </a>
+      <a href="/bed/New/Nonacus nonacus_cell3_target_nexome_grch38_target_merged.bed"
+         download="Nonacus_cell3_target_nexome_grch38_target_merged.bed">
+        <span class="file-icon">&#128196;</span>
+        <span class="file-name">Nonacus cell3 target nexome (merged).bed</span>
+      </a>
+      <a href="/bed/New/Medgenome.bed" download="Medgenome.bed">
+        <span class="file-icon">&#128196;</span>
+        <span class="file-name">Medgenome.bed</span>
+      </a>
+    </div>
+  </div>
 </nav>
 <main>
 
@@ -917,6 +973,15 @@ window.addEventListener('scroll', () => {
   navLinks.forEach(a => {
     a.classList.toggle('active', a.getAttribute('href') === '#'+current);
   });
+});
+
+// Download dropdown toggle
+function toggleDlMenu(e) {
+  e.stopPropagation();
+  document.getElementById('dlMenu').classList.toggle('open');
+}
+document.addEventListener('click', () => {
+  document.getElementById('dlMenu').classList.remove('open');
 });
 </script>
 </body>

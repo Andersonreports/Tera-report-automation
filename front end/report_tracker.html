@@ -648,15 +648,34 @@
     
     .an-sidebar { padding: 20px; display: flex; flex-direction: column; gap: 20px; background: var(--panel); border-radius: var(--r); border: 1px solid var(--pb); position: sticky; top: 100px; }
     
-    .an-filter-group { display: flex; flex-direction: column; gap: 8px; }
-    .an-filter-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+    .an-layout { display: flex; flex-direction: column; gap: 20px; }
+    .an-charts-scroll { display: flex; flex-direction: column; gap: 20px; width: 100%; }
     
-    .an-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .an-card-toolbar {
+      display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+      background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--pb);
+      flex-wrap: wrap;
+    }
+    @media(prefers-color-scheme:dark){ .an-card-toolbar { background: rgba(255,255,255,0.03); } }
     
-    @media(max-width:1100px){ 
-      .an-layout { grid-template-columns: 1fr; } 
-      .an-sidebar { position: static; margin-bottom: 20px; order: -1; } 
-      .an-charts-scroll { max-height: none; overflow: visible; }
+    .an-card-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .an-card-search {
+      display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px;
+      padding: 0 12px; height: 34px; border: 1.5px solid var(--bdr);
+      border-radius: 8px; background: var(--ib);
+    }
+    .an-card-search input { border: none; background: transparent; outline: none; font-size: 12px; color: var(--text); width: 100%; }
+    .an-card-search svg { color: var(--muted); }
+    
+    .an-card-sel {
+      height: 34px; padding: 0 10px; border: 1.5px solid var(--bdr);
+      border-radius: 8px; background: var(--ib); color: var(--text);
+      font-size: 12px; outline: none; cursor: pointer;
+    }
+
+    @media(max-width:900px){ 
+      .an-card-toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
+      .an-card-search { min-width: 100%; }
     }
 
   </style>
@@ -961,7 +980,6 @@
     </div>
 
     <div class="an-layout">
-      <!-- 1. LEFT: Vertical Scrollable Charts -->
       <div class="an-charts-scroll">
         
         <!-- Chart 1: Test Wise Sample Count -->
@@ -970,11 +988,31 @@
             <span class="an-chart-title">Test-wise Sample Count</span>
             <span class="badge b-rel">Pie Chart</span>
           </div>
+          
+          <div class="an-card-toolbar">
+            <div class="an-card-filters">
+              <select id="an-f1-year" class="an-card-sel" onchange="anDrawChart1()">
+                <option value="All">All Years</option>
+              </select>
+              <select id="an-f1-month" class="an-card-sel" onchange="anDrawChart1()">
+                <option value="All">All Months</option>
+                <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
+                <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
+                <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
+                <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
+              </select>
+            </div>
+            <div class="an-card-search">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="an-f1-search" placeholder="Search test name..." oninput="anDrawChart1()">
+            </div>
+          </div>
+
           <div class="an-chart-body">
             <canvas id="an-chart-1"></canvas>
           </div>
           <div class="an-chart-footer">
-            <span style="font-size:11px; color:var(--muted)">Breakdown of samples by test type</span>
+            <span style="font-size:11px; color:var(--muted)">Distribution of samples by test type</span>
             <div id="an-total-1" class="an-total-box">Total: 0</div>
           </div>
         </div>
@@ -985,52 +1023,35 @@
             <span class="an-chart-title">Client-wise Analysis</span>
             <span class="badge b-ong">Bar Chart</span>
           </div>
-          <div class="an-chart-body">
+
+          <div class="an-card-toolbar">
+            <div class="an-card-filters">
+              <select id="an-f2-year" class="an-card-sel" onchange="anDrawChart2()">
+                <option value="All">All Years</option>
+              </select>
+              <select id="an-f2-month" class="an-card-sel" onchange="anDrawChart2()">
+                <option value="All">All Months</option>
+                <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
+                <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
+                <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
+                <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
+              </select>
+            </div>
+            <div class="an-card-search">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="an-f2-search" placeholder="Search client name..." oninput="anDrawChart2()">
+            </div>
+          </div>
+
+          <div class="an-chart-body" style="min-height:350px">
             <canvas id="an-chart-2"></canvas>
           </div>
           <div class="an-chart-footer">
-            <span style="font-size:11px; color:var(--muted)">Monthly volume by client</span>
+            <span style="font-size:11px; color:var(--muted)">Sample volume comparison by client</span>
             <div id="an-total-2" class="an-total-box">Total: 0</div>
           </div>
         </div>
 
-      </div>
-
-      <!-- 2. RIGHT: Sidebar Filters -->
-      <div class="an-sidebar">
-        <div class="an-section-label">Report Filters</div>
-        
-        <div class="an-filter-group">
-          <label class="an-filter-label">Select Year</label>
-          <select id="an-filter-year" class="sel" onchange="anDrawAll()">
-            <option value="All">All Years</option>
-          </select>
-        </div>
-
-        <div class="an-filter-group">
-          <label class="an-filter-label">Select Month</label>
-          <select id="an-filter-month" class="sel" onchange="anDrawAll()">
-            <option value="All">All Months</option>
-            <option value="Jan">January</option>
-            <option value="Feb">February</option>
-            <option value="Mar">March</option>
-            <option value="Apr">April</option>
-            <option value="May">May</option>
-            <option value="Jun">June</option>
-            <option value="Jul">July</option>
-            <option value="Aug">August</option>
-            <option value="Sep">September</option>
-            <option value="Oct">October</option>
-            <option value="Nov">November</option>
-            <option value="Dec">December</option>
-          </select>
-        </div>
-
-        <div style="margin-top:auto; padding-top:20px; border-top:1px solid var(--pb)">
-          <p style="font-size:11px; color:var(--muted); line-height:1.5">
-            Charts update automatically when filters are changed. Total count is displayed at the bottom of each visual.
-          </p>
-        </div>
       </div>
     </div>
   </div>
@@ -2620,74 +2641,97 @@ function filterPriority(month) {
 
 
 // ================================================================
-//  ANALYTICS STUDIO (Power BI Style)
+//  ANALYTICS STUDIO
 // ================================================================
-let anChart = null;
 let anChart1 = null;
 let anChart2 = null;
 
 function anInitFilters() {
-  const ySel = document.getElementById('an-filter-year');
-  if (!ySel || ySel.children.length > 1) return;
-
   const years = [...new Set(rows.map(r => {
     const d = parseDate(r.tat) || parseDate(r.rel_date);
     return d ? d.getFullYear() : null;
   }).filter(Boolean))].sort((a, b) => b - a);
 
-  years.forEach(y => {
-    const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = y;
-    ySel.appendChild(opt);
+  ['an-f1-year', 'an-f2-year'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel || sel.children.length > 1) return;
+    years.forEach(y => {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      sel.appendChild(opt);
+    });
+    const currentYear = new Date().getFullYear();
+    if (years.includes(currentYear)) sel.value = currentYear;
   });
-  
-  // Set default to current year if exists
-  const currentYear = new Date().getFullYear();
-  if (years.includes(currentYear)) ySel.value = currentYear;
 }
 
 function anDrawAll() {
-  const selectedYear = document.getElementById('an-filter-year').value;
-  const selectedMonth = document.getElementById('an-filter-month').value;
-  
-  const MONTH_MAP = {
-    'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
-    'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
-  };
+  anDrawChart1();
+  anDrawChart2();
+}
 
-  // 1. Filter Data
+function anDrawChart1() {
+  const year = document.getElementById('an-f1-year').value;
+  const month = document.getElementById('an-f1-month').value;
+  const search = document.getElementById('an-f1-search').value.toLowerCase();
+
   const filtered = rows.filter(r => {
     const d = parseDate(r.tat) || parseDate(r.rel_date);
     if (!d) return false;
-    
-    const yearMatch = selectedYear === 'All' || String(d.getFullYear()) === selectedYear;
-    const monthMatch = selectedMonth === 'All' || d.toLocaleString('default', { month: 'short' }) === selectedMonth;
-    
-    return yearMatch && monthMatch;
+    const yearMatch = year === 'All' || String(d.getFullYear()) === year;
+    const monthMatch = month === 'All' || d.toLocaleString('default', { month: 'short' }) === month;
+    const searchMatch = !search || (r.test && r.test.toLowerCase().includes(search));
+    return yearMatch && monthMatch && searchMatch;
   });
 
-  // 2. Aggregate Chart 1: Test Wise Sample Count
   const testMap = {};
   filtered.forEach(r => {
     const t = r.test || 'Unknown';
     testMap[t] = (testMap[t] || 0) + 1;
   });
 
-  // 3. Aggregate Chart 2: Client Wise Volume
+  renderPieChart(testMap);
+}
+
+function anDrawChart2() {
+  const year = document.getElementById('an-f2-year').value;
+  const month = document.getElementById('an-f2-month').value;
+  const search = document.getElementById('an-f2-search').value.toLowerCase();
+
+  const filtered = rows.filter(r => {
+    const d = parseDate(r.tat) || parseDate(r.rel_date);
+    if (!d) return false;
+    const yearMatch = year === 'All' || String(d.getFullYear()) === year;
+    const monthMatch = month === 'All' || d.toLocaleString('default', { month: 'short' }) === month;
+    const searchMatch = !search || (r.client && r.client.toLowerCase().includes(search));
+    return yearMatch && monthMatch && searchMatch;
+  });
+
   const clientMap = {};
   filtered.forEach(r => {
     const c = r.client || 'Unknown';
     clientMap[c] = (clientMap[c] || 0) + 1;
   });
 
-  renderPieChart(testMap);
   renderBarChart(clientMap);
 }
 
+// High-contrast, distinct color palette
 const CHART_COLORS = [
-  '#4f46e5', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', 
-  '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#a855f7'
+  '#4f46e5', // indigo
+  '#10b981', // green
+  '#f59e0b', // amber
+  '#ef4444', // red
+  '#06b6d4', // cyan
+  '#ec4899', // pink
+  '#f97316', // orange
+  '#8b5cf6', // purple
+  '#14b8a6', // teal
+  '#84cc16', // lime
+  '#3b82f6', // blue
+  '#d946ef', // fuchsia
+  '#fbbf24', // yellow
+  '#475569'  // slate
 ];
 
 function renderPieChart(map) {
@@ -2714,8 +2758,21 @@ function renderPieChart(map) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
-        tooltip: { padding: 10 }
+        legend: { 
+          position: 'bottom', 
+          labels: { 
+            boxWidth: 12, 
+            font: { size: 11, weight: '600' },
+            padding: 15,
+            usePointStyle: true
+          } 
+        },
+        tooltip: { 
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          padding: 12,
+          bodyFont: { size: 13 },
+          titleFont: { size: 13, weight: '700' }
+        }
       }
     }
   });
@@ -2737,8 +2794,9 @@ function renderBarChart(map) {
       datasets: [{
         label: 'Sample Count',
         data: values,
-        backgroundColor: 'rgba(79, 70, 229, 0.8)',
-        borderRadius: 6
+        backgroundColor: 'rgba(79, 70, 229, 0.85)',
+        borderRadius: 6,
+        hoverBackgroundColor: '#4f46e5'
       }]
     },
     options: {
@@ -2746,8 +2804,15 @@ function renderBarChart(map) {
       maintainAspectRatio: false,
       indexAxis: 'y',
       scales: {
-        x: { beginAtZero: true, grid: { display: false } },
-        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        x: { 
+          beginAtZero: true, 
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { font: { size: 11 } }
+        },
+        y: { 
+          grid: { display: false }, 
+          ticks: { font: { size: 11, weight: '500' } } 
+        }
       },
       plugins: {
         legend: { display: false },

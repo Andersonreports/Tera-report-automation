@@ -617,52 +617,48 @@
     .an-header{display:flex;align-items:center;justify-content:space-between;padding:20px 0 10px}
     .an-title{font-size:18px;font-weight:800;background:linear-gradient(135deg,#4f46e5,#8b5cf6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
     
-    .an-top-bar { display: flex; align-items: center; padding: 12px 20px; margin-bottom: 15px; border-radius: 12px; }
-    .an-chart-types { display: flex; gap: 8px; flex-wrap: wrap; }
-    .an-ct { 
-      padding: 6px 12px; display: flex; align-items: center; justify-content: center; 
-      border-radius: 20px; border: 1.5px solid var(--bdr); background: var(--ib); 
-      color: var(--muted); cursor: pointer; transition: var(--tr); 
+    .an-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
+    
+    .an-charts-scroll { 
+      display: flex; flex-direction: column; gap: 20px; 
+      max-height: calc(100vh - 200px); overflow-y: auto; padding-right: 8px;
+      scrollbar-width: thin;
     }
-    .an-ct:hover { border-color: var(--pri); color: var(--pri); background: rgba(79,70,229,.06); }
-    .an-ct.active { border-color: var(--pri); color: var(--pri); background: rgba(79,70,229,.1); border-width: 2px; }
     
-    .an-layout { display: grid; grid-template-columns: 1fr 480px; gap: 16px; align-items: start; }
-    .an-canvas-wrap { padding: 24px; min-height: 480px; display: flex; flex-direction: column; align-items: stretch; }
+    .an-chart-card { 
+      padding: 24px; min-height: 400px; display: flex; flex-direction: column; 
+      background: var(--panel); border: 1px solid var(--pb); border-radius: var(--r);
+      box-shadow: var(--sh);
+    }
     
-    .an-sidebar { padding: 16px; display: flex; flex-direction: column; background: rgba(255,255,255,0.4); border-radius: 12px; }
-    .an-split-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-    .an-split-col { display: flex; flex-direction: column; gap: 8px; }
+    .an-chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .an-chart-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    
+    .an-chart-body { flex: 1; position: relative; min-height: 300px; }
+    
+    .an-chart-footer { 
+      margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--pb);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    
+    .an-total-box { 
+      padding: 6px 14px; border-radius: 20px; background: rgba(79,70,229,.1); 
+      color: var(--pri); font-weight: 700; font-size: 13px; border: 1px solid rgba(79,70,229,.2);
+    }
+    
+    .an-sidebar { padding: 20px; display: flex; flex-direction: column; gap: 20px; background: var(--panel); border-radius: var(--r); border: 1px solid var(--pb); position: sticky; top: 100px; }
+    
+    .an-filter-group { display: flex; flex-direction: column; gap: 8px; }
+    .an-filter-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
     
     .an-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
     
-    .an-fields { display: flex; flex-direction: column; gap: 5px; max-height: 420px; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
-    .an-field { 
-      display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; 
-      background: var(--pb); border: 1px solid var(--bdr); font-size: 11.5px; font-weight: 600; 
-      cursor: grab; transition: var(--tr); user-select: none;
+    @media(max-width:1100px){ 
+      .an-layout { grid-template-columns: 1fr; } 
+      .an-sidebar { position: static; margin-bottom: 20px; order: -1; } 
+      .an-charts-scroll { max-height: none; overflow: visible; }
     }
-    .an-field:hover { border-color: var(--pri); background: rgba(79,70,229,.07); color: var(--pri); }
-    .an-field .af-icon { width: 18px; height: 18px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 9px; background: rgba(79,70,229,.1); color: var(--pri); flex-shrink: 0; }
-    
-    .an-drop-stack { display: flex; flex-direction: column; gap: 6px; }
-    .an-drop-label { font-size: 10.5px; font-weight: 600; color: var(--muted); margin-top: 2px; }
-    .an-drop-zone { 
-      min-height: 38px; display: flex; align-items: center; justify-content: center; 
-      padding: 5px; border-radius: 8px; border: 2px dashed var(--bdr); 
-      background: rgba(79,70,229,.02); font-size: 10.5px; color: var(--muted); 
-      text-align: center; transition: var(--tr);
-    }
-    .an-drop-zone.has-field { border-style: solid; border-color: var(--pri); background: rgba(79,70,229,.08); color: var(--pri); font-weight: 700; }
-    .an-drop-zone.drag-over { border-color: var(--pri); background: rgba(79,70,229,.12); transform: scale(1.02); }
-    
-    .an-format-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    
-    .an-empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 20px; opacity: .75; }
-    .an-summary-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-    .an-chip { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; background: rgba(79,70,229,.1); color: var(--pri); border: 1px solid rgba(79,70,229,.2); }
-    
-    @media(max-width:1200px){ .an-layout { grid-template-columns: 1fr; } .an-sidebar { margin-top: 15px; } }
+
   </style>
 </head>
 <body>
@@ -955,110 +951,90 @@
     <div class="an-header">
       <div>
         <h2 class="an-title">Analytics Studio</h2>
-        <p class="an-sub">Drag fields to configure your chart — like Power BI</p>
+        <p class="an-sub">Monthly trend and distribution analysis</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn btn-out btn-sm" onclick="anExportPNG()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export PNG
         </button>
-        <button class="btn btn-pri btn-sm" onclick="anDraw()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Draw Chart
-        </button>
-      </div>
-    </div>
-
-    <!-- 1. TOP BAR: Chart Types -->
-    <div class="an-top-bar glass">
-      <div class="an-section-label" style="margin-bottom:0; margin-right:15px">Chart Type</div>
-      <div class="an-chart-types" id="an-chart-types">
-        <div class="an-ct active" data-type="bar" onclick="anSelectChart(this)" title="Bar Chart">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <span style="font-size:10px; font-weight:700; margin-left:6px">Bar</span>
-        </div>
-        <div class="an-ct" data-type="horizontalBar" onclick="anSelectChart(this)" title="Horizontal Bar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="17" y2="18"/></svg>
-          <span style="font-size:10px; font-weight:700; margin-left:6px">Horiz</span>
-        </div>
-        <div class="an-ct" data-type="line" onclick="anSelectChart(this)" title="Line Chart">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <span style="font-size:10px; font-weight:700; margin-left:6px">Line</span>
-        </div>
-        <div class="an-ct" data-type="area" onclick="anSelectChart(this)" title="Area Chart">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M3 15l5-5 4 4 5-6 4 4"/></svg>
-          <span style="font-size:10px; font-weight:700; margin-left:6px">Area</span>
-        </div>
-        <div class="an-ct" data-type="pie" onclick="anSelectChart(this)" title="Pie Chart">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
-          <span style="font-size:10px; font-weight:700; margin-left:6px">Pie</span>
-        </div>
-        <div class="an-ct" data-type="doughnut" onclick="anSelectChart(this)" title="Doughnut Chart">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
-          <span style="font-size:10px; font-weight:700; margin-left:6px">Donut</span>
-        </div>
       </div>
     </div>
 
     <div class="an-layout">
-      <!-- 2. LEFT: Chart Area -->
-      <div class="an-canvas-wrap glass">
-        <div id="an-empty-state" class="an-empty-state">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <p style="font-size:14px;font-weight:600;color:var(--muted);margin-top:12px">Drag fields to the right panels to draw</p>
+      <!-- 1. LEFT: Vertical Scrollable Charts -->
+      <div class="an-charts-scroll">
+        
+        <!-- Chart 1: Test Wise Sample Count -->
+        <div class="an-chart-card">
+          <div class="an-chart-header">
+            <span class="an-chart-title">Test-wise Sample Count</span>
+            <span class="badge b-rel">Pie Chart</span>
+          </div>
+          <div class="an-chart-body">
+            <canvas id="an-chart-1"></canvas>
+          </div>
+          <div class="an-chart-footer">
+            <span style="font-size:11px; color:var(--muted)">Breakdown of samples by test type</span>
+            <div id="an-total-1" class="an-total-box">Total: 0</div>
+          </div>
         </div>
-        <canvas id="an-chart" style="display:none; max-height: 540px"></canvas>
-        <div id="an-summary-strip" class="an-summary-strip"></div>
+
+        <!-- Chart 2: Client Wise Volume -->
+        <div class="an-chart-card">
+          <div class="an-chart-header">
+            <span class="an-chart-title">Client-wise Analysis</span>
+            <span class="badge b-ong">Bar Chart</span>
+          </div>
+          <div class="an-chart-body">
+            <canvas id="an-chart-2"></canvas>
+          </div>
+          <div class="an-chart-footer">
+            <span style="font-size:11px; color:var(--muted)">Monthly volume by client</span>
+            <div id="an-total-2" class="an-total-box">Total: 0</div>
+          </div>
+        </div>
+
       </div>
 
-      <!-- 3. RIGHT: 2-Column Controls -->
-      <div class="an-sidebar glass">
-        <div class="an-split-row">
-          
-          <!-- Column A: Configuration (Build Visual) -->
-          <div class="an-split-col">
-            <div class="an-section-label">Build Visual</div>
-            <div class="an-drop-stack">
-              <div class="an-drop-label">Axis / Category</div>
-              <div class="an-drop-zone" id="an-zone-x" ondragover="event.preventDefault()" ondrop="anDrop(event,'x')">
-                <span id="an-zone-x-label">Drop here</span>
-              </div>
-              
-              <div class="an-drop-label">Values</div>
-              <div class="an-drop-zone" id="an-zone-y" ondragover="event.preventDefault()" ondrop="anDrop(event,'y')">
-                <span id="an-zone-y-label">Drop here</span>
-              </div>
-              
-              <div class="an-drop-label">Filters</div>
-              <div class="an-drop-zone" id="an-zone-filter" ondragover="event.preventDefault()" ondrop="anDrop(event,'filter')" style="background:rgba(16,185,129,.02)">
-                <span id="an-zone-filter-label">Drop here</span>
-              </div>
-              <div id="an-filter-val-wrap" style="display:none; margin-top: 4px">
-                <select class="sel" id="an-filter-val" style="width:100%;font-size:10px" onchange="anDraw()"><option value="">All values</option></select>
-              </div>
+      <!-- 2. RIGHT: Sidebar Filters -->
+      <div class="an-sidebar">
+        <div class="an-section-label">Report Filters</div>
+        
+        <div class="an-filter-group">
+          <label class="an-filter-label">Select Year</label>
+          <select id="an-filter-year" class="sel" onchange="anDrawAll()">
+            <option value="All">All Years</option>
+          </select>
+        </div>
 
-              <div class="an-drop-label" style="margin-top:8px">Options</div>
-              <div class="an-format-grid">
-                <select class="sel" id="an-agg" style="width:100%;font-size:10px" onchange="anDraw()">
-                  <option value="count">Count</option>
-                  <option value="sum">Sum</option>
-                </select>
-                <select class="sel" id="an-topn" style="width:100%;font-size:10px" onchange="anDraw()">
-                  <option value="0">All</option>
-                  <option value="10">Top 10</option>
-                </select>
-              </div>
-            </div>
-          </div>
+        <div class="an-filter-group">
+          <label class="an-filter-label">Select Month</label>
+          <select id="an-filter-month" class="sel" onchange="anDrawAll()">
+            <option value="All">All Months</option>
+            <option value="Jan">January</option>
+            <option value="Feb">February</option>
+            <option value="Mar">March</option>
+            <option value="Apr">April</option>
+            <option value="May">May</option>
+            <option value="Jun">June</option>
+            <option value="Jul">July</option>
+            <option value="Aug">August</option>
+            <option value="Sep">September</option>
+            <option value="Oct">October</option>
+            <option value="Nov">November</option>
+            <option value="Dec">December</option>
+          </select>
+        </div>
 
-          <!-- Column B: Available Fields -->
-          <div class="an-split-col" style="border-left: 1px solid var(--bdr); padding-left: 15px">
-            <div class="an-section-label">Fields</div>
-            <div class="an-fields" id="an-fields"></div>
-          </div>
-
+        <div style="margin-top:auto; padding-top:20px; border-top:1px solid var(--pb)">
+          <p style="font-size:11px; color:var(--muted); line-height:1.5">
+            Charts update automatically when filters are changed. Total count is displayed at the bottom of each visual.
+          </p>
         </div>
       </div>
     </div>
   </div>
+
 
 </main>
 
@@ -1575,7 +1551,7 @@ function switchTab(id, btn) {
   document.getElementById(PAGE_MAP[id]).classList.add('active');
   btn.classList.add('active');
   if (id==='overdue') renderOverdue();
-  else if (id==='analytics') { anPopulateFields(); anDraw(); }
+  else if (id==='analytics') { anInitFilters(); anDrawAll(); }
   else if (id!=='dashboard') renderTable(id);
 }
 
@@ -2647,196 +2623,146 @@ function filterPriority(month) {
 //  ANALYTICS STUDIO (Power BI Style)
 // ================================================================
 let anChart = null;
-let anState = {
-  type: 'bar',
-  x: null,
-  y: null,
-  filter: null,
-  filterVal: '',
-  agg: 'count',
-  topn: 0
-};
+let anChart1 = null;
+let anChart2 = null;
 
-const AN_FIELDS = [
-  { id: 'test',    label: 'Test',      icon: 'T' },
-  { id: 'client',  label: 'Client',    icon: 'C' },
-  { id: 'status',  label: 'Status',    icon: 'S' },
-  { id: 'analyst', label: 'Analyst',   icon: 'A' },
-  { id: 'pri_rev', label: 'Reviewer',  icon: 'R' },
-  { id: 'run_txt', label: 'Run',       icon: '# ' },
-  { id: 'tat_m',   label: 'TAT Month', icon: 'M' },
-  { id: 'tat_y',   label: 'TAT Year',  icon: 'Y' },
-  { id: 'rel_m',   label: 'Rel Month', icon: 'M' },
-  { id: 'rel_y',   label: 'Rel Year',  icon: 'Y' }
-];
+function anInitFilters() {
+  const ySel = document.getElementById('an-filter-year');
+  if (!ySel || ySel.children.length > 1) return;
 
-function anPopulateFields() {
-  const container = document.getElementById('an-fields');
-  if (!container || container.children.length > 0) return;
-  
-  container.innerHTML = AN_FIELDS.map(f => `
-    <div class="an-field" draggable="true" ondragstart="anDragStart(event, '${f.id}', '${f.label}')">
-      <span class="af-icon">${f.icon}</span>
-      <span>${f.label}</span>
-    </div>
-  `).join('');
-}
+  const years = [...new Set(rows.map(r => {
+    const d = parseDate(r.tat) || parseDate(r.rel_date);
+    return d ? d.getFullYear() : null;
+  }).filter(Boolean))].sort((a, b) => b - a);
 
-function anDragStart(e, id, label) {
-  e.dataTransfer.setData('fieldId', id);
-  e.dataTransfer.setData('fieldLabel', label);
-}
-
-function anDrop(e, zone) {
-  e.preventDefault();
-  const id = e.dataTransfer.getData('fieldId');
-  const label = e.dataTransfer.getData('fieldLabel');
-  
-  anState[zone] = id;
-  const zoneEl = document.getElementById(`an-zone-${zone}`);
-  zoneEl.classList.add('has-field');
-  document.getElementById(`an-zone-${zone}-label`).textContent = label;
-  
-  if (zone === 'filter') {
-    anPopulateFilterValues(id);
-  }
-  
-  anDraw();
-}
-
-function anPopulateFilterValues(fieldId) {
-  const wrap = document.getElementById('an-filter-val-wrap');
-  const sel = document.getElementById('an-filter-val');
-  wrap.style.display = 'block';
-  
-  const vals = [...new Set(rows.map(r => anGetVal(r, fieldId)).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">All Values</option>' + vals.map(v => `<option value="${v}">${v}</option>`).join('');
-  anState.filterVal = '';
-}
-
-function anSelectChart(el) {
-  document.querySelectorAll('.an-ct').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  anState.type = el.dataset.type;
-  anDraw();
-}
-
-function anGetVal(r, fieldId) {
-  if (fieldId === 'status') return getStatus(r);
-  if (fieldId === 'tat_m') { const d = parseDate(r.tat); return d ? d.toLocaleString('default', { month: 'short' }) : 'N/A'; }
-  if (fieldId === 'tat_y') { const d = parseDate(r.tat); return d ? String(d.getFullYear()) : 'N/A'; }
-  if (fieldId === 'rel_m') { const d = parseDate(r.rel_date); return d ? d.toLocaleString('default', { month: 'short' }) : 'N/A'; }
-  if (fieldId === 'rel_y') { const d = parseDate(r.rel_date); return d ? String(d.getFullYear()) : 'N/A'; }
-  return r[fieldId] || 'N/A';
-}
-
-function anDraw() {
-  if (!anState.x) return;
-  
-  const aggType = document.getElementById('an-agg').value;
-  const topN = parseInt(document.getElementById('an-topn').value);
-  const filterVal = document.getElementById('an-filter-val').value;
-  
-  // 1. Filter
-  let data = rows;
-  if (anState.filter && filterVal) {
-    data = data.filter(r => anGetVal(r, anState.filter) === filterVal);
-  }
-  
-  // 2. Aggregate
-  const map = {};
-  data.forEach(r => {
-    const x = anGetVal(r, anState.x);
-    if (!map[x]) map[x] = 0;
-    
-    if (aggType === 'count') {
-      map[x]++;
-    } else {
-      const yVal = parseFloat(anGetVal(r, anState.y));
-      if (!isNaN(yVal)) map[x] += yVal;
-    }
+  years.forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    ySel.appendChild(opt);
   });
   
-  // 3. Prepare Chart Data
-  let labels = Object.keys(map);
-  let values = labels.map(l => map[l]);
+  // Set default to current year if exists
+  const currentYear = new Date().getFullYear();
+  if (years.includes(currentYear)) ySel.value = currentYear;
+}
+
+function anDrawAll() {
+  const selectedYear = document.getElementById('an-filter-year').value;
+  const selectedMonth = document.getElementById('an-filter-month').value;
   
-  // Sort by value descending
-  const combined = labels.map((l, i) => ({ label: l, value: values[i] }));
-  combined.sort((a, b) => b.value - a.value);
-  
-  if (topN > 0) {
-    const sliced = combined.slice(0, topN);
-    labels = sliced.map(i => i.label);
-    values = sliced.map(i => i.value);
-  } else {
-    labels = combined.map(i => i.label);
-    values = combined.map(i => i.value);
-  }
-  
-  // 4. Render
-  document.getElementById('an-empty-state').style.display = 'none';
-  const canvas = document.getElementById('an-chart');
-  canvas.style.display = 'block';
-  
-  if (anChart) anChart.destroy();
-  
-  const ctx = canvas.getContext('2d');
-  const isPie = anState.type === 'pie' || anState.type === 'doughnut';
-  
-  const colors = [
-    '#4f46e5', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', 
-    '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#a855f7'
-  ];
-  
-  anChart = new Chart(ctx, {
-    type: anState.type === 'horizontalBar' ? 'bar' : anState.type,
+  const MONTH_MAP = {
+    'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+    'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+  };
+
+  // 1. Filter Data
+  const filtered = rows.filter(r => {
+    const d = parseDate(r.tat) || parseDate(r.rel_date);
+    if (!d) return false;
+    
+    const yearMatch = selectedYear === 'All' || String(d.getFullYear()) === selectedYear;
+    const monthMatch = selectedMonth === 'All' || d.toLocaleString('default', { month: 'short' }) === selectedMonth;
+    
+    return yearMatch && monthMatch;
+  });
+
+  // 2. Aggregate Chart 1: Test Wise Sample Count
+  const testMap = {};
+  filtered.forEach(r => {
+    const t = r.test || 'Unknown';
+    testMap[t] = (testMap[t] || 0) + 1;
+  });
+
+  // 3. Aggregate Chart 2: Client Wise Volume
+  const clientMap = {};
+  filtered.forEach(r => {
+    const c = r.client || 'Unknown';
+    clientMap[c] = (clientMap[c] || 0) + 1;
+  });
+
+  renderPieChart(testMap);
+  renderBarChart(clientMap);
+}
+
+const CHART_COLORS = [
+  '#4f46e5', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', 
+  '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#a855f7'
+];
+
+function renderPieChart(map) {
+  const ctx = document.getElementById('an-chart-1').getContext('2d');
+  const labels = Object.keys(map);
+  const values = Object.values(map);
+  const total = values.reduce((a, b) => a + b, 0);
+
+  document.getElementById('an-total-1').textContent = `Total: ${total}`;
+
+  if (anChart1) anChart1.destroy();
+  anChart1 = new Chart(ctx, {
+    type: 'pie',
     data: {
       labels: labels,
       datasets: [{
-        label: aggType === 'count' ? 'Count of Samples' : 'Sum of ' + anState.y,
         data: values,
-        backgroundColor: isPie ? colors : colors[0],
-        borderColor: isPie ? '#fff' : colors[0],
-        borderWidth: 1,
-        fill: anState.type === 'area',
-        tension: 0.3
+        backgroundColor: CHART_COLORS,
+        borderWidth: 2,
+        borderColor: '#ffffff'
       }]
     },
     options: {
-      indexAxis: anState.type === 'horizontalBar' ? 'y' : 'x',
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: isPie, position: 'bottom' },
-        tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12 }
-      },
-      scales: isPie ? {} : {
-        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
-        x: { grid: { display: false } }
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
+        tooltip: { padding: 10 }
       }
     }
   });
-  
-  // 5. Summary Strip
-  const strip = document.getElementById('an-summary-strip');
-  strip.style.display = 'flex';
+}
+
+function renderBarChart(map) {
+  const ctx = document.getElementById('an-chart-2').getContext('2d');
+  const labels = Object.keys(map);
+  const values = Object.values(map);
   const total = values.reduce((a, b) => a + b, 0);
-  strip.innerHTML = `
-    <div class="an-chip">Total: ${total.toLocaleString()}</div>
-    <div class="an-chip">Groups: ${labels.length}</div>
-    <div class="an-chip">Avg: ${labels.length ? (total / labels.length).toFixed(1) : 0}</div>
-  `;
+
+  document.getElementById('an-total-2').textContent = `Total: ${total}`;
+
+  if (anChart2) anChart2.destroy();
+  anChart2 = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Sample Count',
+        data: values,
+        backgroundColor: 'rgba(79, 70, 229, 0.8)',
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      scales: {
+        x: { beginAtZero: true, grid: { display: false } },
+        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { padding: 10 }
+      }
+    }
+  });
 }
 
 function anExportPNG() {
-  const canvas = document.getElementById('an-chart');
-  if (!canvas || canvas.style.display === 'none') { toast('Nothing to export', 'warn'); return; }
-  const link = document.createElement('a');
-  link.download = 'anderson-analytics.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
+  const container = document.querySelector('.an-charts-scroll');
+  if (!container) return;
+  toast('Right-click on charts to save as image', 'info');
 }
+
 
 // (Auth/idle-logout removed for static GitHub Pages deployment)
 

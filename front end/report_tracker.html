@@ -8,6 +8,7 @@
   <!-- SheetJS served through authenticated backend endpoint — not publicly accessible -->
   <script src="/tracker/xlsx.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
   <style>
     /* ── TOKENS ── */
@@ -2849,6 +2850,9 @@ const CHART_COLORS = [
   '#475569'  // slate
 ];
 
+// Register ChartDataLabels plugin
+Chart.register(ChartDataLabels);
+
 function renderPieChart(map) {
   const ctx = document.getElementById('an-chart-1').getContext('2d');
   const labels = Object.keys(map);
@@ -2887,6 +2891,13 @@ function renderPieChart(map) {
           padding: 12,
           bodyFont: { size: 13 },
           titleFont: { size: 13, weight: '700' }
+        },
+        datalabels: {
+          color: '#fff',
+          font: { weight: 'bold', size: 12 },
+          formatter: (value) => value > 0 ? value : '',
+          anchor: 'center',
+          align: 'center'
         }
       }
     }
@@ -2953,6 +2964,13 @@ function renderBarChart(map) {
       plugins: {
         legend: { display: false },
         tooltip: { padding: 10 },
+        datalabels: {
+          anchor: 'end',
+          align: 'top',
+          color: 'var(--pri)',
+          font: { weight: 'bold', size: 11 },
+          formatter: (value) => value
+        },
         title: {
           display: isLimited,
           text: `Showing top ${limit} clients`,

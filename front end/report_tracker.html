@@ -1062,6 +1062,10 @@
 
           <div class="an-filter-group">
             <label class="an-filter-label">Select Tests</label>
+            <div style="display:flex; gap:8px; margin-bottom:8px">
+              <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f1',true)">Select All</button>
+              <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f1',false)">Clear All</button>
+            </div>
             <div id="an-f1-test-list" class="an-check-list">
               <!-- Dynamically populated -->
             </div>
@@ -1101,6 +1105,10 @@
 
           <div class="an-filter-group">
             <label class="an-filter-label">Select Clients</label>
+            <div style="display:flex; gap:8px; margin-bottom:8px">
+              <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f2',true)">Select All</button>
+              <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f2',false)">Clear All</button>
+            </div>
             <div id="an-f2-client-list" class="an-check-list">
               <!-- Dynamically populated -->
             </div>
@@ -2709,6 +2717,13 @@ function filterPriority(month) {
 let anChart1 = null;
 let anChart2 = null;
 
+function anToggleAll(chartPrefix, checked) {
+  const list = document.getElementById(`an-${chartPrefix}-${chartPrefix === 'f1' ? 'test' : 'client'}-list`);
+  if (!list) return;
+  list.querySelectorAll('input').forEach(i => i.checked = checked);
+  if (chartPrefix === 'f1') anDrawChart1(); else anDrawChart2();
+}
+
 function anInitFilters() {
   // 1. Years
   const years = [...new Set(rows.map(r => {
@@ -2875,12 +2890,26 @@ function renderPieChart(map) {
 }
 
 function renderBarChart(map) {
+  const container = document.getElementById('an-chart-2').parentElement;
   const ctx = document.getElementById('an-chart-2').getContext('2d');
-  const labels = Object.keys(map);
-  const values = Object.values(map);
-  const total = values.reduce((a, b) => a + b, 0);
+  
+  // 1. Sort and Limit to Top 25 for better presentation
+  let entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
+  const totalInFilter = entries.reduce((sum, e) => sum + e[1], 0);
+  
+  const limit = 25;
+  const isLimited = entries.length > limit;
+  if (isLimited) entries = entries.slice(0, limit);
+  
+  const labels = entries.map(e => e[0].length > 40 ? e[0].substring(0, 37) + '...' : e[0]);
+  const values = entries.map(e => e[1]);
 
-  document.getElementById('an-total-2').textContent = `Total: ${total}`;
+  document.getElementById('an-total-2').textContent = `Total (Filtered): ${totalInFilter}`;
+
+  // 2. Dynamic height adjustment to prevent tiny bars
+  const minHeightPerBar = 30;
+  const calculatedHeight = Math.max(350, entries.length * minHeightPerBar);
+  container.style.height = `${calculatedHeight}px`;
 
   if (anChart2) anChart2.destroy();
   anChart2 = new Chart(ctx, {
@@ -2892,7 +2921,8 @@ function renderBarChart(map) {
         data: values,
         backgroundColor: 'rgba(79, 70, 229, 0.85)',
         borderRadius: 6,
-        hoverBackgroundColor: '#4f46e5'
+        hoverBackgroundColor: '#4f46e5',
+        barThickness: 18
       }]
     },
     options: {
@@ -2907,12 +2937,19 @@ function renderBarChart(map) {
         },
         y: { 
           grid: { display: false }, 
-          ticks: { font: { size: 11, weight: '500' } } 
+          ticks: { font: { size: 10, weight: '600' }, padding: 10 } 
         }
       },
       plugins: {
         legend: { display: false },
-        tooltip: { padding: 10 }
+        tooltip: { padding: 10 },
+        title: {
+          display: isLimited,
+          text: `Showing top ${limit} clients`,
+          font: { size: 11, weight: 'normal' },
+          color: '#64748b',
+          padding: { bottom: 10 }
+        }
       }
     }
   });

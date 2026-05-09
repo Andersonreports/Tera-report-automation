@@ -646,36 +646,38 @@
       color: var(--pri); font-weight: 700; font-size: 13px; border: 1px solid rgba(79,70,229,.2);
     }
     
-    .an-sidebar { padding: 20px; display: flex; flex-direction: column; gap: 20px; background: var(--panel); border-radius: var(--r); border: 1px solid var(--pb); position: sticky; top: 100px; }
+    .an-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+    .an-charts-scroll { display: flex; flex-direction: column; gap: 24px; width: 100%; }
     
-    .an-layout { display: flex; flex-direction: column; gap: 20px; }
-    .an-charts-scroll { display: flex; flex-direction: column; gap: 20px; width: 100%; }
-    
-    .an-card-toolbar {
-      display: flex; align-items: center; gap: 12px; padding: 12px 16px;
-      background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--pb);
-      flex-wrap: wrap;
+    .an-sidebar {
+      position: sticky; top: 100px; padding: 24px;
+      background: var(--panel); border-radius: var(--r);
+      border: 1px solid var(--pb); display: flex; flex-direction: column; gap: 32px;
+      max-height: calc(100vh - 140px); overflow-y: auto;
     }
-    @media(prefers-color-scheme:dark){ .an-card-toolbar { background: rgba(255,255,255,0.03); } }
     
-    .an-card-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .an-card-search {
-      display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px;
-      padding: 0 12px; height: 34px; border: 1.5px solid var(--bdr);
+    .an-sidebar-section { display: flex; flex-direction: column; gap: 16px; }
+    .an-section-title { 
+      font-size: 11px; font-weight: 800; text-transform: uppercase; 
+      letter-spacing: 1px; color: var(--pri); border-bottom: 1px solid var(--pb); 
+      padding-bottom: 8px; margin-bottom: 4px;
+    }
+    
+    .an-filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .an-filter-group { display: flex; flex-direction: column; gap: 6px; }
+    .an-filter-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+    
+    .an-sidebar-search {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 12px; height: 38px; border: 1.5px solid var(--bdr);
       border-radius: 8px; background: var(--ib);
     }
-    .an-card-search input { border: none; background: transparent; outline: none; font-size: 12px; color: var(--text); width: 100%; }
-    .an-card-search svg { color: var(--muted); }
-    
-    .an-card-sel {
-      height: 34px; padding: 0 10px; border: 1.5px solid var(--bdr);
-      border-radius: 8px; background: var(--ib); color: var(--text);
-      font-size: 12px; outline: none; cursor: pointer;
-    }
+    .an-sidebar-search input { border: none; background: transparent; outline: none; font-size: 13px; color: var(--text); width: 100%; }
+    .an-sidebar-search svg { color: var(--muted); }
 
-    @media(max-width:900px){ 
-      .an-card-toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
-      .an-card-search { min-width: 100%; }
+    @media(max-width:1100px){ 
+      .an-layout { grid-template-columns: 1fr; }
+      .an-sidebar { position: static; order: -1; max-height: none; }
     }
 
   </style>
@@ -980,6 +982,7 @@
     </div>
 
     <div class="an-layout">
+      <!-- 1. LEFT: Charts -->
       <div class="an-charts-scroll">
         
         <!-- Chart 1: Test Wise Sample Count -->
@@ -988,26 +991,6 @@
             <span class="an-chart-title">Test-wise Sample Count</span>
             <span class="badge b-rel">Pie Chart</span>
           </div>
-          
-          <div class="an-card-toolbar">
-            <div class="an-card-filters">
-              <select id="an-f1-year" class="an-card-sel" onchange="anDrawChart1()">
-                <option value="All">All Years</option>
-              </select>
-              <select id="an-f1-month" class="an-card-sel" onchange="anDrawChart1()">
-                <option value="All">All Months</option>
-                <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
-                <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
-                <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
-                <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
-              </select>
-            </div>
-            <div class="an-card-search">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" id="an-f1-search" placeholder="Search test name..." oninput="anDrawChart1()">
-            </div>
-          </div>
-
           <div class="an-chart-body">
             <canvas id="an-chart-1"></canvas>
           </div>
@@ -1023,32 +1006,95 @@
             <span class="an-chart-title">Client-wise Analysis</span>
             <span class="badge b-ong">Bar Chart</span>
           </div>
-
-          <div class="an-card-toolbar">
-            <div class="an-card-filters">
-              <select id="an-f2-year" class="an-card-sel" onchange="anDrawChart2()">
-                <option value="All">All Years</option>
-              </select>
-              <select id="an-f2-month" class="an-card-sel" onchange="anDrawChart2()">
-                <option value="All">All Months</option>
-                <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
-                <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
-                <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
-                <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
-              </select>
-            </div>
-            <div class="an-card-search">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" id="an-f2-search" placeholder="Search client name..." oninput="anDrawChart2()">
-            </div>
-          </div>
-
           <div class="an-chart-body" style="min-height:350px">
             <canvas id="an-chart-2"></canvas>
           </div>
           <div class="an-chart-footer">
             <span style="font-size:11px; color:var(--muted)">Sample volume comparison by client</span>
             <div id="an-total-2" class="an-total-box">Total: 0</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 2. RIGHT: Sidebar Filters (Split) -->
+      <div class="an-sidebar">
+        
+        <!-- SECTION 1: CHART 1 FILTERS -->
+        <div class="an-sidebar-section">
+          <div class="an-section-title">Test-wise Filters</div>
+          
+          <div class="an-filter-row">
+            <div class="an-filter-group">
+              <label class="an-filter-label">Year</label>
+              <select id="an-f1-year" class="sel" onchange="anDrawChart1()">
+                <option value="All">All</option>
+              </select>
+            </div>
+            <div class="an-filter-group">
+              <label class="an-filter-label">Month</label>
+              <select id="an-f1-month" class="sel" onchange="anDrawChart1()">
+                <option value="All">All</option>
+                <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
+                <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
+                <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
+                <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="an-filter-group">
+            <label class="an-filter-label">Specific Test</label>
+            <select id="an-f1-test" class="sel" onchange="anDrawChart1()">
+              <option value="All">All Tests</option>
+            </select>
+          </div>
+
+          <div class="an-filter-group">
+            <label class="an-filter-label">Manual Search</label>
+            <div class="an-sidebar-search">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input type="text" id="an-f1-search" placeholder="Type to search..." oninput="anDrawChart1()">
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: CHART 2 FILTERS -->
+        <div class="an-sidebar-section">
+          <div class="an-section-title">Client-wise Filters</div>
+          
+          <div class="an-filter-row">
+            <div class="an-filter-group">
+              <label class="an-filter-label">Year</label>
+              <select id="an-f2-year" class="sel" onchange="anDrawChart2()">
+                <option value="All">All</option>
+              </select>
+            </div>
+            <div class="an-filter-group">
+              <label class="an-filter-label">Month</label>
+              <select id="an-f2-month" class="sel" onchange="anDrawChart2()">
+                <option value="All">All</option>
+                <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
+                <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
+                <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
+                <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="an-filter-group">
+            <label class="an-filter-label">Specific Client</label>
+            <select id="an-f2-client" class="sel" onchange="anDrawChart2()">
+              <option value="All">All Clients</option>
+            </select>
+          </div>
+
+          <div class="an-filter-group">
+            <label class="an-filter-label">Manual Search</label>
+            <div class="an-sidebar-search">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input type="text" id="an-f2-search" placeholder="Type to search..." oninput="anDrawChart2()">
+            </div>
           </div>
         </div>
 
@@ -2647,6 +2693,7 @@ let anChart1 = null;
 let anChart2 = null;
 
 function anInitFilters() {
+  // 1. Years
   const years = [...new Set(rows.map(r => {
     const d = parseDate(r.tat) || parseDate(r.rel_date);
     return d ? d.getFullYear() : null;
@@ -2663,6 +2710,28 @@ function anInitFilters() {
     const currentYear = new Date().getFullYear();
     if (years.includes(currentYear)) sel.value = currentYear;
   });
+
+  // 2. Tests (Chart 1)
+  const tSel = document.getElementById('an-f1-test');
+  if (tSel && tSel.children.length <= 1) {
+    const tests = [...new Set(rows.map(r => r.test).filter(Boolean))].sort();
+    tests.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      tSel.appendChild(opt);
+    });
+  }
+
+  // 3. Clients (Chart 2)
+  const cSel = document.getElementById('an-f2-client');
+  if (cSel && cSel.children.length <= 1) {
+    const clients = [...new Set(rows.map(r => r.client).filter(Boolean))].sort();
+    clients.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      cSel.appendChild(opt);
+    });
+  }
 }
 
 function anDrawAll() {
@@ -2673,6 +2742,7 @@ function anDrawAll() {
 function anDrawChart1() {
   const year = document.getElementById('an-f1-year').value;
   const month = document.getElementById('an-f1-month').value;
+  const testVal = document.getElementById('an-f1-test').value;
   const search = document.getElementById('an-f1-search').value.toLowerCase();
 
   const filtered = rows.filter(r => {
@@ -2680,8 +2750,9 @@ function anDrawChart1() {
     if (!d) return false;
     const yearMatch = year === 'All' || String(d.getFullYear()) === year;
     const monthMatch = month === 'All' || d.toLocaleString('default', { month: 'short' }) === month;
+    const testMatch = testVal === 'All' || r.test === testVal;
     const searchMatch = !search || (r.test && r.test.toLowerCase().includes(search));
-    return yearMatch && monthMatch && searchMatch;
+    return yearMatch && monthMatch && testMatch && searchMatch;
   });
 
   const testMap = {};
@@ -2696,6 +2767,7 @@ function anDrawChart1() {
 function anDrawChart2() {
   const year = document.getElementById('an-f2-year').value;
   const month = document.getElementById('an-f2-month').value;
+  const clientVal = document.getElementById('an-f2-client').value;
   const search = document.getElementById('an-f2-search').value.toLowerCase();
 
   const filtered = rows.filter(r => {
@@ -2703,8 +2775,9 @@ function anDrawChart2() {
     if (!d) return false;
     const yearMatch = year === 'All' || String(d.getFullYear()) === year;
     const monthMatch = month === 'All' || d.toLocaleString('default', { month: 'short' }) === month;
+    const clientMatch = clientVal === 'All' || r.client === clientVal;
     const searchMatch = !search || (r.client && r.client.toLowerCase().includes(search));
-    return yearMatch && monthMatch && searchMatch;
+    return yearMatch && monthMatch && clientMatch && searchMatch;
   });
 
   const clientMap = {};

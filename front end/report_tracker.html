@@ -627,19 +627,19 @@
     
     .an-chart-card { 
       padding: 24px; min-height: 400px; display: flex; flex-direction: column; 
-      background: var(--panel); border: 1px solid var(--pb); border-radius: var(--r);
+      background: #ffffff; border: 1px solid var(--pb); border-radius: var(--r);
       box-shadow: var(--sh);
     }
+    @media(prefers-color-scheme:dark){ .an-chart-card { background: var(--panel); } }
     
-    .an-chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .an-chart-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .an-chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 15px; }
+    .an-chart-info { display: flex; flex-direction: column; gap: 4px; }
+    .an-chart-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .an-chart-sub { font-size: 11px; color: var(--muted); font-weight: 500; }
     
     .an-chart-body { flex: 1; position: relative; min-height: 300px; }
     
-    .an-chart-footer { 
-      margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--pb);
-      display: flex; align-items: center; justify-content: space-between;
-    }
+    .an-chart-actions { display: flex; align-items: center; gap: 10px; }
     
     .an-total-box { 
       padding: 6px 14px; border-radius: 20px; background: rgba(79,70,229,.1); 
@@ -1005,30 +1005,34 @@
         <!-- Chart 1: Test Wise Sample Count -->
         <div class="an-chart-card">
           <div class="an-chart-header">
-            <span class="an-chart-title">Test-wise Sample Count</span>
-            <span class="badge b-rel">Pie Chart</span>
+            <div class="an-chart-info">
+              <span class="an-chart-title">Test-wise Sample Count</span>
+              <span class="an-chart-sub">Distribution of samples by test type</span>
+            </div>
+            <div class="an-chart-actions">
+              <span class="badge b-rel">Pie Chart</span>
+              <div id="an-total-1" class="an-total-box">Total: 0</div>
+            </div>
           </div>
           <div class="an-chart-body">
             <canvas id="an-chart-1"></canvas>
-          </div>
-          <div class="an-chart-footer">
-            <span style="font-size:11px; color:var(--muted)">Distribution of samples by test type</span>
-            <div id="an-total-1" class="an-total-box">Total: 0</div>
           </div>
         </div>
 
         <!-- Chart 2: Client Wise Volume -->
         <div class="an-chart-card">
           <div class="an-chart-header">
-            <span class="an-chart-title">Client-wise Analysis</span>
-            <span class="badge b-ong">Bar Chart</span>
+            <div class="an-chart-info">
+              <span class="an-chart-title">Client-wise Analysis</span>
+              <span class="an-chart-sub">Sample volume comparison by client</span>
+            </div>
+            <div class="an-chart-actions">
+              <span class="badge b-ong">Bar Chart</span>
+              <div id="an-total-2" class="an-total-box">Total: 0</div>
+            </div>
           </div>
           <div class="an-chart-body" style="min-height:350px">
             <canvas id="an-chart-2"></canvas>
-          </div>
-          <div class="an-chart-footer">
-            <span style="font-size:11px; color:var(--muted)">Sample volume comparison by client</span>
-            <div id="an-total-2" class="an-total-box">Total: 0</div>
           </div>
         </div>
 

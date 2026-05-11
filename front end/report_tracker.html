@@ -647,25 +647,22 @@
       color: var(--pri); font-weight: 700; font-size: 13px; border: 1px solid rgba(79,70,229,.2);
     }
     
-    .an-layout { 
-      display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; 
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-    }
-    .an-layout.sidebar-collapsed { grid-template-columns: 1fr 0px; gap: 0; }
+    .an-layout { display: flex; flex-direction: column; gap: 32px; }
     
-    .an-sidebar {
-      position: sticky; top: 100px; padding: 24px;
-      background: var(--panel); border-radius: var(--r);
-      border: 1px solid var(--pb); display: flex; flex-direction: column; gap: 32px;
-      max-height: calc(100vh - 140px); overflow-y: auto;
+    .an-card-content { 
+      display: grid; grid-template-columns: 1fr 300px; gap: 32px; align-items: start;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      opacity: 1; transform-origin: right;
     }
-    .sidebar-collapsed .an-sidebar { 
-      opacity: 0; transform: scaleX(0); pointer-events: none; padding: 0; margin: 0; border: none;
-    }
+    .an-card-content.filters-collapsed { grid-template-columns: 1fr 0px; gap: 0; }
     
-    .an-sidebar-section { display: flex; flex-direction: column; gap: 16px; min-width: 270px; }
+    .an-card-filters {
+      padding: 0 10px; display: flex; flex-direction: column; gap: 24px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 1; transform-origin: right; overflow: hidden;
+    }
+    .filters-collapsed .an-card-filters {
+      opacity: 0; transform: scaleX(0); pointer-events: none; padding: 0; margin: 0;
+    }
     .an-section-title { 
       font-size: 11px; font-weight: 800; text-transform: uppercase; 
       letter-spacing: 1px; color: var(--pri); border-bottom: 1px solid var(--pb); 
@@ -1029,10 +1026,6 @@
         <p class="an-sub">Monthly trend and distribution analysis</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn btn-out btn-sm" onclick="anToggleSidebar()" id="an-sidebar-toggle">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg> 
-          <span id="an-toggle-text">Hide Filters</span>
-        </button>
         <button class="btn btn-out btn-sm" onclick="anExportPNG()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export PNG
         </button>
@@ -1040,129 +1033,120 @@
     </div>
 
     <div class="an-layout">
-      <!-- 1. LEFT: Charts -->
-      <div class="an-charts-scroll">
-        
-        <!-- Chart 1: Test Wise Sample Count -->
-        <div class="an-chart-card">
-          <div class="an-chart-header">
-            <div class="an-chart-info">
-              <span class="an-chart-title">Test-wise Sample Count</span>
-              <span class="an-chart-sub">Distribution of samples by test type</span>
-            </div>
-            <div class="an-chart-actions">
-              <span class="badge b-rel">Pie Chart</span>
-              <div id="an-total-1" class="an-total-box">Total: 0</div>
-            </div>
+      
+      <!-- Chart 1: Test Wise Sample Count -->
+      <div class="an-chart-card">
+        <div class="an-chart-header">
+          <div class="an-chart-info">
+            <span class="an-chart-title">Test-wise Sample Count</span>
+            <span class="an-chart-sub">Distribution of samples by test type</span>
           </div>
+          <div class="an-chart-actions">
+            <button class="btn btn-out btn-sm" style="height:32px" onclick="anToggleCardFilters('1')" id="btn-toggle-1">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <span>Filters</span>
+            </button>
+            <span class="badge b-rel">Pie Chart</span>
+            <div id="an-total-1" class="an-total-box">Total: 0</div>
+          </div>
+        </div>
+        
+        <div class="an-card-content" id="an-content-1">
           <div class="an-chart-main">
             <div class="an-chart-body">
               <canvas id="an-chart-1"></canvas>
             </div>
             <div id="an-legend-1" class="an-custom-legend"></div>
           </div>
-        </div>
 
-        <!-- Chart 2: Client Wise Volume -->
-        <div class="an-chart-card">
-          <div class="an-chart-header">
-            <div class="an-chart-info">
-              <span class="an-chart-title">Client-wise Analysis</span>
-              <span class="an-chart-sub">Sample volume comparison by client</span>
+          <div class="an-card-filters" id="an-filters-1">
+            <div class="an-filter-row">
+              <div class="an-filter-group">
+                <label class="an-filter-label">Year</label>
+                <select id="an-f1-year" class="sel" onchange="anDrawChart1()"><option value="All">All</option></select>
+              </div>
+              <div class="an-filter-group">
+                <label class="an-filter-label">Month</label>
+                <select id="an-f1-month" class="sel" onchange="anDrawChart1()">
+                  <option value="All">All</option>
+                  <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
+                  <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
+                  <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
+                  <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
+                </select>
+              </div>
             </div>
-            <div class="an-chart-actions">
-              <span class="badge b-ong">Bar Chart</span>
-              <div id="an-total-2" class="an-total-box">Total: 0</div>
+            <div class="an-filter-group">
+              <label class="an-filter-label">Search & Select Tests</label>
+              <div class="an-sidebar-search" style="margin-bottom:8px">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" id="an-f1-search" placeholder="Filter test list..." oninput="anFilterList('f1')">
+              </div>
+              <div style="display:flex; gap:8px; margin-bottom:8px">
+                <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f1',true)">Select All</button>
+                <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f1',false)">Clear All</button>
+              </div>
+              <div id="an-f1-test-list" class="an-check-list"></div>
             </div>
           </div>
-          <div class="an-chart-body" style="min-height:350px">
-            <canvas id="an-chart-2"></canvas>
-          </div>
         </div>
-
       </div>
 
-      <!-- 2. RIGHT: Sidebar Filters (Split) -->
-      <div class="an-sidebar">
+      <!-- Chart 2: Client Wise Volume -->
+      <div class="an-chart-card">
+        <div class="an-chart-header">
+          <div class="an-chart-info">
+            <span class="an-chart-title">Client-wise Analysis</span>
+            <span class="an-chart-sub">Sample volume comparison by client</span>
+          </div>
+          <div class="an-chart-actions">
+            <button class="btn btn-out btn-sm" style="height:32px" onclick="anToggleCardFilters('2')" id="btn-toggle-2">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <span>Filters</span>
+            </button>
+            <span class="badge b-ong">Bar Chart</span>
+            <div id="an-total-2" class="an-total-box">Total: 0</div>
+          </div>
+        </div>
         
-        <!-- SECTION 1: CHART 1 FILTERS -->
-        <div class="an-sidebar-section">
-          <div class="an-section-title">Test-wise Filters</div>
-          
-          <div class="an-filter-row">
-            <div class="an-filter-group">
-              <label class="an-filter-label">Year</label>
-              <select id="an-f1-year" class="sel" onchange="anDrawChart1()">
-                <option value="All">All</option>
-              </select>
-            </div>
-            <div class="an-filter-group">
-              <label class="an-filter-label">Month</label>
-              <select id="an-f1-month" class="sel" onchange="anDrawChart1()">
-                <option value="All">All</option>
-                <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
-                <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
-                <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
-                <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
-              </select>
+        <div class="an-card-content" id="an-content-2">
+          <div class="an-chart-main">
+            <div class="an-chart-body" style="min-height:350px">
+              <canvas id="an-chart-2"></canvas>
             </div>
           </div>
 
-          <div class="an-filter-group">
-            <label class="an-filter-label">Search & Select Tests</label>
-            <div class="an-sidebar-search" style="margin-bottom:8px">
-              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-              <input type="text" id="an-f1-search" placeholder="Filter test list..." oninput="anFilterList('f1')">
-            </div>
-            <div style="display:flex; gap:8px; margin-bottom:8px">
-              <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f1',true)">Select All</button>
-              <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f1',false)">Clear All</button>
-            </div>
-            <div id="an-f1-test-list" class="an-check-list">
-              <!-- Dynamically populated -->
-            </div>
-          </div>
-        </div>
-
-        <!-- SECTION 2: CHART 2 FILTERS -->
-        <div class="an-sidebar-section">
-          <div class="an-section-title">Client-wise Filters</div>
-          
-          <div class="an-filter-row">
-            <div class="an-filter-group">
-              <label class="an-filter-label">Year</label>
-              <select id="an-f2-year" class="sel" onchange="anDrawChart2()">
-                <option value="All">All</option>
-              </select>
+          <div class="an-card-filters" id="an-filters-2">
+            <div class="an-filter-row">
+              <div class="an-filter-group">
+                <label class="an-filter-label">Year</label>
+                <select id="an-f2-year" class="sel" onchange="anDrawChart2()"><option value="All">All</option></select>
+              </div>
+              <div class="an-filter-group">
+                <label class="an-filter-label">Month</label>
+                <select id="an-f2-month" class="sel" onchange="anDrawChart2()">
+                  <option value="All">All</option>
+                  <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
+                  <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
+                  <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
+                  <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
+                </select>
+              </div>
             </div>
             <div class="an-filter-group">
-              <label class="an-filter-label">Month</label>
-              <select id="an-f2-month" class="sel" onchange="anDrawChart2()">
-                <option value="All">All</option>
-                <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
-                <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
-                <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
-                <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="an-filter-group">
-            <label class="an-filter-label">Search & Select Clients</label>
-            <div class="an-sidebar-search" style="margin-bottom:8px">
-              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-              <input type="text" id="an-f2-search" placeholder="Filter client list..." oninput="anFilterList('f2')">
-            </div>
-            <div style="display:flex; gap:8px; margin-bottom:8px">
-              <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f2',true)">Select All</button>
-              <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f2',false)">Clear All</button>
-            </div>
-            <div id="an-f2-client-list" class="an-check-list">
-              <!-- Dynamically populated -->
+              <label class="an-filter-label">Search & Select Clients</label>
+              <div class="an-sidebar-search" style="margin-bottom:8px">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" id="an-f2-search" placeholder="Filter client list..." oninput="anFilterList('f2')">
+              </div>
+              <div style="display:flex; gap:8px; margin-bottom:8px">
+                <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f2',true)">Select All</button>
+                <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f2',false)">Clear All</button>
+              </div>
+              <div id="an-f2-client-list" class="an-check-list"></div>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   </div>
@@ -2832,11 +2816,11 @@ function normalizeClient(name) {
   return n.toUpperCase().replace(/\s+/g, ' ');
 }
 
-function anToggleSidebar() {
-  const layout = document.querySelector('.an-layout');
-  const text = document.getElementById('an-toggle-text');
-  const isCollapsed = layout.classList.toggle('sidebar-collapsed');
-  text.textContent = isCollapsed ? 'Show Filters' : 'Hide Filters';
+function anToggleCardFilters(id) {
+  const content = document.getElementById(`an-content-${id}`);
+  const btn = document.getElementById(`btn-toggle-${id}`);
+  const isCollapsed = content.classList.toggle('filters-collapsed');
+  btn.querySelector('span').textContent = isCollapsed ? 'Show Filters' : 'Filters';
 }
 
 function anToggleAll(chartPrefix, checked) {

@@ -627,9 +627,9 @@
     }
     
     .an-chart-card { 
-      padding: 24px; min-height: 750px; display: flex; flex-direction: column; 
+      padding: 30px; min-height: 600px; display: flex; flex-direction: column; 
       background: #ffffff; border: 1px solid var(--pb); border-radius: var(--r);
-      box-shadow: var(--sh); overflow: hidden;
+      box-shadow: var(--sh);
     }
     @media(prefers-color-scheme:dark){ .an-chart-card { background: var(--panel); } }
     
@@ -638,7 +638,7 @@
     .an-chart-title { font-size: 15px; font-weight: 700; color: var(--text); }
     .an-chart-sub { font-size: 11px; color: var(--muted); font-weight: 500; }
     
-    .an-chart-body { flex: 0 0 350px; position: relative; min-height: 350px; }
+    .an-chart-body { flex: 1; position: relative; min-height: 400px; display: flex; align-items: center; justify-content: center; }
     
     .an-chart-actions { display: flex; align-items: center; gap: 10px; }
     
@@ -650,8 +650,8 @@
     .an-layout { display: flex; flex-direction: column; gap: 32px; }
     
     .an-card-content { 
-      display: grid; grid-template-columns: 1fr 300px; gap: 32px; align-items: start;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: grid; grid-template-columns: 1fr 280px; gap: 40px; align-items: stretch;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex: 1;
     }
     .an-card-content.filters-collapsed { grid-template-columns: 1fr 0px; gap: 0; }
     
@@ -699,16 +699,18 @@
     }
 
     .an-chart-main {
-      display: flex; flex-direction: row; align-items: center; gap: 32px;
-      flex: 1; min-height: 450px; margin-top: 10px;
+      display: flex; flex-direction: row; align-items: stretch; gap: 32px;
+      flex: 1; min-height: 450px;
     }
     .an-chart-body {
       flex: 1; position: relative; min-height: 450px;
+      display: flex; align-items: center; justify-content: center;
     }
     .an-custom-legend {
-      flex: 0 0 320px; max-height: 450px; overflow-y: auto;
+      flex: 0 0 260px; max-height: 450px; overflow-y: auto;
       display: flex; flex-direction: column; gap: 6px;
-      padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.4);
+      padding: 15px; border-radius: 12px; background: rgba(248, 250, 252, 0.8);
+      border: 1px solid var(--bdr);
       scrollbar-width: thin;
     }
     @media(prefers-color-scheme:dark){ .an-custom-legend { background: rgba(0,0,0,0.2); } }

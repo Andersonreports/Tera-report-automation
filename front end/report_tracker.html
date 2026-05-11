@@ -1097,22 +1097,17 @@
           </div>
 
           <div class="an-filter-group">
-            <label class="an-filter-label">Select Tests</label>
+            <label class="an-filter-label">Search & Select Tests</label>
+            <div class="an-sidebar-search" style="margin-bottom:8px">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input type="text" id="an-f1-search" placeholder="Filter test list..." oninput="anFilterList('f1')">
+            </div>
             <div style="display:flex; gap:8px; margin-bottom:8px">
               <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f1',true)">Select All</button>
               <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f1',false)">Clear All</button>
             </div>
             <div id="an-f1-test-list" class="an-check-list">
               <!-- Dynamically populated -->
-            </div>
-          </div>
-
-          <div class="an-filter-group">
-            <label class="an-filter-label">Manual Search</label>
-            <div class="an-sidebar-search">
-              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-              <input type="text" id="an-f1-search" placeholder="Type to search..." oninput="anDrawChart1()" list="an-f1-tests-dl">
-              <datalist id="an-f1-tests-dl"></datalist>
             </div>
           </div>
         </div>
@@ -1141,22 +1136,17 @@
           </div>
 
           <div class="an-filter-group">
-            <label class="an-filter-label">Select Clients</label>
+            <label class="an-filter-label">Search & Select Clients</label>
+            <div class="an-sidebar-search" style="margin-bottom:8px">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input type="text" id="an-f2-search" placeholder="Filter client list..." oninput="anFilterList('f2')">
+            </div>
             <div style="display:flex; gap:8px; margin-bottom:8px">
               <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f2',true)">Select All</button>
               <button class="pm-fbtn" style="padding:2px 8px; font-size:10px" onclick="anToggleAll('f2',false)">Clear All</button>
             </div>
             <div id="an-f2-client-list" class="an-check-list">
               <!-- Dynamically populated -->
-            </div>
-          </div>
-
-          <div class="an-filter-group">
-            <label class="an-filter-label">Manual Search</label>
-            <div class="an-sidebar-search">
-              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-              <input type="text" id="an-f2-search" placeholder="Type to search..." oninput="anDrawChart2()" list="an-f2-clients-dl">
-              <datalist id="an-f2-clients-dl"></datalist>
             </div>
           </div>
         </div>
@@ -2845,10 +2835,28 @@ function normalizeClient(name) {
 }
 
 function anToggleAll(chartPrefix, checked) {
-  const list = document.getElementById(`an-${chartPrefix}-${chartPrefix === 'f1' ? 'test' : 'client'}-list`);
+  const listId = chartPrefix === 'f1' ? 'an-f1-test-list' : 'an-f2-client-list';
+  const list = document.getElementById(listId);
   if (!list) return;
+  // Only toggle VISIBLE items if searching? Or all? Usually all.
   list.querySelectorAll('input').forEach(i => i.checked = checked);
   if (chartPrefix === 'f1') anDrawChart1(); else anDrawChart2();
+}
+
+function anFilterList(prefix) {
+  const search = document.getElementById(`an-${prefix}-search`).value.toLowerCase();
+  const listId = prefix === 'f1' ? 'an-f1-test-list' : 'an-f2-client-list';
+  const list = document.getElementById(listId);
+  if (!list) return;
+
+  const items = list.querySelectorAll('.an-check-item');
+  items.forEach(item => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(search) ? 'flex' : 'none';
+  });
+
+  // Redraw chart to reflect filtered view
+  if (prefix === 'f1') anDrawChart1(); else anDrawChart2();
 }
 
 function anInitFilters() {
@@ -2870,39 +2878,27 @@ function anInitFilters() {
     if (years.includes(currentYear)) sel.value = currentYear;
   });
 
-  // 2. Tests Multi-select & Search Datalist (Chart 1)
+  // 2. Tests Multi-select (Chart 1)
   const tList = document.getElementById('an-f1-test-list');
-  const tDL = document.getElementById('an-f1-tests-dl');
   if (tList && tList.children.length === 0) {
     const tests = [...new Set(rows.map(r => normalizeTest(r.test)).filter(Boolean))].sort();
     tests.forEach(t => {
-      // Checklist
       const label = document.createElement('label');
       label.className = 'an-check-item';
       label.innerHTML = `<input type="checkbox" value="${t}" checked onchange="anDrawChart1()"> <span>${t}</span>`;
       tList.appendChild(label);
-      // Datalist
-      const opt = document.createElement('option');
-      opt.value = t;
-      tDL.appendChild(opt);
     });
   }
 
-  // 3. Clients Multi-select & Search Datalist (Chart 2)
+  // 3. Clients Multi-select (Chart 2)
   const cList = document.getElementById('an-f2-client-list');
-  const cDL = document.getElementById('an-f2-clients-dl');
   if (cList && cList.children.length === 0) {
     const clients = [...new Set(rows.map(r => normalizeClient(r.client)).filter(Boolean))].sort();
     clients.forEach(c => {
-      // Checklist
       const label = document.createElement('label');
       label.className = 'an-check-item';
       label.innerHTML = `<input type="checkbox" value="${c}" checked onchange="anDrawChart2()"> <span>${c}</span>`;
       cList.appendChild(label);
-      // Datalist
-      const opt = document.createElement('option');
-      opt.value = c;
-      cDL.appendChild(opt);
     });
   }
 }

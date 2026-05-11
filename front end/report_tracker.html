@@ -2935,44 +2935,38 @@ function anDrawAll() {
 }
 
 function anExportPNG() {
-  const canvas1 = document.getElementById('an-chart-1');
-  const canvas2 = document.getElementById('an-chart-2');
-  if (!canvas1 || !canvas2) { alert('Charts not ready yet.'); return; }
+  // Export each chart as its own PNG download
+  [
+    { id: 'an-chart-1', name: 'Test_wise_Analysis' },
+    { id: 'an-chart-2', name: 'Client_wise_Analysis' }
+  ].forEach(({ id, name }) => {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
 
-  const pad = 24;
-  const titleH = 32;
-  const totalW = Math.max(canvas1.width, canvas2.width, 900);
-  const totalH = titleH + canvas1.height + pad + titleH + canvas2.height + pad * 2;
+    // Create a new canvas at the ACTUAL pixel dimensions
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.width  || Math.round(rect.width  * dpr);
+    const h = canvas.height || Math.round(rect.height * dpr);
+    if (!w || !h) return;
 
-  const offscreen = document.createElement('canvas');
-  offscreen.width = totalW;
-  offscreen.height = totalH;
-  const ctx = offscreen.getContext('2d');
+    const offscreen = document.createElement('canvas');
+    offscreen.width  = w;
+    offscreen.height = h;
+    const ctx = offscreen.getContext('2d');
 
-  // White background
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, totalW, totalH);
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
 
-  // Chart 1 title
-  ctx.fillStyle = '#1e293b';
-  ctx.font = 'bold 15px Inter, sans-serif';
-  ctx.fillText('Test-wise Sample Count', pad, pad + 14);
+    // Draw the chart on top
+    ctx.drawImage(canvas, 0, 0, w, h);
 
-  // Chart 1 image
-  ctx.drawImage(canvas1, 0, pad + titleH, totalW, canvas1.height);
-
-  // Chart 2 title
-  const chart2Y = pad + titleH + canvas1.height + pad;
-  ctx.fillText('Client-wise Analysis', pad, chart2Y + 14);
-
-  // Chart 2 image
-  ctx.drawImage(canvas2, 0, chart2Y + titleH, totalW, canvas2.height);
-
-  // Trigger download
-  const link = document.createElement('a');
-  link.download = `Analytics_${new Date().toISOString().slice(0,10)}.png`;
-  link.href = offscreen.toDataURL('image/png');
-  link.click();
+    const link = document.createElement('a');
+    link.download = `${name}_${new Date().toISOString().slice(0, 10)}.png`;
+    link.href = offscreen.toDataURL('image/png');
+    link.click();
+  });
 }
 
 function anDrawChart1() {

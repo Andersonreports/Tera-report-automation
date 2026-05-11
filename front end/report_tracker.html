@@ -647,17 +647,25 @@
       color: var(--pri); font-weight: 700; font-size: 13px; border: 1px solid rgba(79,70,229,.2);
     }
     
-    .an-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
-    .an-charts-scroll { display: flex; flex-direction: column; gap: 24px; width: 100%; }
+    .an-layout { 
+      display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; 
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    }
+    .an-layout.sidebar-collapsed { grid-template-columns: 1fr 0px; gap: 0; }
     
     .an-sidebar {
       position: sticky; top: 100px; padding: 24px;
       background: var(--panel); border-radius: var(--r);
       border: 1px solid var(--pb); display: flex; flex-direction: column; gap: 32px;
       max-height: calc(100vh - 140px); overflow-y: auto;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 1; transform-origin: right;
+    }
+    .sidebar-collapsed .an-sidebar { 
+      opacity: 0; transform: scaleX(0); pointer-events: none; padding: 0; margin: 0; border: none;
     }
     
-    .an-sidebar-section { display: flex; flex-direction: column; gap: 16px; }
+    .an-sidebar-section { display: flex; flex-direction: column; gap: 16px; min-width: 270px; }
     .an-section-title { 
       font-size: 11px; font-weight: 800; text-transform: uppercase; 
       letter-spacing: 1px; color: var(--pri); border-bottom: 1px solid var(--pb); 
@@ -1021,6 +1029,10 @@
         <p class="an-sub">Monthly trend and distribution analysis</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-out btn-sm" onclick="anToggleSidebar()" id="an-sidebar-toggle">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg> 
+          <span id="an-toggle-text">Hide Filters</span>
+        </button>
         <button class="btn btn-out btn-sm" onclick="anExportPNG()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export PNG
         </button>
@@ -2815,23 +2827,16 @@ function normalizeClient(name) {
   // 2. Common Groupings & Shortening
   if (lower.includes('chief minister') || lower.includes('cmchis')) return "CMCHIS";
   
-  // Robust CMC grouping (Christian Medical College)
-  if (lower.includes('christian medical college') || lower.includes('cmc vellore') || /\bcmc\b/i.test(lower)) {
-    return "CMC Vellore";
-  }
+  // Basic normalization to group exact duplicates regardless of case/whitespace
+  // We return the uppercase version to ensure consistent grouping
+  return n.toUpperCase().replace(/\s+/g, ' ');
+}
 
-  if (lower.includes('a4 fertility')) return "A4 Fertility Centre";
-  if (lower.includes('aikya fertility')) return "Aikya Fertility";
-  if (lower.includes('hegde healthcare')) return "Hegde Healthcare";
-  if (lower.includes('meitra hospital')) return "Meitra Hospital";
-  if (lower.includes('ankura hospital') || lower.includes('9m fertility')) return "Ankura / 9M Fertility";
-  if (lower.includes('sudha rathna prabhu')) return "Dr. Sudha Rathna Prabhu";
-  if (lower.includes('lakshminarasimhan')) return "Dr. Lakshminarasimhan";
-  if (lower.includes('doppler scan')) return "Doppler Scan Madurai";
-  if (lower.includes('akshara fertility')) return "Akshara Fertility";
-  if (lower.includes('guru scan')) return "Guru Scan Centre";
-
-  return n;
+function anToggleSidebar() {
+  const layout = document.querySelector('.an-layout');
+  const text = document.getElementById('an-toggle-text');
+  const isCollapsed = layout.classList.toggle('sidebar-collapsed');
+  text.textContent = isCollapsed ? 'Show Filters' : 'Hide Filters';
 }
 
 function anToggleAll(chartPrefix, checked) {

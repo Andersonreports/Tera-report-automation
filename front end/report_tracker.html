@@ -2822,10 +2822,15 @@ function normalizeClient(name) {
 
   // 2. Common Groupings & Shortening
   if (lower.includes('chief minister') || lower.includes('cmchis')) return "CMCHIS";
+  
+  // Robust CMC grouping (Christian Medical College)
+  if (lower.includes('christian medical college') || lower.includes('cmc vellore') || /\bcmc\b/i.test(lower)) {
+    return "CMC Vellore";
+  }
+
   if (lower.includes('a4 fertility')) return "A4 Fertility Centre";
   if (lower.includes('aikya fertility')) return "Aikya Fertility";
   if (lower.includes('hegde healthcare')) return "Hegde Healthcare";
-  if (lower.includes('christian medical college') || lower.includes('cmc vellore')) return "CMC Vellore";
   if (lower.includes('meitra hospital')) return "Meitra Hospital";
   if (lower.includes('ankura hospital') || lower.includes('9m fertility')) return "Ankura / 9M Fertility";
   if (lower.includes('sudha rathna prabhu')) return "Dr. Sudha Rathna Prabhu";

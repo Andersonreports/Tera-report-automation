@@ -51,6 +51,7 @@
       text-decoration: none; transition: 0.2s;
       width: 80%; justify-content: center;
       color: #fff; font-size: 13px; font-weight: 600;
+      margin-top: auto; margin-bottom: 30px;
     }
     .admin-login-btn:hover { background: rgba(255,255,255,0.35); }
 
@@ -402,11 +403,6 @@
 
   <!-- Sidebar -->
   <nav class="sidebar">
-    <a href="/admin/login" class="admin-login-btn">
-      <i class="fas fa-shield-alt" style="font-size:18px;"></i>
-      <span>Admin Login</span>
-    </a>
-
     <!-- Shown when logged in -->
     <div class="user-pill" id="user-pill">
       <div class="user-pill-name" id="user-pill-name"></div>
@@ -420,6 +416,12 @@
     <button class="nav-btn"        id="btn-databases" onclick="handleNavClick('databases')">Databases</button>
     <button class="nav-btn"        id="btn-reports"   onclick="handleNavClick('reports')">Report Automation</button>
     <button class="nav-btn"        id="btn-trackers"  onclick="handleNavClick('trackers')">Inhouse Tools</button>
+
+    <!-- Admin Login Button (Moved to bottom) -->
+    <a href="/admin/login" class="admin-login-btn">
+      <i class="fas fa-shield-alt" style="font-size:18px;"></i>
+      <span>Admin Portal</span>
+    </a>
   </nav>
 
   <!-- Main content -->

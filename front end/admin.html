@@ -284,10 +284,7 @@
       <i class="fas fa-shield-alt"></i> Admin
     </div>
 
-    <button class="nav-btn active" id="btn-users"    onclick="showSection('users')">User Management</button>
-    <button class="nav-btn"        id="btn-databases" onclick="showSection('databases')">Databases</button>
-    <button class="nav-btn"        id="btn-reports"   onclick="showSection('reports')">Report Automation</button>
-    <button class="nav-btn"        id="btn-trackers"  onclick="showSection('trackers')">Inhouse Tools</button>
+    <button class="nav-btn active" id="btn-users" onclick="showSection('users')">User Management</button>
 
     <button class="nav-btn danger" onclick="signOut()">
       <i class="fas fa-sign-out-alt" style="margin-right:6px;"></i>Sign Out
@@ -355,101 +352,7 @@
       </div>
     </div>
 
-    <!-- ══ DATABASES ══ -->
-    <div id="section-databases" class="section">
-      <div class="report-section-title">
-        <h2>Databases</h2>
-        <p>Select a database to view records</p>
-      </div>
-      <div class="report-cards">
-        <a href="https://andersonreports.github.io/Germline-Panel/" class="report-card">
-          <div class="report-card-icon"><i class="fas fa-database"></i></div>
-          <span>Germline Panel</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- ══ REPORT AUTOMATION ══ -->
-    <div id="section-reports" class="section">
-      <div class="report-section-title">
-        <h2>Report Automation</h2>
-        <p>Select a report type to open the tool</p>
-      </div>
-      <div class="report-cards">
-        <a href="/dashboard" class="report-card">
-          <div class="report-card-icon"><i class="fas fa-dna"></i></div>
-          <span>TERA Report</span>
-        </a>
-        <a href="/pgta" class="report-card">
-          <div class="report-card-icon"><i class="fas fa-microscope"></i></div>
-          <span>PGTA Report</span>
-        </a>
-        <a href="/karyotype" class="report-card">
-          <div class="report-card-icon"><i class="fas fa-project-diagram"></i></div>
-          <span>Karyotype Report</span>
-        </a>
-        <a href="nips.html" class="report-card">
-          <div class="report-card-icon"><i class="fas fa-baby"></i></div>
-          <span>NIPS Report</span>
-        </a>
-        <a href="hla.html" class="report-card">
-          <div class="report-card-icon"><i class="fas fa-flask"></i></div>
-          <span>HLA Typing Report</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- ══ INHOUSE TOOLS ══ -->
-    <div id="section-trackers" class="section">
-      <div class="report-section-title">
-        <h2>Inhouse Tools</h2>
-        <p>Select a team to view tools</p>
-      </div>
-
-      <!-- Level 1: team buttons -->
-      <div class="report-cards" id="admin-trackers-subnav">
-        <div class="report-card" style="width:180px;cursor:pointer" onclick="adminShowTeam('bioinfo')">
-          <div class="report-card-icon"><i class="fas fa-dna"></i></div>
-          <span>Bioinfo Team</span>
-        </div>
-        <div class="report-card" style="width:180px;cursor:pointer" onclick="adminShowTeam('others')">
-          <div class="report-card-icon"><i class="fas fa-tools"></i></div>
-          <span>Others</span>
-        </div>
-      </div>
-
-      <!-- Level 2: Bioinfo Team tools -->
-      <div id="admin-trackers-bioinfo" style="display:none">
-        <div class="report-cards">
-          <div class="report-card" style="cursor:pointer" onclick="openTool('/tracker/')">
-            <div class="report-card-icon"><i class="fas fa-clipboard-list"></i></div>
-            <span>Sample Tracker</span>
-          </div>
-          <div class="report-card" style="cursor:pointer" onclick="openTool('https://andersonreports.github.io/Clinical-history/')">
-            <div class="report-card-icon"><i class="fas fa-notes-medical"></i></div>
-            <span>Clinical History Tracker</span>
-          </div>
-          <div class="report-card" style="cursor:pointer" onclick="openTool('https://andersonbioinfo.github.io/CMC__Sample_Tracking/')">
-            <div class="report-card-icon"><i class="fas fa-vials"></i></div>
-            <span>CMC Tracker</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Level 2: Others -->
-      <div id="admin-trackers-others" style="display:none">
-        <div class="report-cards">
-          <div class="report-card" style="cursor:pointer" onclick="openTool('https://andersonreports.github.io/NGS-run-tracker/')">
-            <div class="report-card-icon"><i class="fas fa-chart-bar"></i></div>
-            <span>NGS Run</span>
-          </div>
-          <div class="report-card" style="cursor:pointer" onclick="openTool('https://andersonreports.github.io/Wetlab_tracker/')">
-            <div class="report-card-icon"><i class="fas fa-microscope"></i></div>
-            <span>CMC-ONCO</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- User Management is the only section now -->
 
   </main>
 
@@ -512,7 +415,6 @@
       document.getElementById('section-' + id).classList.add('active');
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       if (NAV_MAP[id]) document.getElementById(NAV_MAP[id]).classList.add('active');
-      if (id !== 'trackers') adminShowSubnav();
     }
     async function openTool(url) {
       // SSO: exchange Supabase session for tracker cookie so admins skip the separate login

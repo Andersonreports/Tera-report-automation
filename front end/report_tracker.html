@@ -627,7 +627,7 @@
     }
     
     .an-chart-card { 
-      padding: 30px; min-height: 600px; display: flex; flex-direction: column; 
+      width: 100%; padding: 30px; min-height: 500px; display: flex; flex-direction: column; 
       background: #ffffff; border: 1px solid var(--pb); border-radius: var(--r);
       box-shadow: var(--sh);
     }
@@ -647,11 +647,11 @@
       color: var(--pri); font-weight: 700; font-size: 13px; border: 1px solid rgba(79,70,229,.2);
     }
     
-    .an-layout { display: flex; flex-direction: column; gap: 32px; }
+    .an-layout { width: 100%; display: flex; flex-direction: column; gap: 32px; }
     
     .an-card-content { 
-      display: grid; grid-template-columns: 1fr 280px; gap: 40px; align-items: stretch;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex: 1;
+      display: grid; grid-template-columns: 1fr 320px; gap: 40px; align-items: stretch;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex: 1; width: 100%;
     }
     .an-card-content.filters-collapsed { grid-template-columns: 1fr 0px; gap: 0; }
     
@@ -700,14 +700,14 @@
 
     .an-chart-main {
       display: flex; flex-direction: row; align-items: stretch; gap: 32px;
-      flex: 1; min-height: 450px;
+      flex: 1; width: 100%; min-height: 450px;
     }
     .an-chart-body {
-      flex: 1; position: relative; min-height: 450px;
+      flex: 1; position: relative; min-height: 450px; width: 100%;
       display: flex; align-items: center; justify-content: center;
     }
     .an-custom-legend {
-      flex: 0 0 260px; max-height: 450px; overflow-y: auto;
+      flex: 0 0 280px; max-height: 450px; overflow-y: auto;
       display: flex; flex-direction: column; gap: 6px;
       padding: 15px; border-radius: 12px; background: rgba(248, 250, 252, 0.8);
       border: 1px solid var(--bdr);

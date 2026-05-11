@@ -122,6 +122,7 @@ def _resolve_cnv_images(embryos: list) -> tuple:
     return embryos, temp_paths
 
 @app.api_route("/", methods=["GET", "HEAD"])
+@app.api_route("/index.html", methods=["GET", "HEAD"])
 def root():
     p = os.path.join(FRONTEND_DIR, "index.html")
     if os.path.exists(p):

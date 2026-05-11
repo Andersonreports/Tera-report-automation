@@ -2835,18 +2835,21 @@ function normalizeClient(n) {
   let upper = n.trim().toUpperCase();
   
   // Map "Christian Medical College" variations to "CMC"
-  if (upper.includes('CHRISTIAN MEDICAL COLLEGE')) {
-    upper = upper.replace(/CHRISTIAN MEDICAL COLLEGE/g, 'CMC');
-  }
+  upper = upper.replace(/CHRISTIAN MEDICAL COLLEGE/g, 'CMC');
 
-  // Handle variations in "CMC --" or "CMC -"
-  // Replace hyphens with space then collapse multiple spaces
-  upper = upper.replace(/[-–—]+/g, ' ');
+  // Only collapse MULTIPLE consecutive hyphens (---, --) to a single space
+  // Single hyphens (e.g. "A4 FERTILITY - SELAIYUR") are kept as-is
+  upper = upper.replace(/[-–—]{2,}/g, ' ');
+
+  // Normalize whitespace around single hyphens (e.g. "CMC- NEPHROLOGY" → "CMC - NEPHROLOGY")
+  upper = upper.replace(/\s*-\s*/g, ' - ');
   
-  // Specific spelling normalization for Hematology
-  upper = upper.replace('HEAMATOLOGY', 'HEMATOLOGY');
+  // Specific spelling normalization
+  upper = upper.replace(/HEAMATOLOGY/g, 'HEMATOLOGY');
+  upper = upper.replace(/HAEMOTOLOGY/g, 'HEMATOLOGY');
+  upper = upper.replace(/HAEMATOLOGY/g, 'HEMATOLOGY');
   
-  // Final cleanup: uppercase and single spaces
+  // Final cleanup: collapse multiple spaces
   return upper.replace(/\s+/g, ' ').trim();
 }
 

@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Anderson Clinical Genetics</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,600,700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" crossorigin="anonymous">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Lato', sans-serif;
-      background: #F58220;
-      color: #111;
+      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+      background: #f5f7fa;
+      color: #1c3a5f;
       opacity: 0;
       transition: opacity 0.4s ease;
       min-height: 100vh;
@@ -23,10 +23,11 @@
     .logo-bar {
       position: fixed; top: 0; left: 0; width: 100%; z-index: 200;
       background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 8px rgba(28,58,95,0.12);
       height: 72px;
       display: flex; align-items: center;
       padding: 0 24px;
+      border-bottom: 3px solid #e87722;
     }
     .logo-bar img {
       max-height: 48px;
@@ -41,15 +42,17 @@
       display: none;
       font-size: 20px;
       font-weight: 800;
-      color: #1F497D;
+      color: #1c3a5f;
       letter-spacing: -0.5px;
+      margin-left: 10px;
+      white-space: nowrap;
     }
 
     /* ── Sidebar ── */
     .sidebar {
       position: fixed; top: 0; left: 0;
       width: 220px; height: 100vh;
-      background: #1F5EA8;
+      background: #1c3a5f;
       display: flex; flex-direction: column; align-items: center;
       padding-top: 90px; gap: 12px;
       z-index: 100;
@@ -57,22 +60,22 @@
 
     /* ── Admin login button ── */
     .admin-login-btn {
-      background: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
       padding: 10px 20px; border-radius: 30px;
-      border: 2px solid rgba(255,255,255,0.6);
+      border: 2px solid rgba(255,255,255,0.3);
       display: inline-flex; align-items: center; gap: 8px;
       text-decoration: none; transition: 0.2s;
       width: 80%; justify-content: center;
-      color: #fff; font-size: 13px; font-weight: 600;
+      color: #e0e8f0; font-size: 13px; font-weight: 600;
       margin-top: auto; margin-bottom: 30px;
     }
-    .admin-login-btn:hover { background: rgba(255,255,255,0.35); }
+    .admin-login-btn:hover { background: rgba(232,119,34,0.25); border-color: #e87722; color: #fff; }
 
     /* ── User pill (shown when logged in) ── */
     .user-pill {
       display: none;
-      background: rgba(255,255,255,0.15);
-      border: 1.5px solid rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.1);
+      border: 1.5px solid rgba(255,255,255,0.25);
       border-radius: 10px;
       padding: 10px 14px;
       width: 80%;
@@ -89,7 +92,7 @@
     }
     .btn-signout {
       margin-top: 6px;
-      background: transparent; border: 1px solid rgba(255,255,255,0.4);
+      background: transparent; border: 1px solid rgba(255,255,255,0.35);
       border-radius: 6px; padding: 5px 10px;
       color: rgba(255,255,255,0.75); font-size: 11px; font-weight: 600;
       cursor: pointer; font-family: inherit; transition: 0.2s;
@@ -100,14 +103,14 @@
     /* ── Nav buttons ── */
     .nav-btn {
       width: 180px; padding: 14px;
-      border: 2px solid #1b4b8c;
-      background: #fff; border-radius: 8px;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08); border-radius: 8px;
       font-size: 12px; letter-spacing: 2px; font-weight: 700;
-      color: #1b4b8c; cursor: pointer; transition: 0.3s;
-      text-transform: uppercase;
+      color: #e0e8f0; cursor: pointer; transition: 0.3s;
+      text-transform: uppercase; font-family: inherit;
     }
     .nav-btn:hover, .nav-btn.active {
-      background: #1b4b8c; color: #fff;
+      background: #e87722; border-color: #e87722; color: #fff;
     }
 
     /* ── Main content ── */
@@ -126,13 +129,12 @@
     .hero { text-align: center; margin-bottom: 48px; }
     .hero h1 {
       font-size: 2.6em; font-weight: 700;
-      color: #fff;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      color: #1c3a5f;
       margin-bottom: 10px;
       line-height: 1.2;
     }
     .hero p {
-      font-size: 1.05em; color: rgba(255,255,255,0.88);
+      font-size: 1.05em; color: #64748b;
     }
 
     /* Section cards */
@@ -141,7 +143,7 @@
     }
     .card {
       width: 220px; background: #fff; border-radius: 16px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      box-shadow: 0 4px 16px rgba(28,58,95,0.1);
       padding: 36px 20px 28px;
       display: flex; flex-direction: column; align-items: center; gap: 14px;
       cursor: pointer; transition: 0.22s; text-decoration: none; color: inherit;
@@ -149,17 +151,17 @@
     }
     .card:hover {
       transform: translateY(-6px);
-      box-shadow: 0 10px 28px rgba(0,0,0,0.22);
-      border-color: #1F5EA8;
+      box-shadow: 0 10px 28px rgba(28,58,95,0.18);
+      border-color: #e87722;
     }
     .card-icon {
       width: 56px; height: 56px; border-radius: 14px;
-      background: #e8f0fb;
+      background: #eef2f8;
       display: flex; align-items: center; justify-content: center;
     }
-    .card-icon i { font-size: 26px; color: #1F5EA8; }
+    .card-icon i { font-size: 26px; color: #1c3a5f; }
     .card span {
-      font-size: 13px; font-weight: 700; color: #1b4b8c;
+      font-size: 13px; font-weight: 700; color: #1c3a5f;
       text-align: center; letter-spacing: 0.5px;
     }
     .card small { font-size: 11px; color: #888; text-align: center; }
@@ -169,15 +171,15 @@
       text-align: center; margin-bottom: 32px;
     }
     .report-section-title h2 {
-      font-size: 2em; color: #fff; font-weight: 700; margin-bottom: 6px;
+      font-size: 2em; color: #1c3a5f; font-weight: 700; margin-bottom: 6px;
     }
-    .report-section-title p { font-size: 1em; color: rgba(255,255,255,0.82); }
+    .report-section-title p { font-size: 1em; color: #64748b; }
     .report-cards {
       display: flex; justify-content: center; gap: 22px; flex-wrap: wrap;
     }
     .report-card {
       width: 150px; background: #fff; border-radius: 14px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.16);
+      box-shadow: 0 4px 14px rgba(28,58,95,0.1);
       padding: 28px 14px 22px;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
       cursor: pointer; transition: 0.22s; color: inherit;
@@ -187,22 +189,22 @@
     }
     .report-card:hover {
       transform: translateY(-5px);
-      box-shadow: 0 10px 24px rgba(0,0,0,0.22);
-      border-color: #1F5EA8;
+      box-shadow: 0 10px 24px rgba(28,58,95,0.18);
+      border-color: #e87722;
     }
     .report-card.locked:hover {
       transform: none;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.16);
+      box-shadow: 0 4px 14px rgba(28,58,95,0.1);
       border-color: #e2e8f0;
     }
     .report-card-icon {
       width: 48px; height: 48px; border-radius: 12px;
-      background: #e8f0fb;
+      background: #eef2f8;
       display: flex; align-items: center; justify-content: center;
     }
-    .report-card-icon i { font-size: 22px; color: #1F5EA8; }
+    .report-card-icon i { font-size: 22px; color: #1c3a5f; }
     .report-card span {
-      font-size: 12px; font-weight: 700; color: #1b4b8c;
+      font-size: 12px; font-weight: 700; color: #1c3a5f;
       text-align: center; letter-spacing: 0.3px;
     }
     /* Lock overlay on report cards */
@@ -235,14 +237,14 @@
     }
     .subnav-breadcrumb button {
       display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(255,255,255,0.2); border: 1.5px solid rgba(255,255,255,0.4);
+      background: #eef2f8; border: 1.5px solid #c5d5eb;
       border-radius: 20px; padding: 6px 14px;
-      color: #fff; font-size: 13px; font-weight: 600;
+      color: #1c3a5f; font-size: 13px; font-weight: 600;
       cursor: pointer; font-family: inherit;
       transition: background 0.2s;
     }
-    .subnav-breadcrumb button:hover { background: rgba(255,255,255,0.35); }
-    .subnav-breadcrumb span { color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600; }
+    .subnav-breadcrumb button:hover { background: #1c3a5f; color: #fff; border-color: #1c3a5f; }
+    .subnav-breadcrumb span { color: #64748b; font-size: 13px; font-weight: 600; }
 
     /* Coming Soon section */
     .coming-soon {
@@ -250,31 +252,31 @@
     }
     .coming-soon-badge {
       display: inline-flex; align-items: center; gap: 10px;
-      background: rgba(255,255,255,0.15);
-      border: 2px solid rgba(255,255,255,0.4);
+      background: #eef2f8;
+      border: 2px solid #c5d5eb;
       border-radius: 50px; padding: 8px 22px;
-      color: #fff; font-size: 12px; font-weight: 700;
+      color: #1c3a5f; font-size: 12px; font-weight: 700;
       letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px;
     }
     .coming-soon h2 {
-      font-size: 2.2em; color: #fff; font-weight: 700; margin-bottom: 12px;
+      font-size: 2.2em; color: #1c3a5f; font-weight: 700; margin-bottom: 12px;
     }
-    .coming-soon p { font-size: 1em; color: rgba(255,255,255,0.82); }
+    .coming-soon p { font-size: 1em; color: #64748b; }
 
     /* No-access notice inside a section */
     .no-access-notice {
       display: none;
-      background: rgba(255,255,255,0.15);
-      border: 2px solid rgba(255,255,255,0.35);
+      background: #f1f5f9;
+      border: 2px solid #dde3ec;
       border-radius: 14px;
       padding: 40px 24px;
       text-align: center;
       margin-top: 20px;
     }
     .no-access-notice.visible { display: block; }
-    .no-access-notice i { font-size: 32px; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
-    .no-access-notice h3 { font-size: 1.3em; color: #fff; margin-bottom: 8px; }
-    .no-access-notice p { color: rgba(255,255,255,0.75); font-size: 14px; }
+    .no-access-notice i { font-size: 32px; color: #94a3b8; margin-bottom: 12px; }
+    .no-access-notice h3 { font-size: 1.3em; color: #1c3a5f; margin-bottom: 8px; }
+    .no-access-notice p { color: #64748b; font-size: 14px; }
 
     /* ── Auth Modal ── */
     .modal-backdrop {
@@ -291,7 +293,7 @@
     }
     .auth-logo { text-align: center; margin-bottom: 28px; }
     .auth-logo img { max-height: 52px; object-fit: contain; }
-    .auth-logo h2 { font-size: 1.3em; font-weight: 700; color: #1b4b8c; margin-top: 10px; }
+    .auth-logo h2 { font-size: 1.3em; font-weight: 700; color: #1c3a5f; margin-top: 10px; }
     .auth-logo p  { font-size: 12px; color: #888; margin-top: 4px; }
     .auth-error {
       background: #fee2e2; color: #dc2626;
@@ -309,15 +311,15 @@
       outline: none; transition: border-color 0.2s;
       margin-bottom: 14px;
     }
-    .auth-card input:focus { border-color: #1F5EA8; }
+    .auth-card input:focus { border-color: #e87722; box-shadow: 0 0 0 3px rgba(232,119,34,0.12); }
     .btn-auth-login {
       width: 100%; padding: 13px;
-      background: #1F5EA8; color: #fff;
+      background: #1c3a5f; color: #fff;
       border: none; border-radius: 8px;
       font-size: 15px; font-weight: 700; font-family: inherit;
       cursor: pointer; transition: background 0.2s; margin-bottom: 10px;
     }
-    .btn-auth-login:hover    { background: #1b4b8c; }
+    .btn-auth-login:hover    { background: #e87722; }
     .btn-auth-login:disabled { background: #93b4d9; cursor: not-allowed; }
     .btn-auth-cancel {
       width: 100%; padding: 11px;
@@ -334,7 +336,7 @@
       display: flex; flex-direction: column; gap: 8px; z-index: 9999;
     }
     .toast {
-      background: #1e293b; color: #fff;
+      background: #1c3a5f; color: #fff;
       padding: 12px 18px; border-radius: 10px;
       font-size: 13px; font-weight: 600;
       box-shadow: 0 4px 16px rgba(0,0,0,0.2);
@@ -372,7 +374,7 @@
     .ad-card::before {
       content: '';
       position: absolute; top: 0; left: 0; right: 0; height: 5px;
-      background: linear-gradient(90deg, #ef4444, #f59e0b, #ef4444);
+      background: linear-gradient(90deg, #ef4444, #e87722, #ef4444);
       background-size: 200% 100%;
       animation: shimmer 2s linear infinite;
     }
@@ -393,7 +395,7 @@
     .ad-icon-wrap i { font-size: 30px; color: #dc2626; }
     .ad-title {
       font-size: 1.25em; font-weight: 800;
-      color: #1b4b8c; margin-bottom: 8px; letter-spacing: -0.3px;
+      color: #1c3a5f; margin-bottom: 8px; letter-spacing: -0.3px;
     }
     .ad-msg {
       font-size: 13px; color: #64748b; line-height: 1.55; margin-bottom: 24px;
@@ -404,13 +406,6 @@
       border-radius: 30px; padding: 5px 14px;
       font-size: 11px; font-weight: 700; color: #94a3b8;
       letter-spacing: 0.5px; text-transform: uppercase;
-    }
-    .logo-text {
-      font-size: 20px;
-      font-weight: 800;
-      color: #1F497D;
-      margin-left: 10px;
-      white-space: nowrap;
     }
   </style>
 </head>

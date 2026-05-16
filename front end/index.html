@@ -419,6 +419,81 @@
       font-size: 11px; font-weight: 700; color: #94a3b8;
       letter-spacing: 0.5px; text-transform: uppercase;
     }
+
+    /* ── Home section decorations (scoped) ── */
+    #section-home { position: relative; overflow: visible; }
+
+    .home-blob {
+      position: absolute; border-radius: 50%;
+      filter: blur(72px); pointer-events: none; z-index: 0;
+      animation: floatBlob 8s ease-in-out infinite alternate;
+    }
+    .home-blob-1 {
+      width: 420px; height: 420px;
+      background: rgba(30,74,130,0.13);
+      top: -120px; right: -100px;
+      animation-duration: 9s;
+    }
+    .home-blob-2 {
+      width: 300px; height: 300px;
+      background: rgba(232,119,34,0.09);
+      bottom: -80px; left: -60px;
+      animation-duration: 11s;
+    }
+    .home-blob-3 {
+      width: 180px; height: 180px;
+      background: rgba(30,74,130,0.07);
+      top: 40%; left: 10%;
+      animation-duration: 13s;
+    }
+    @keyframes floatBlob {
+      0%   { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(20px, 30px) scale(1.08); }
+    }
+
+    .home-glass-card {
+      position: relative; z-index: 1;
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.95);
+      border-radius: 28px;
+      padding: 56px 52px 48px;
+      max-width: 680px;
+      margin: 0 auto;
+      box-shadow:
+        0 4px 6px rgba(28,58,95,0.04),
+        0 16px 48px rgba(28,58,95,0.1),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    .home-glass-card .hero { margin-bottom: 36px; }
+
+    .home-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(28,58,95,0.12), transparent);
+      margin: 0 0 30px;
+    }
+
+    .home-features {
+      display: flex; justify-content: center;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .home-feature-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #fff; border: 1.5px solid #e2e8f0;
+      border-radius: 50px; padding: 10px 20px;
+      font-size: 12px; font-weight: 700; color: #1c3a5f;
+      box-shadow: 0 2px 10px rgba(28,58,95,0.07);
+      transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+      cursor: default; letter-spacing: 0.3px;
+    }
+    .home-feature-pill:hover {
+      background: #1c3a5f; color: #fff; border-color: #1c3a5f;
+      box-shadow: 0 8px 24px rgba(28,58,95,0.22);
+      transform: translateY(-3px);
+    }
+    .home-feature-pill i { font-size: 13px; color: #e87722; transition: color 0.25s; flex-shrink: 0; }
+    .home-feature-pill:hover i { color: #f5a75b; }
   </style>
 </head>
 <body>
@@ -459,9 +534,23 @@
 
     <!-- Default landing view -->
     <div id="section-home" class="section active">
-      <div class="hero">
-<h1>Anderson Clinical Genetics</h1>
-        <p>Select a module from the sidebar to get started</p>
+      <!-- Decorative blobs -->
+      <div class="home-blob home-blob-1"></div>
+      <div class="home-blob home-blob-2"></div>
+      <div class="home-blob home-blob-3"></div>
+
+      <!-- Glass card -->
+      <div class="home-glass-card">
+        <div class="hero">
+          <h1>Anderson Clinical Genetics</h1>
+          <p>Select a module from the sidebar to get started</p>
+        </div>
+        <div class="home-divider"></div>
+        <div class="home-features">
+          <div class="home-feature-pill"><i class="fas fa-file-medical"></i> Report Automation</div>
+          <div class="home-feature-pill"><i class="fas fa-database"></i> Databases</div>
+          <div class="home-feature-pill"><i class="fas fa-tools"></i> Inhouse Tools</div>
+        </div>
       </div>
     </div>
 

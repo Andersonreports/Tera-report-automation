@@ -423,6 +423,16 @@
     /* ── Home section decorations (scoped) ── */
     #section-home { position: relative; overflow: visible; }
 
+    .home-header-img-wrap {
+      position: relative; z-index: 1;
+      max-width: 780px; margin: 0 auto 24px;
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 4px 24px rgba(28,58,95,0.14), 0 1px 4px rgba(28,58,95,0.08);
+    }
+    .home-header-img {
+      width: 100%; height: auto; display: block;
+    }
+
     .home-blob {
       position: absolute; border-radius: 50%;
       filter: blur(72px); pointer-events: none; z-index: 0;
@@ -538,6 +548,11 @@
       <div class="home-blob home-blob-1"></div>
       <div class="home-blob home-blob-2"></div>
       <div class="home-blob home-blob-3"></div>
+
+      <!-- Header image -->
+      <div class="home-header-img-wrap">
+        <img src="head_loggo.jpg" alt="Anderson Diagnostic Services" class="home-header-img">
+      </div>
 
       <!-- Glass card -->
       <div class="home-glass-card">

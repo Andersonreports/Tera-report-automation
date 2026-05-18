@@ -138,6 +138,7 @@
     /* ── Sections ── */
     .section { display: none; width: 100%; max-width: 900px; padding: 52px 32px; position: relative; z-index: 1; }
     .section.active { display: block; }
+    #section-home.active { display: flex; }
 
     /* Hero */
     .hero { text-align: center; margin-bottom: 52px; }
@@ -405,15 +406,19 @@
 
     /* ── Home section decorations (scoped) ── */
     #section-home {
-      position: relative; overflow: hidden;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      max-width: none;
+      padding: 0;
+      min-height: 100%;
       display: flex; align-items: center; justify-content: center;
-      min-height: 100vh;
+      overflow: hidden;
       background: url('/static/Background.jpg') center center / cover no-repeat;
     }
     #section-home::before {
       content: '';
       position: absolute; inset: 0;
-      background: rgba(5, 18, 40, 0.45);
+      background: rgba(5, 18, 40, 0.60);
       z-index: 0;
     }
 

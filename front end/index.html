@@ -404,7 +404,27 @@
     }
 
     /* ── Home section decorations (scoped) ── */
-    #section-home { position: relative; overflow: visible; }
+    #section-home {
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      min-height: calc(100vh - 0px);
+    }
+
+    .dna-bg {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 320px; height: 80%;
+      opacity: 0.12;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .dna-bg svg { width: 100%; height: 100%; }
+
+    #section-home .hero {
+      position: relative; z-index: 1;
+      text-align: center;
+    }
 
     .home-blob {
       position: absolute; border-radius: 50%;
@@ -498,6 +518,55 @@
       <div class="home-blob home-blob-1"></div>
       <div class="home-blob home-blob-2"></div>
       <div class="home-blob home-blob-3"></div>
+
+      <!-- DNA background -->
+      <div class="dna-bg" aria-hidden="true">
+        <svg viewBox="0 0 200 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <!-- Strand A (left sine wave) -->
+          <path d="M60,0 C100,50 100,100 60,150 C20,200 20,250 60,300 C100,350 100,400 60,450 C20,500 20,550 60,600"
+                fill="none" stroke="#1E4A82" stroke-width="3.5" stroke-linecap="round"/>
+          <!-- Strand B (right sine wave, offset) -->
+          <path d="M140,0 C100,50 100,100 140,150 C180,200 180,250 140,300 C100,350 100,400 140,450 C180,500 180,550 140,600"
+                fill="none" stroke="#E87722" stroke-width="3.5" stroke-linecap="round"/>
+          <!-- Rungs -->
+          <line x1="60"  y1="0"   x2="140" y2="0"   stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="72"  y1="25"  x2="128" y2="25"  stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="96"  y1="50"  x2="104" y2="50"  stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="108" y1="75"  x2="92"  y2="75"  stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="96"  y1="100" x2="104" y2="100" stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="72"  y1="125" x2="128" y2="125" stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="60"  y1="150" x2="140" y2="150" stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="72"  y1="175" x2="128" y2="175" stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="96"  y1="200" x2="104" y2="200" stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="108" y1="225" x2="92"  y2="225" stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="96"  y1="250" x2="104" y2="250" stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="72"  y1="275" x2="128" y2="275" stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="60"  y1="300" x2="140" y2="300" stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="72"  y1="325" x2="128" y2="325" stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="96"  y1="350" x2="104" y2="350" stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="108" y1="375" x2="92"  y2="375" stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="96"  y1="400" x2="104" y2="400" stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="72"  y1="425" x2="128" y2="425" stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="60"  y1="450" x2="140" y2="450" stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="72"  y1="475" x2="128" y2="475" stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="96"  y1="500" x2="104" y2="500" stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="108" y1="525" x2="92"  y2="525" stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="96"  y1="550" x2="104" y2="550" stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="72"  y1="575" x2="128" y2="575" stroke="#E87722" stroke-width="2" stroke-opacity="0.5"/>
+          <line x1="60"  y1="600" x2="140" y2="600" stroke="#1E4A82" stroke-width="2" stroke-opacity="0.5"/>
+          <!-- Nodes on strands -->
+          <circle cx="60"  cy="0"   r="5" fill="#1E4A82"/>
+          <circle cx="60"  cy="150" r="5" fill="#1E4A82"/>
+          <circle cx="60"  cy="300" r="5" fill="#1E4A82"/>
+          <circle cx="60"  cy="450" r="5" fill="#1E4A82"/>
+          <circle cx="60"  cy="600" r="5" fill="#1E4A82"/>
+          <circle cx="140" cy="0"   r="5" fill="#E87722"/>
+          <circle cx="140" cy="150" r="5" fill="#E87722"/>
+          <circle cx="140" cy="300" r="5" fill="#E87722"/>
+          <circle cx="140" cy="450" r="5" fill="#E87722"/>
+          <circle cx="140" cy="600" r="5" fill="#E87722"/>
+        </svg>
+      </div>
 
       <div class="hero">
         <h1>Anderson Clinical Genetics</h1>

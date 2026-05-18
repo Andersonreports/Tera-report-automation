@@ -136,19 +136,27 @@
       padding-top: 0;
       min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(145deg, #eef1f7 0%, #f5f7fb 55%, #e8edf6 100%);
+      background: linear-gradient(145deg, #0d1f3c 0%, #0f2545 50%, #0b1b38 100%);
       position: relative; overflow: hidden;
+    }
+    /* Ambient glow orbs */
+    .main::before {
+      content: '';
+      position: absolute; top: -180px; right: -120px;
+      width: 560px; height: 560px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(30,80,160,0.25) 0%, transparent 65%);
+      pointer-events: none; z-index: 0;
     }
     .main::after {
       content: '';
-      position: absolute; bottom: -120px; right: -120px;
-      width: 480px; height: 480px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(232,119,34,0.06) 0%, transparent 70%);
-      pointer-events: none;
+      position: absolute; bottom: -140px; left: 80px;
+      width: 440px; height: 440px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(232,119,34,0.12) 0%, transparent 65%);
+      pointer-events: none; z-index: 0;
     }
 
     /* ── Sections ── */
-    .section { display: none; width: 100%; max-width: 900px; padding: 52px 32px; position: relative; z-index: 1; }
+    .section { display: none; width: 100%; max-width: 960px; padding: 52px 32px; position: relative; z-index: 1; }
     .section.active { display: block; }
     #section-home.active {
       display: flex; align-items: center; justify-content: center;
@@ -195,79 +203,112 @@
     .hero p { font-size: 1.05em; color: #64748b; max-width: 380px; margin: 0 auto; line-height: 1.65; }
 
     /* Section titles */
-    .report-section-title { text-align: center; margin-bottom: 38px; }
+    .report-section-title { text-align: center; margin-bottom: 42px; position: relative; z-index: 1; }
     .report-section-title h2 {
-      font-size: 1.85em; color: #0a1f3d; font-weight: 800;
+      font-size: 2em; color: #ffffff; font-weight: 800;
       margin-bottom: 10px; letter-spacing: -0.5px;
       display: inline-block; position: relative; padding-bottom: 14px;
+      text-shadow: 0 2px 20px rgba(30,80,160,0.4);
     }
     .report-section-title h2::after {
       content: '';
       position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-      width: 36px; height: 3px; border-radius: 2px;
-      background: linear-gradient(90deg, #1c3a5f, #e87722);
+      width: 44px; height: 3px; border-radius: 2px;
+      background: linear-gradient(90deg, #4d9fff, #e87722);
+      box-shadow: 0 0 10px rgba(232,119,34,0.5);
     }
-    .report-section-title p { font-size: 0.95em; color: #64748b; margin-top: 6px; }
+    .report-section-title p { font-size: 0.95em; color: rgba(255,255,255,0.45); margin-top: 6px; }
 
     /* Cards row */
-    .cards { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+    .cards { display: flex; justify-content: center; gap: 22px; flex-wrap: wrap; position: relative; z-index: 1; }
     .card {
-      width: 210px; background: #fff; border-radius: 18px;
-      box-shadow: 0 2px 16px rgba(28,58,95,0.08);
+      width: 210px;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
       padding: 34px 20px 28px;
       display: flex; flex-direction: column; align-items: center; gap: 14px;
       cursor: pointer; transition: all 0.32s cubic-bezier(0.4,0,0.2,1);
-      text-decoration: none; color: inherit; border: 2px solid transparent;
+      text-decoration: none; color: inherit;
       position: relative; overflow: hidden;
     }
     .card::before {
       content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, #1c3a5f, #e87722);
+      background: linear-gradient(90deg, #4d9fff, #e87722);
       transform: scaleX(0); transform-origin: left; transition: transform 0.35s;
     }
-    .card:hover { transform: translateY(-8px); box-shadow: 0 20px 48px rgba(28,58,95,0.15); }
+    .card:hover {
+      transform: translateY(-8px);
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 0 24px 56px rgba(0,0,0,0.4), 0 0 30px rgba(77,159,255,0.12);
+    }
     .card:hover::before { transform: scaleX(1); }
     .card-icon {
       width: 62px; height: 62px; border-radius: 17px;
-      background: linear-gradient(135deg, #eef2f8, #dbe6f5);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
       display: flex; align-items: center; justify-content: center;
       transition: all 0.32s;
     }
-    .card:hover .card-icon { background: linear-gradient(135deg, #e87722, #f5a742); transform: scale(1.07); }
-    .card-icon i { font-size: 26px; color: #1c3a5f; transition: color 0.32s; }
+    .card:hover .card-icon {
+      background: linear-gradient(135deg, #e87722, #f5a742);
+      border-color: transparent;
+      transform: scale(1.07);
+      box-shadow: 0 6px 20px rgba(232,119,34,0.45);
+    }
+    .card-icon i { font-size: 26px; color: rgba(255,255,255,0.7); transition: color 0.32s; }
     .card:hover .card-icon i { color: #fff; }
-    .card span { font-size: 13px; font-weight: 700; color: #0d2137; text-align: center; letter-spacing: 0.2px; }
-    .card small { font-size: 11px; color: #94a3b8; text-align: center; }
+    .card span { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.85); text-align: center; letter-spacing: 0.2px; }
+    .card small { font-size: 11px; color: rgba(255,255,255,0.35); text-align: center; }
 
     /* Report cards */
-    .report-cards { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; }
+    .report-cards { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; position: relative; z-index: 1; }
     .report-card {
-      width: 148px; background: #fff; border-radius: 16px;
-      box-shadow: 0 2px 14px rgba(28,58,95,0.08);
+      width: 148px;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07);
       padding: 28px 12px 22px;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
       cursor: pointer; transition: all 0.32s cubic-bezier(0.4,0,0.2,1);
-      color: inherit; border: 2px solid transparent;
-      position: relative; overflow: hidden; user-select: none;
+      color: inherit; position: relative; overflow: hidden; user-select: none;
     }
     .report-card::before {
       content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, #1c3a5f, #e87722);
+      background: linear-gradient(90deg, #4d9fff, #e87722);
       transform: scaleX(0); transform-origin: left; transition: transform 0.35s;
     }
-    .report-card:not(.locked):hover { transform: translateY(-7px); box-shadow: 0 18px 40px rgba(28,58,95,0.15); }
+    .report-card:not(.locked):hover {
+      transform: translateY(-7px);
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 0 20px 44px rgba(0,0,0,0.4), 0 0 24px rgba(77,159,255,0.1);
+    }
     .report-card:not(.locked):hover::before { transform: scaleX(1); }
-    .report-card.locked { opacity: 0.72; }
+    .report-card.locked { opacity: 0.45; }
     .report-card-icon {
       width: 52px; height: 52px; border-radius: 14px;
-      background: linear-gradient(135deg, #eef2f8, #dbe6f5);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
       display: flex; align-items: center; justify-content: center;
       transition: all 0.32s;
     }
-    .report-card:not(.locked):hover .report-card-icon { background: linear-gradient(135deg, #e87722, #f5a742); transform: scale(1.08); }
-    .report-card-icon i { font-size: 22px; color: #1c3a5f; transition: color 0.32s; }
+    .report-card:not(.locked):hover .report-card-icon {
+      background: linear-gradient(135deg, #e87722, #f5a742);
+      border-color: transparent;
+      transform: scale(1.08);
+      box-shadow: 0 5px 18px rgba(232,119,34,0.45);
+    }
+    .report-card-icon i { font-size: 22px; color: rgba(255,255,255,0.65); transition: color 0.32s; }
     .report-card:not(.locked):hover .report-card-icon i { color: #fff; }
-    .report-card span { font-size: 12px; font-weight: 700; color: #0d2137; text-align: center; letter-spacing: 0.2px; }
+    .report-card span { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.82); text-align: center; letter-spacing: 0.2px; }
 
     /* Lock overlay */
     .report-card .lock-overlay {

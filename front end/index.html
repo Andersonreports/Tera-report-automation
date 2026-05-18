@@ -138,7 +138,7 @@
     /* ── Sections ── */
     .section { display: none; width: 100%; max-width: 900px; padding: 52px 32px; position: relative; z-index: 1; }
     .section.active { display: block; }
-    #section-home.active { display: flex; }
+    #section-home.active { display: flex; width: 100%; }
 
     /* Hero */
     .hero { text-align: center; margin-bottom: 52px; }
@@ -404,28 +404,24 @@
       letter-spacing: 0.5px; text-transform: uppercase;
     }
 
-    /* ── Home section decorations (scoped) ── */
-    #section-home {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      max-width: none;
-      padding: 0;
-      min-height: 100%;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-      background: url('/static/Background.jpg') center center / cover no-repeat;
+    /* ── Home section background on .main ── */
+    .main.home-bg {
+      background: url('/static/Background.jpg') center center / cover no-repeat !important;
     }
-    #section-home::before {
+    .main.home-bg::after {
       content: '';
       position: absolute; inset: 0;
       background: rgba(5, 18, 40, 0.60);
-      z-index: 0;
+      pointer-events: none; z-index: 0;
     }
 
-    #section-home .hero {
+    #section-home {
+      width: 100%; max-width: none; padding: 0;
+      min-height: calc(100vh - 68px);
+      display: flex; align-items: center; justify-content: center;
       position: relative; z-index: 1;
-      text-align: center;
     }
+    #section-home .hero { text-align: center; }
     #section-home .hero h1 { color: #ffffff; }
     #section-home .hero p  { color: rgba(255,255,255,0.80); }
 
@@ -780,6 +776,7 @@
       document.getElementById('section-' + id).classList.add('active');
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       if (NAV_MAP[id]) document.getElementById(NAV_MAP[id]).classList.add('active');
+      document.querySelector('.main').classList.toggle('home-bg', id === 'home');
       // Reset sub-navigations whenever we enter/leave their sections
       if (id !== 'trackers')  showTrackerSubnav();
       if (id !== 'databases') showDatabasesMainGrid();
@@ -1033,6 +1030,7 @@
         updateAuthUI();
       }
       document.body.classList.add('loaded');
+      document.querySelector('.main').classList.add('home-bg');
 
       // Auto-open section from ?section= URL param (e.g. back button from a tracker)
       const _params     = new URLSearchParams(window.location.search);

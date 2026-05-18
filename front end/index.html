@@ -28,12 +28,10 @@
       display: flex; align-items: center;
       padding: 0 28px;
     }
-    .logo-bar img { max-height: 46px; width: auto; object-fit: contain; display: block; }
-    .logo-bar img[style*="display: none"] + .logo-text { display: block; }
-    .logo-text {
-      display: none;
-      font-size: 18px; font-weight: 700; color: #0a1f3d;
-      letter-spacing: -0.3px; margin-left: 12px; white-space: nowrap;
+    .logo-bar img {
+      height: 100%; width: 100%;
+      object-fit: contain; object-position: left center;
+      display: block;
     }
 
     /* ── Sidebar ── */
@@ -510,8 +508,7 @@
 
   <!-- Logo -->
   <div class="logo-bar">
-        <img src="Head_logo.jpg" alt="Anderson Clinical Genetics" onerror="this.style.display='none'">
-        <div class="logo-text">Anderson Clinical Genetics</div>
+    <img src="/static/head_loggo.jpg" alt="Anderson Clinical Genetics">
   </div>
 
   <!-- Sidebar -->
@@ -551,7 +548,7 @@
 
       <!-- Header image -->
       <div class="home-header-img-wrap">
-        <img src="head_loggo.jpg" alt="Anderson Diagnostic Services" class="home-header-img">
+        <img src="/static/head_loggo.jpg" alt="Anderson Diagnostic Services" class="home-header-img">
       </div>
 
       <!-- Glass card -->

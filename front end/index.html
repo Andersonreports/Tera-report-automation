@@ -19,21 +19,6 @@
     }
     body.loaded { opacity: 1; }
 
-    /* ── Logo bar ── */
-    .logo-bar {
-      position: fixed; top: 0; left: 220px; right: 0; z-index: 200;
-      background: #fff;
-      box-shadow: 0 1px 0 #e2e8f0, 0 4px 16px rgba(28,58,95,0.06);
-      height: 68px;
-      display: flex; align-items: center;
-      padding: 0 28px;
-    }
-    .logo-bar img {
-      height: 100%; width: 100%;
-      object-fit: contain; object-position: left center;
-      display: block;
-    }
-
     /* ── Sidebar ── */
     .sidebar {
       position: fixed; top: 0; left: 0;
@@ -421,16 +406,6 @@
     /* ── Home section decorations (scoped) ── */
     #section-home { position: relative; overflow: visible; }
 
-    .home-header-img-wrap {
-      position: relative; z-index: 1;
-      max-width: 780px; margin: 0 auto 24px;
-      border-radius: 16px; overflow: hidden;
-      box-shadow: 0 4px 24px rgba(28,58,95,0.14), 0 1px 4px rgba(28,58,95,0.08);
-    }
-    .home-header-img {
-      width: 100%; height: auto; display: block;
-    }
-
     .home-blob {
       position: absolute; border-radius: 50%;
       filter: blur(72px); pointer-events: none; z-index: 0;
@@ -458,23 +433,6 @@
       0%   { transform: translate(0, 0) scale(1); }
       100% { transform: translate(20px, 30px) scale(1.08); }
     }
-
-    .home-glass-card {
-      position: relative; z-index: 1;
-      background: rgba(255,255,255,0.75);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border: 1px solid rgba(255,255,255,0.95);
-      border-radius: 28px;
-      padding: 56px 52px 48px;
-      max-width: 680px;
-      margin: 0 auto;
-      box-shadow:
-        0 4px 6px rgba(28,58,95,0.04),
-        0 16px 48px rgba(28,58,95,0.1),
-        inset 0 1px 0 rgba(255,255,255,0.9);
-    }
-    .home-glass-card .hero { margin-bottom: 36px; }
 
     .home-divider {
       height: 1px;
@@ -505,11 +463,6 @@
   </style>
 </head>
 <body>
-
-  <!-- Logo -->
-  <div class="logo-bar">
-    <img src="/static/head_loggo.jpg" alt="Anderson Clinical Genetics">
-  </div>
 
   <!-- Sidebar -->
   <nav class="sidebar">
@@ -546,17 +499,9 @@
       <div class="home-blob home-blob-2"></div>
       <div class="home-blob home-blob-3"></div>
 
-      <!-- Header image -->
-      <div class="home-header-img-wrap">
-        <img src="/static/head_loggo.jpg" alt="Anderson Diagnostic Services" class="home-header-img">
-      </div>
-
-      <!-- Glass card -->
-      <div class="home-glass-card">
-        <div class="hero">
-          <h1>Anderson Clinical Genetics</h1>
-          <p>Select a module from the sidebar to get started</p>
-        </div>
+      <div class="hero">
+        <h1>Anderson Clinical Genetics</h1>
+        <p>Select a module from the sidebar to get started</p>
       </div>
     </div>
 

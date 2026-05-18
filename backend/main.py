@@ -166,7 +166,7 @@ def home():
 
 @app.get("/dashboard")
 def dashboard():
-    p = os.path.join(FRONTEND_DIR, "dashboard_copy.html")
+    p = os.path.join(FRONTEND_DIR, "tera.html")
     if os.path.exists(p):
         return FileResponse(p, media_type="text/html")
     return {"status": "not found"}

@@ -73,27 +73,27 @@
       border: none; background: transparent;
       border-radius: 10px; border-left: 3px solid transparent;
       font-size: 13px; font-weight: 500; letter-spacing: 0;
-      color: rgba(255,255,255,0.5); cursor: pointer;
+      color: rgba(232,119,34,0.65); cursor: pointer;
       transition: all 0.2s ease;
       text-transform: none; font-family: inherit;
       text-align: left; display: flex; align-items: center; gap: 12px;
       position: relative;
     }
-    .nav-btn i { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; opacity: 0.7; transition: opacity 0.2s; }
+    .nav-btn i { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; color: rgba(232,119,34,0.5); transition: all 0.2s; }
     .nav-btn .nav-label { flex: 1; }
     .nav-btn:hover {
-      background: rgba(255,255,255,0.06);
-      color: rgba(255,255,255,0.9);
-      border-left-color: rgba(255,255,255,0.15);
+      background: rgba(232,119,34,0.08);
+      color: #e87722;
+      border-left-color: rgba(232,119,34,0.3);
     }
-    .nav-btn:hover i { opacity: 1; }
+    .nav-btn:hover i { color: #e87722; }
     .nav-btn.active {
       background: rgba(232,119,34,0.18);
       color: #f5a75b;
       border-left-color: #e87722;
       font-weight: 600;
     }
-    .nav-btn.active i { opacity: 1; color: #e87722; }
+    .nav-btn.active i { color: #e87722; }
 
     /* Admin login button */
     .admin-login-btn {
@@ -163,16 +163,24 @@
       width: 100%; max-width: none; padding: 0;
       min-height: 100vh;
       position: relative; overflow: hidden;
-      background: url('/static/Background.jpg') center center / cover no-repeat;
     }
+    /* Blurred background image layer */
+    #section-home.active::after {
+      content: '';
+      position: absolute; inset: -8px;
+      background: url('/static/Background.jpg') center center / cover no-repeat;
+      filter: blur(4px);
+      z-index: 0;
+    }
+    /* Dark overlay sits above blurred image */
     #section-home.active::before {
       content: '';
       position: absolute; inset: 0;
       background: rgba(4, 15, 35, 0.55);
-      z-index: 0;
+      z-index: 1;
     }
     #section-home .hero {
-      position: relative; z-index: 1;
+      position: relative; z-index: 2;
       text-align: center;
     }
     #section-home .hero h1 {

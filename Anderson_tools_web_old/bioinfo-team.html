@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bioinfo Team — Anderson Lab</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://kit.fontawesome.com/c993345b5e.js" crossorigin="anonymous"></script>
+    <style>
+        /* ===== Bioinfo Team Page Styles ===== */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Times New Roman', Times, serif;
+            background: linear-gradient(#dcdbff 0%, #ffccc1 50%, #eefff9 100%);
+            min-height: 100vh;
+        }
+
+        .page-header {
+            text-align: center;
+            padding: 40px 10% 10px;
+        }
+
+        .page-header h1 {
+            font-size: 54px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            background: #262626;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: background 0.4s, transform 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .back-btn:hover {
+            background: #FF7518;
+            transform: translateY(-3px);
+        }
+
+        /* Section titles */
+        .section-title {
+            font-size: 38px;
+            font-weight: 600;
+            color: #000;
+            padding: 30px 10% 10px;
+        }
+
+        .section-subtitle {
+            font-size: 15px;
+            color: #444;
+            padding: 0 10% 10px;
+        }
+
+        /* Card grid */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-gap: 30px;
+            padding: 10px 10% 40px;
+        }
+
+        .team-card {
+            background: #262626;
+            border-radius: 10px;
+            padding: 32px 28px;
+            color: #fff;
+            transition: background 0.5s, transform 0.5s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .team-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: #FF7518;
+            border-radius: 10px 0 0 10px;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .team-card:hover {
+            background: #FF7518;
+            transform: translateY(-10px);
+        }
+
+        .team-card:hover::before {
+            opacity: 0;
+        }
+
+        .team-card .card-icon {
+            font-size: 36px;
+            margin-bottom: 14px;
+            display: block;
+        }
+
+        .team-card .card-name {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .team-card .card-detail {
+            font-size: 14px;
+            font-weight: 200;
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .team-card .card-detail span {
+            font-weight: 500;
+            color: #ffc66d;
+        }
+
+        .team-card:hover .card-detail span {
+            color: #fff;
+        }
+
+        .team-card .card-projects {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .team-card .card-projects span {
+            font-weight: 500;
+            color: #ffc66d;
+        }
+
+        .team-card:hover .card-projects span {
+            color: #fff;
+        }
+
+        .team-card .card-projects p {
+            font-size: 13px;
+            font-weight: 200;
+            line-height: 1.6;
+            margin-top: 4px;
+        }
+
+        .divider {
+            border: none;
+            height: 1px;
+            background: rgba(0,0,0,0.12);
+            margin: 0 10%;
+        }
+
+        /* Footer */
+        .page-footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+            color: #555;
+            background: white;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <img src="./Images/pic2.png" alt="" class="logo">
+        <ul>
+            <li><a href="index.html#header">Home</a></li>
+            <li><a href="index.html#tools">Tools</a></li>
+            <li><a href="index.html#contact">Contact us</a></li>
+        </ul>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>Bioinformatics Team</h1>
+        <p>Staff directory of the Genetics / Bioinformatics Department at Anderson Diagnostics &amp; Labs</p>
+        <a href="index.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
+    </div>
+
+    <!-- ===================== PRIMARY TEAM ===================== -->
+    <h2 class="section-title"><i class="fa-solid fa-star" style="color:#FF7518;margin-right:10px;font-size:30px;"></i>Primary Team</h2>
+    <p class="section-subtitle">Core bioinformatics analysts and engineers</p>
+
+    <div class="team-grid">
+
+        <!-- Employee 1 -->
+        <div class="team-card">
+            <i class="fa-solid fa-user-tie card-icon"></i>
+            <div class="card-name">Sachin Kumar</div>
+            <div class="card-detail"><span>Employee ID:</span> ADL-BIO-001</div>
+            <div class="card-detail"><span>Role:</span> Lead Bioinformatics Analyst</div>
+            <div class="card-detail"><span>Month of Joining:</span> January 2022</div>
+            <div class="card-detail"><span>Department:</span> Genetics / Bioinformatics</div>
+            <div class="card-projects">
+                <span>Current Projects:</span>
+                <p>WES/WGS Pipeline Optimization, GATK Variant Calling, HLA Typing Automation</p>
+            </div>
+        </div>
+
+        <!-- Employee 2 -->
+        <div class="team-card">
+            <i class="fa-solid fa-user-tie card-icon"></i>
+            <div class="card-name">Priya Sharma</div>
+            <div class="card-detail"><span>Employee ID:</span> ADL-BIO-002</div>
+            <div class="card-detail"><span>Role:</span> Senior Bioinformatics Analyst</div>
+            <div class="card-detail"><span>Month of Joining:</span> March 2022</div>
+            <div class="card-detail"><span>Department:</span> Genetics / Bioinformatics</div>
+            <div class="card-projects">
+                <span>Current Projects:</span>
+                <p>PGT-A Report Generation, CNV Analysis, Karyotyping Reports</p>
+            </div>
+        </div>
+
+        <!-- Employee 3 -->
+        <div class="team-card">
+            <i class="fa-solid fa-user-tie card-icon"></i>
+            <div class="card-name">Arun Venkatesh</div>
+            <div class="card-detail"><span>Employee ID:</span> ADL-BIO-003</div>
+            <div class="card-detail"><span>Role:</span> Bioinformatics Engineer</div>
+            <div class="card-detail"><span>Month of Joining:</span> July 2022</div>
+            <div class="card-detail"><span>Department:</span> Genetics / Bioinformatics</div>
+            <div class="card-projects">
+                <span>Current Projects:</span>
+                <p>NGS Data QC Pipeline, Metagenomic Analysis, Tertiary Tool Development</p>
+            </div>
+        </div>
+
+        <!-- Employee 4 -->
+        <div class="team-card">
+            <i class="fa-solid fa-user-tie card-icon"></i>
+            <div class="card-name">Deepika Rajan</div>
+            <div class="card-detail"><span>Employee ID:</span> ADL-BIO-004</div>
+            <div class="card-detail"><span>Role:</span> Bioinformatics Analyst</div>
+            <div class="card-detail"><span>Month of Joining:</span> November 2022</div>
+            <div class="card-detail"><span>Department:</span> Genetics / Bioinformatics</div>
+            <div class="card-projects">
+                <span>Current Projects:</span>
+                <p>Phenotype Panel Curation, Cardiac Gene Panel, Variant Annotation</p>
+            </div>
+        </div>
+
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== SECONDARY TEAM ===================== -->
+    <h2 class="section-title"><i class="fa-solid fa-users" style="color:#FF7518;margin-right:10px;font-size:30px;"></i>Secondary Team</h2>
+    <p class="section-subtitle">Supporting analysts, interns, and cross-functional collaborators</p>
+
+    <div class="team-grid">
+
+        <!-- Employee 5 -->
+        <div class="team-card">
+            <i class="fa-solid fa-user card-icon"></i>
+            <div class="card-name">Kavitha Mohan</div>
+            <div class="card-detail"><span>Employee ID:</span> ADL-BIO-005</div>
+            <div class="card-detail"><span>Role:</span> Junior Bioinformatics Analyst</div>
+            <div class="card-detail"><span>Month of Joining:</span> February 2023</div>
+            <div class="card-detail"><span>Department:</span> Genetics / Bioinformatics</div>
+            <div class="card-projects">
+                <span>Current Projects:</span>
+                <p>Sample Tracker Dashboard, Report Automation, Data Mining</p>
+            </div>
+        </div>
+
+        <!-- Employee 6 -->
+        <div class="team-card">
+            <i class="fa-solid fa-user card-icon"></i>
+            <div class="card-name">Rahul Nair</div>
+            <div class="card-detail"><span>Employee ID:</span> ADL-BIO-006</div>
+            <div class="card-detail"><span>Role:</span> Bioinformatics Intern</div>
+            <div class="card-detail"><span>Month of Joining:</span> June 2023</div>
+            <div class="card-detail"><span>Department:</span> Genetics / Bioinformatics</div>
+            <div class="card-projects">
+                <span>Current Projects:</span>
+                <p>Wet Lab Sample Tracking, Raw Data Processing Support</p>
+            </div>
+        </div>
+
+        <!-- Employee 7 -->
+        <div class="team-card">
+            <i class="fa-solid fa-user card-icon"></i>
+            <div class="card-name">Sneha Iyer</div>
+            <div class="card-detail"><span>Employee ID:</span> ADL-BIO-007</div>
+            <div class="card-detail"><span>Role:</span> Research Associate</div>
+            <div class="card-detail"><span>Month of Joining:</span> September 2023</div>
+            <div class="card-detail"><span>Department:</span> Genetics / Bioinformatics</div>
+            <div class="card-projects">
+                <span>Current Projects:</span>
+                <p>Publication Support, Poster Design, Genemind Platform Integration</p>
+            </div>
+        </div>
+
+        <!-- Employee 8 -->
+        <div class="team-card">
+            <i class="fa-solid fa-user card-icon"></i>
+            <div class="card-name">Vikram Sundar</div>
+            <div class="card-detail"><span>Employee ID:</span> ADL-BIO-008</div>
+            <div class="card-detail"><span>Role:</span> IT & Pipeline Support</div>
+            <div class="card-detail"><span>Month of Joining:</span> January 2024</div>
+            <div class="card-detail"><span>Department:</span> Genetics / Bioinformatics</div>
+            <div class="card-projects">
+                <span>Current Projects:</span>
+                <p>Server Maintenance, Pipeline Deployment, Internal Web Tools</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="page-footer">
+        &copy; Anderson Diagnostics and Labs &mdash; Bioinformatics Department
+    </div>
+
+</body>
+</html>

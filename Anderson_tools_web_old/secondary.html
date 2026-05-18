@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anderson Lab</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://kit.fontawesome.com/c993345b5e.js" crossorigin="anonymous"></script>
+    <style>
+        .table-container {
+        margin: 0 auto; 
+        width: 60%; 
+    }
+        table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <div class="container">
+    <nav>
+        <img src="./Images/pic2.png" alt="" class="logo">
+    
+        <ul>
+            <li><a href="#header">Home</a></li>
+            <li><a href="#tools">Tools</a></li>
+            <li><a href="#contact">Contact us</a></li>
+            
+        </ul>
+        
+    </nav>
+    
+        </div>
+        
+        <div class="paragraph-box">
+            <h1>Secondary Analysis: </h1><br>
+            <p style="text-align: justify;" >Genomic variant discovery seems like a fairly simple problem in principle – take reads 
+            mapped to a reference sequence, and at every position, count the mismatches and deduce the 
+            genotype. In practice it is made more complicated by multiple sources of errors: 
+            amplification biases when the sample libraries are prepped in the wet lab, machine errors 
+            when the libraries are sequenced, software errors and mapping artifacts when the reads are 
+            aligned. A good variant calling workflow must involve data preparation methods that correct 
+            or compensate for these various error modes. Variant discovery can then be performed on 
+            the appropriately processed data, using a robust calling algorithm that leverages meta information such as base qualities. At this stage, it is preferable to prioritize sensitivity 
+            (seeking to include as many potential variants as possible to avoid missing any) over 
+            specificity (seeking to limit the proportion of false positives in the call set). Once a highly-sensitive call set has been generated, appropriate filters can be applied to achieve the desired 
+            balance between sensitivity and specificity. <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4243306/">Know more</a>
+            </p></div><br>
+        
+        <div class="table-container">
+            <h1 style="text-align: center;">Tools used in Secondary analysis</h1><br>
+        <table>
+            <thead>
+                <tr>
+                    <th>S.NO</th>
+                    <th>Tool</th>
+                    <th>Description </th>
+                    <th>Publication</th>
+                    <th>SOP</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1.</td>
+                    <td>Trimmomatic</td>
+                    <td>A flexible read trimming tool for Illumina NGS data.</td>
+                    <td> <a href="https://academic.oup.com/bioinformatics/article/30/15/2114/2390096">CLICK HERE</a></td>
+                    <td>CLICK HERE</td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td>2.</td>
+                    <td>BWA (Burrows-Wheeler Aligner)</td>
+                    <td>Aligns relatively short nucleotide sequences to a long reference sequence</td>
+                    <td> <a href="https://academic.oup.com/bioinformatics/article/25/14/1754/225615">CLICK HERE</a></td>
+                    <td>CLICK HERE</td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td>3.</td>
+                    <td>SAMtools</td>
+                    <td>A suite of programs for interacting with high-throughput sequencing data. Converts SAM files to BAM, sorts BAM files, and more.</td>
+                    <td> <a href="https://academic.oup.com/bioinformatics/article/25/16/2078/204688">CLICK HERE</a></td>
+                    <td>CLICK HERE</td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td>4.</td>
+                    <td>Picard</td>
+                    <td>A set of Java command line tools for manipulating high-throughput sequencing data. It includes tools for marking duplicates.</td>
+                    <td> <a href="https://broadinstitute.github.io/picard/">CLICK HERE</a></td>
+                    <td>CLICK HERE</td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td>5.</td>
+                    <td>GATK (Genome Analysis Toolkit)</td>
+                    <td>A toolkit for variant discovery in high-throughput sequencing data. It includes tools for realignment around indels and base quality score recalibration.</td>
+                    <td> <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2928508/">CLICK HERE</a></td>
+                    <td><a href="GATK_WORKFLOW_SOP.pdf" target="_blank">CLICK HERE</a></td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td>6.</td>
+                    <td>GATK HaplotypeCaller</td>
+                    <td>Part of the GATK toolkit, used for calling SNPs and indels.</td>
+                    <td> <a href="https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller">CLICK HERE</a></td>
+                    <td>CLICK HERE</td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td>7.</td>
+                    <td>GATK VariantFiltration</td>
+                    <td>Used to filter variant calls based on various criteria.</td>
+                    <td> <a href="https://gatk.broadinstitute.org/hc/en-us/articles/360037434691-VariantFiltration">CLICK HERE</a></td>
+                    <td>CLICK HERE</td>
+                </tr>
+            </tbody>
+             <tbody>
+                <tr>
+                    <td>6.</td>
+                    <td>HARD FILTER VS VQSR PARAMETERS </td>
+                    <td>Comparission of filter parametrs set in VQSR and hard filtering </td>
+                    <td> <a href="https://gatk.broadinstitute.org/hc/en-us/articles/360035531112--How-to-Filter-variants-either-with-VQSR-or-by-hard-filtering">CLICK HERE</a></td>
+                    <td><a href="HARD FILTER VS VQSR PARAMETERS.pdf" target="_blank">CLICK HERE</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>

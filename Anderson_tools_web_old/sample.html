@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anderson Lab</title>
+    <style>
+        .table-container {
+            margin: 0 auto; 
+            width: 60%; 
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+    <script>
+        function openLink() {
+            const os = navigator.platform.toLowerCase();
+            let path;
+
+            if (os.includes('win')) {
+                // Windows path
+                path = 'file:///X:/NGS%20RAW%20DATA/GENEMIND/2024/SEPTEMBER/RUN_17A_09_09_2024';
+            } else if (os.includes('linux')) {
+                // Linux path
+                path = '/run/user/1000/gvfs/ftp:host=192.168.100.208/Gentics%20FTP/NGS%20RAW%20DATA/GENEMIND/2024/SEPTEMBER/RUN_17A_09_09_2024';
+            } else {
+                alert("Unsupported operating system.");
+                return;
+            }
+
+            // Attempt to open the link
+            const a = document.createElement('a');
+            a.href = path;
+            a.target = '_blank';
+            a.click();
+        }
+    </script>
+</head>
+<body>
+    <div id="header">
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="index.html">Tools</a></li>
+                    <li><a href="index.html">Contact us</a></li>
+                </ul>
+            </nav>
+        </div>
+        
+        <div class="paragraph-box">
+            <h1>Genemind Optimization Raw Data</h1><br>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S.NO</th>
+                            <th>Run/Batch</th>
+                            <th>Library Used</th>
+                            <th>Count</th>
+                            <th>Raw Data Location</th>
+                            <th>Consolidated Files</th>
+                            <th>Raw Data Received Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1.</td>
+                            <td>17A</td>
+                            <td>TWIST 2.0.2__</td>
+                            <td>7</td>
+                            <td><a href="javascript:void(0);" onclick="openLink()">CLICK HERE</a></td>
+                            <td><a href="RUN-17A.pdf" target="_blank">CLICK HERE</a></td>
+                            <td>09.09.2024</td>
+                        </tr>
+                        <!-- Additional entries can be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

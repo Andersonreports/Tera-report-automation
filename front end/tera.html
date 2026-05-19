@@ -1027,7 +1027,7 @@
           <!-- Bottom Controls Bar -->
           <div class="bulk-bottom-controls">
             <div class="bulk-bottom-row">
-              <button class="btn-bulk-draft" onclick="saveBulkDraft()">Save Draft</button>
+              <button class="btn-bulk-draft" onclick="saveAllBulkDraft()">Save Draft</button>
               <button class="btn-bulk-draft muted" onclick="loadBulkDraft()">Load Draft</button>
               <div class="bulk-bottom-divider"></div>
               <span class="fr-label">Branding:</span>
@@ -1551,6 +1551,7 @@
   </script>
 
   <script>
+    // Save the current selected patient as an individual draft (editor "Save as Draft" button)
     async function saveBulkDraft() {
         if (selectedPatientIndex === null || selectedPatientIndex < 0) {
             showToast("No patient selected.", "error"); return;
@@ -1570,15 +1571,42 @@
         }
     }
 
+    // Save ALL patient rows as one bulk draft (bottom-bar "Save Draft" button)
+    async function saveAllBulkDraft() {
+        if (!patients.length) { showToast("No patients loaded.", "error"); return; }
+        localStorage.setItem("tera_bulk_draft", JSON.stringify(patients));
+        try {
+            await fetch(API + "/save-draft/bulk", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(patients)
+            });
+            showToast(patients.length + " patients saved to draft.");
+        } catch (e) {
+            showToast(patients.length + " patients saved locally.", "error");
+        }
+    }
+
+    // Restore ALL rows from bulk draft (bottom-bar "Load Draft" button)
     async function loadBulkDraft() {
         try {
             const res = await fetch(API + "/load-draft/bulk");
             const result = await res.json();
-            if (result.data) { patients = result.data; renderPatientTable(patients); showToast("Bulk draft loaded!"); return; }
+            if (result.data && Array.isArray(result.data) && result.data.length) {
+                patients = result.data;
+                renderPatientTable(patients);
+                showToast(patients.length + " patients restored from draft.");
+                return;
+            }
         } catch (e) {}
         const local = localStorage.getItem("tera_bulk_draft");
-        if (local) { patients = JSON.parse(local); renderPatientTable(patients); showToast("Bulk draft loaded from local storage."); }
-        else showToast("No bulk draft found.", "error");
+        if (local) {
+            patients = JSON.parse(local);
+            renderPatientTable(patients);
+            showToast(patients.length + " patients restored from local draft.");
+        } else {
+            showToast("No bulk draft found.", "error");
+        }
     }
 
     async function generateAllReports() {

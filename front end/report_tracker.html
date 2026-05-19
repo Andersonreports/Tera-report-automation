@@ -1126,7 +1126,7 @@
           <div class="an-filters-overlay" id="an-overlay-0" onclick="anToggleCardFilters('0')"></div>
 
           <div class="an-chart-main">
-            <div class="an-chart-body" style="min-height:350px">
+            <div class="an-chart-body" style="min-height:420px">
               <canvas id="an-chart-0"></canvas>
             </div>
             <div id="an-legend-0" class="an-custom-legend"></div>
@@ -2732,9 +2732,10 @@ function buildRecentReleasesPanel() {
   const list = document.getElementById('rrp-list');
   const released = rows.filter(r => getStatus(r) === 'Released');
 
+  // Sort using _relOrTat — skips future dates from 2-digit year typos
   released.sort((a, b) => {
-    const da = parseDate(a.rel_date);
-    const db = parseDate(b.rel_date);
+    const da = _relOrTat(a);
+    const db = _relOrTat(b);
     if (!da && !db) return 0;
     if (!da) return 1;
     if (!db) return -1;
@@ -2748,7 +2749,7 @@ function buildRecentReleasesPanel() {
   }
 
   list.innerHTML = top7.map((r, i) => {
-    const relD  = parseDate(r.rel_date);
+    const relD  = _relOrTat(r);
     const dateStr = relD
       ? relD.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
       : '—';
@@ -3224,30 +3225,36 @@ function anDrawChart2() {
   renderBarChart(clientMap);
 }
 
+// Returns a valid (non-future) release date, falling back to TAT.
+// Fixes 2-digit year typos in rel_date (e.g. "17/07/27" → 2027 instead of 2026).
+function _relOrTat(r) {
+  const today = new Date();
+  const rd = parseDate(r.rel_date);
+  if (rd && rd <= today) return rd;
+  return parseDate(r.tat);
+}
+
 function anDrawChart0() {
   const year  = document.getElementById('an-f0-year').value;
   const month = document.getElementById('an-f0-month').value;
 
-  // Only released rows, filtered by year/month using rel_date then tat as fallback
   const filtered = rows.filter(r => {
     if (getStatus(r) !== 'Released') return false;
-    const d = parseDate(r.rel_date) || parseDate(r.tat);
+    const d = _relOrTat(r);
     if (!d) return false;
     const yearMatch  = year  === 'All' || String(d.getFullYear()) === year;
     const monthMatch = month === 'All' || d.toLocaleString('default', { month: 'short' }) === month;
     return yearMatch && monthMatch;
   });
 
-  // Determine labels (all months, or single month)
   const labels = month === 'All' ? MONTH_LABELS : [month];
 
-  // Build { teamKey → { monthLabel → count } }
   const teamData = {};
   TEAM_MEMBERS.forEach(t => { teamData[t.key] = {}; });
 
   filtered.forEach(r => {
     const rv = String(r.pri_rev || '').toLowerCase().trim();
-    const d  = parseDate(r.rel_date) || parseDate(r.tat);
+    const d  = _relOrTat(r);
     if (!d) return;
     const m = d.toLocaleString('default', { month: 'short' });
     TEAM_MEMBERS.forEach(t => {
@@ -3263,7 +3270,7 @@ function anDrawChart0() {
     backgroundColor: t.color + 'cc',
     borderColor: t.color,
     borderWidth: 1,
-    borderRadius: month === 'All' ? 0 : 6,
+    borderRadius: 4,
     hoverBackgroundColor: t.color,
   }));
 
@@ -3281,6 +3288,7 @@ function anDrawChart0() {
       type: 'bar',
       data: { labels, datasets },
       options: {
+        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -3290,12 +3298,10 @@ function anDrawChart0() {
             padding: 12,
             bodyFont: { size: 13 },
             titleFont: { size: 13, weight: '600' },
-            callbacks: {
-              label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}`
-            }
+            callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x}` }
           },
           datalabels: {
-            display: ctx => ctx.parsed.y > 0,
+            display: ctx => ctx.parsed.x > 0,
             anchor: 'center',
             align: 'center',
             font: { size: 10, weight: 'bold' },
@@ -3304,17 +3310,8 @@ function anDrawChart0() {
           }
         },
         scales: {
-          x: {
-            stacked: true,
-            grid: { display: false },
-            ticks: { font: { size: 11 } }
-          },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            ticks: { precision: 0, font: { size: 11 } },
-            grid: { color: 'rgba(0,0,0,0.06)' }
-          }
+          x: { stacked: true, beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+          y: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } }
         }
       },
       plugins: [ChartDataLabels]

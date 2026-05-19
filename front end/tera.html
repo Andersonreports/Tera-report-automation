@@ -107,7 +107,11 @@
       color: var(--text-muted);
       transition: 0.2s;
       font-family: 'Inter', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
+    .tab i { font-size: 12px; }
     .tab:hover { color: var(--text); }
     .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
 
@@ -733,6 +737,18 @@
     @keyframes toastIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     @keyframes toastOut { to { transform: translateX(110%); opacity: 0; } }
 
+    /* ── Preview / Compare status text ── */
+    .preview-status-text {
+      font-size: 11px; color: var(--text-muted); font-style: italic;
+      padding: 5px 14px; flex-shrink: 0; margin: 0; line-height: 1.4;
+    }
+    .preview-status-text.ok   { color: var(--success); font-style: normal; }
+    .preview-status-text.busy { color: var(--primary); font-style: italic; }
+    .preview-status-text.err  { color: var(--danger);  font-style: italic; }
+    .cmp-status-lbl {
+      font-size: 11px; color: var(--text-muted); font-style: italic; margin-left: 8px;
+    }
+
     /* ── Scrollbars ── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -755,10 +771,10 @@
 
     <!-- ── Tab Bar ── -->
     <div class="tab-bar">
-      <button class="tab active" onclick="openTab('manual', this)">Manual Entry</button>
-      <button class="tab" onclick="openTab('bulk', this)">Bulk Upload</button>
-      <button class="tab" onclick="openTab('compare', this)">Report Comparison</button>
-      <button class="tab" onclick="openTab('guide', this)">User Guide</button>
+      <button class="tab active" onclick="openTab('manual', this)"><i class="fas fa-file-alt"></i> Manual Entry</button>
+      <button class="tab" onclick="openTab('bulk', this)"><i class="fas fa-table"></i> Bulk Upload</button>
+      <button class="tab" onclick="openTab('compare', this)"><i class="fas fa-columns"></i> Report Comparison</button>
+      <button class="tab" onclick="openTab('guide', this)"><i class="fas fa-book"></i> User Guide</button>
     </div>
 
     <!-- ── Workspace ── -->
@@ -1017,6 +1033,7 @@
                   Refresh
                 </button>
               </div>
+              <p id="bulkPreviewStatus" class="preview-status-text">Select a row to preview</p>
               <div class="bulk-preview-wrap">
                 <iframe id="bulkPreviewFrame"></iframe>
               </div>
@@ -1083,12 +1100,13 @@
 
             <div class="cmp-actions">
               <button class="btn-run-cmp" onclick="comparePDF()">Compare PDFs</button>
+              <span id="cmpStatusLbl" class="cmp-status-lbl"></span>
             </div>
 
             <div class="compare-nav">
-              <button onclick="navigatePage(-1)">&#8592; Prev Page</button>
-              <span id="pageIndicator">Page 1 / 3</span>
-              <button onclick="navigatePage(1)">Next Page &#8594;</button>
+              <button id="cmpPrevBtn" onclick="navigatePage(-1)" disabled>&#8592; Prev Page</button>
+              <span id="pageIndicator">—</span>
+              <button id="cmpNextBtn" onclick="navigatePage(1)" disabled>Next Page &#8594;</button>
             </div>
 
             <div class="compare-workspace">
@@ -1179,6 +1197,7 @@
           <h4>Live PDF Preview</h4>
           <button class="btn-refresh-preview" onclick="refreshPreview()">Refresh Preview</button>
         </div>
+        <p id="previewStatus" class="preview-status-text">Fill in patient details and click Refresh Preview</p>
         <div class="preview-frame-wrap">
           <iframe id="previewFrame" scrolling="yes"></iframe>
         </div>
@@ -1336,12 +1355,22 @@
         if (sidebar) sidebar.style.display = (tabId === "manual") ? "" : "none";
     }
 
-    function showReportGeneratedPopup() {
+    function showReportGeneratedPopup(fileUrl) {
         const overlay = document.createElement('div');
         overlay.className = 'report-popup-overlay';
+        const downloadBtn = fileUrl
+            ? `<a href="${(fileUrl.startsWith('/') ? API : '') + fileUrl}" download
+                style="display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;
+                       padding:8px 24px;background:var(--primary);color:#fff;border-radius:7px;
+                       font-size:12px;font-weight:600;text-decoration:none;transition:opacity 0.15s;"
+                onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                &#8595; Download Report
+               </a><br>`
+            : '';
         overlay.innerHTML = `<div class="report-popup-box">
             <div class="report-popup-icon">&#10003;</div>
             <div class="report-popup-title">Report Generated</div>
+            ${downloadBtn}
             <button class="report-popup-close" onclick="this.closest('.report-popup-overlay').remove()">OK</button>
         </div>`;
         overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
@@ -1350,6 +1379,21 @@
 
     async function downloadReport() {
         const data = collectManualData();
+        if (!data["Patient Name"] || !data["Patient Name"].trim()) {
+            showToast("Patient Name is required.", "error");
+            const nameInput = document.querySelector("#manual .form-grid input");
+            if (nameInput) {
+                nameInput.focus();
+                nameInput.style.borderColor = "var(--danger)";
+                nameInput.style.boxShadow   = "0 0 0 3px rgba(239,68,68,0.15)";
+                nameInput.addEventListener("input", function clear() {
+                    nameInput.style.borderColor = "";
+                    nameInput.style.boxShadow   = "";
+                    nameInput.removeEventListener("input", clear);
+                });
+            }
+            return;
+        }
         const logoOption = document.querySelector('input[name="manualLogoOption"]:checked')?.value || "with_logo";
         const qrOption = document.querySelector('input[name="manualQrOption"]:checked')?.value || "without_qr";
         data["logo_option"] = logoOption;
@@ -1368,7 +1412,7 @@
                 const filename = result.file_url.split("/").pop();
                 await saveFileToDir("manualExportDisplay", blob, filename);
             }
-            showReportGeneratedPopup();
+            showReportGeneratedPopup(result.file_url || null);
         } catch (err) {
             showToast("Error: " + err.message, "error");
         }
@@ -1416,6 +1460,13 @@
   <script>
     let _manualPreviewCtrl = null;
 
+    function _setPreviewStatus(id, msg, state) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = msg;
+        el.className = "preview-status-text" + (state ? " " + state : "");
+    }
+
     async function refreshPreview() {
         if (_manualPreviewCtrl) _manualPreviewCtrl.abort();
         _manualPreviewCtrl = new AbortController();
@@ -1425,6 +1476,7 @@
         const qrOption = document.querySelector('input[name="manualQrOption"]:checked')?.value || "without_qr";
         data["logo_option"] = logoOption;
         data["qr_option"] = qrOption;
+        _setPreviewStatus("previewStatus", "Generating preview…", "busy");
         try {
             const res = await fetch(API + "/preview", {
                 method: "POST",
@@ -1436,8 +1488,13 @@
             const result = await res.json();
             const frame = document.getElementById("previewFrame");
             frame.src = API + result.preview_url + "?t=" + Date.now() + "#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width";
+            const ts = new Date().toLocaleTimeString("en-GB", {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+            _setPreviewStatus("previewStatus", "Preview updated " + ts, "ok");
         } catch (err) {
-            if (err.name !== "AbortError") console.error("Preview error:", err);
+            if (err.name !== "AbortError") {
+                _setPreviewStatus("previewStatus", "Preview error — check connection.", "err");
+                console.error("Preview error:", err);
+            }
         }
     }
   </script>
@@ -1457,7 +1514,8 @@
             const result = await res.json();
             if (result.errors?.length) showDownloadLinks(result.generated, result.errors);
             await _saveBulkToDir(result.generated);
-            showReportGeneratedPopup();
+            const _singleUrl = result.generated?.length === 1 ? result.generated[0].file_url : null;
+            showReportGeneratedPopup(_singleUrl);
         } catch (err) {
             showToast("Error: " + err.message, "error");
         }
@@ -1622,7 +1680,8 @@
             const result = await res.json();
             if (result.errors?.length) showDownloadLinks(result.generated, result.errors);
             await _saveBulkToDir(result.generated);
-            showReportGeneratedPopup();
+            const _singleUrl = result.generated?.length === 1 ? result.generated[0].file_url : null;
+            showReportGeneratedPopup(_singleUrl);
         } catch (err) {
             showToast("Error: " + err.message, "error");
         }
@@ -1767,6 +1826,7 @@
         if (_bulkPreviewCtrl) _bulkPreviewCtrl.abort();
         _bulkPreviewCtrl = new AbortController();
         const signal = _bulkPreviewCtrl.signal;
+        _setPreviewStatus("bulkPreviewStatus", "Generating preview…", "busy");
         try {
             const logoOption = document.querySelector('input[name="bulkLogoOption"]:checked')?.value || "with_logo";
             const qrOption   = document.querySelector('input[name="bulkQrOption"]:checked')?.value || "without_qr";
@@ -1781,47 +1841,85 @@
             const result = await res.json();
             const frame = document.getElementById("bulkPreviewFrame");
             frame.src = API + result.preview_url + "?t=" + Date.now() + "#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width";
+            const ts = new Date().toLocaleTimeString("en-GB", {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+            _setPreviewStatus("bulkPreviewStatus", "Preview updated " + ts, "ok");
         } catch (err) {
-            if (err.name !== "AbortError") console.error("Bulk preview error:", err);
+            if (err.name !== "AbortError") {
+                _setPreviewStatus("bulkPreviewStatus", "Preview error — check connection.", "err");
+                console.error("Bulk preview error:", err);
+            }
         }
     }
   </script>
 
   <script>
     let compareFile1 = null, compareFile2 = null, currentComparePage = 1, totalComparePages = 3;
+    let _cmpUrl1 = null, _cmpUrl2 = null;
+
+    function _setCmpStatus(msg, state) {
+        const el = document.getElementById("cmpStatusLbl");
+        if (!el) return;
+        el.textContent = msg;
+        el.style.color = state === "ok" ? "var(--success)" : state === "err" ? "var(--danger)" : "var(--text-muted)";
+        el.style.fontStyle = state === "ok" ? "normal" : "italic";
+    }
 
     async function comparePDF() {
         compareFile1 = document.getElementById("pdf1").files[0];
         compareFile2 = document.getElementById("pdf2").files[0];
         if (!compareFile1 || !compareFile2) { showToast("Please select both PDFs", "error"); return; }
-        document.getElementById("leftPDF").src = URL.createObjectURL(compareFile1) + "#page=1";
-        document.getElementById("rightPDF").src = URL.createObjectURL(compareFile2) + "#page=1";
+
+        // Revoke old object URLs to avoid memory leaks
+        if (_cmpUrl1) URL.revokeObjectURL(_cmpUrl1);
+        if (_cmpUrl2) URL.revokeObjectURL(_cmpUrl2);
+        _cmpUrl1 = URL.createObjectURL(compareFile1);
+        _cmpUrl2 = URL.createObjectURL(compareFile2);
+
         currentComparePage = 1;
-        updatePageIndicator();
+        document.getElementById("leftPDF").src  = _cmpUrl1 + "#page=1";
+        document.getElementById("rightPDF").src = _cmpUrl2 + "#page=1";
+
+        // Show loading state in diff panel
+        const diffBox = document.querySelector(".diff-box");
+        if (diffBox) diffBox.innerHTML = "<em style='color:var(--text-muted);font-size:12px;'>Analysing differences…</em>";
+        _setCmpStatus("Running auto-diff…", "busy");
+
         const formData = new FormData();
         formData.append("file1", compareFile1);
         formData.append("file2", compareFile2);
         try {
-            const res = await fetch(API + "/compare-pdf", { method: "POST", body: formData });
+            const res  = await fetch(API + "/compare-pdf", { method: "POST", body: formData });
             const data = await res.json();
+
+            // Detect page count: prefer API field, else parse from diff HTML
+            if (data.total_pages && Number.isInteger(data.total_pages)) {
+                totalComparePages = data.total_pages;
+            } else if (data.html) {
+                const m = data.html.match(/Both PDFs have (\d+) pages/);
+                if (m) totalComparePages = parseInt(m[1]);
+            }
+
+            updatePageIndicator();
             showDiff(data.html);
+            _setCmpStatus("Diff complete.", "ok");
         } catch (err) {
+            _setCmpStatus("Compare failed.", "err");
             showToast("Compare error: " + err.message, "error");
         }
     }
 
     function navigatePage(direction) {
-        if (!compareFile1 || !compareFile2) return;
+        if (!_cmpUrl1 || !_cmpUrl2) return;
         currentComparePage = Math.max(1, Math.min(totalComparePages, currentComparePage + direction));
-        const url1 = URL.createObjectURL(compareFile1);
-        const url2 = URL.createObjectURL(compareFile2);
-        document.getElementById("leftPDF").src = url1 + "#page=" + currentComparePage;
-        document.getElementById("rightPDF").src = url2 + "#page=" + currentComparePage;
+        document.getElementById("leftPDF").src  = _cmpUrl1 + "#page=" + currentComparePage;
+        document.getElementById("rightPDF").src = _cmpUrl2 + "#page=" + currentComparePage;
         updatePageIndicator();
     }
 
     function updatePageIndicator() {
         document.getElementById("pageIndicator").textContent = "Page " + currentComparePage + " / " + totalComparePages;
+        document.getElementById("cmpPrevBtn").disabled = currentComparePage <= 1;
+        document.getElementById("cmpNextBtn").disabled = currentComparePage >= totalComparePages;
     }
 
     let lastDiffHtml = "";

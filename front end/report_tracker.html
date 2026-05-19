@@ -1056,6 +1056,58 @@
 
     <div class="an-layout">
       
+      <!-- Chart 0: Month-wise Released Samples by Reviewer -->
+      <div class="an-chart-card">
+        <div class="an-chart-header">
+          <div class="an-chart-info">
+            <span class="an-chart-title">Month-wise Released Samples by Reviewer</span>
+            <span class="an-chart-sub">Monthly released sample count per team member</span>
+          </div>
+          <div class="an-chart-actions">
+            <button class="btn btn-out btn-sm" style="height:32px" onclick="anToggleCardFilters('0')" id="btn-toggle-0">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <span>Filters</span>
+            </button>
+            <span class="badge b-yet">Stacked Bar</span>
+            <div id="an-total-0" class="an-total-box">Total: 0</div>
+          </div>
+        </div>
+
+        <div class="an-card-content" id="an-content-0">
+          <div class="an-filters-overlay" id="an-overlay-0" onclick="anToggleCardFilters('0')"></div>
+
+          <div class="an-chart-main">
+            <div class="an-chart-body" style="min-height:350px">
+              <canvas id="an-chart-0"></canvas>
+            </div>
+            <div id="an-legend-0" class="an-custom-legend"></div>
+          </div>
+
+          <div class="an-card-filters" id="an-filters-0">
+            <button class="an-filters-close" onclick="anToggleCardFilters('0')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="an-section-title" style="margin-bottom:10px">Chart Filters</div>
+            <div class="an-filter-row">
+              <div class="an-filter-group">
+                <label class="an-filter-label">Year</label>
+                <select id="an-f0-year" class="sel" onchange="anDrawChart0()"><option value="All">All</option></select>
+              </div>
+              <div class="an-filter-group">
+                <label class="an-filter-label">Month</label>
+                <select id="an-f0-month" class="sel" onchange="anDrawChart0()">
+                  <option value="All">All</option>
+                  <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
+                  <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
+                  <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
+                  <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Chart 1: Test Wise Sample Count -->
       <div class="an-chart-card">
         <div class="an-chart-header">
@@ -2778,8 +2830,18 @@ function filterPriority(month) {
 // ================================================================
 //  ANALYTICS STUDIO
 // ================================================================
+let anChart0 = null;
 let anChart1 = null;
 let anChart2 = null;
+
+const TEAM_MEMBERS = [
+  { key: 'naveen',   label: 'Naveen',    color: '#4f46e5' },
+  { key: 'vignesh',  label: 'Vignesh',   color: '#10b981' },
+  { key: 'vikram',   label: 'Vikram',    color: '#f59e0b' },
+  { key: 'sudha',    label: 'Dr. Sudha', color: '#ef4444' },
+  { key: 'diwakar',  label: 'Diwakar',   color: '#06b6d4' },
+];
+const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 
 function normalizeTest(name) {
@@ -2910,7 +2972,7 @@ function anInitFilters() {
     return d ? d.getFullYear() : null;
   }).filter(Boolean))].sort((a, b) => b - a);
 
-  ['an-f1-year', 'an-f2-year'].forEach(id => {
+  ['an-f0-year', 'an-f1-year', 'an-f2-year'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel || sel.children.length > 1) return;
     years.forEach(y => {
@@ -2948,6 +3010,7 @@ function anInitFilters() {
 }
 
 function anDrawAll() {
+  anDrawChart0();
   anDrawChart1();
   anDrawChart2();
 }
@@ -3047,6 +3110,117 @@ function anDrawChart2() {
   });
 
   renderBarChart(clientMap);
+}
+
+function anDrawChart0() {
+  const year  = document.getElementById('an-f0-year').value;
+  const month = document.getElementById('an-f0-month').value;
+
+  // Only released rows, filtered by year/month using rel_date then tat as fallback
+  const filtered = rows.filter(r => {
+    if (getStatus(r) !== 'Released') return false;
+    const d = parseDate(r.rel_date) || parseDate(r.tat);
+    if (!d) return false;
+    const yearMatch  = year  === 'All' || String(d.getFullYear()) === year;
+    const monthMatch = month === 'All' || d.toLocaleString('default', { month: 'short' }) === month;
+    return yearMatch && monthMatch;
+  });
+
+  // Determine labels (all months, or single month)
+  const labels = month === 'All' ? MONTH_LABELS : [month];
+
+  // Build { teamKey → { monthLabel → count } }
+  const teamData = {};
+  TEAM_MEMBERS.forEach(t => { teamData[t.key] = {}; });
+
+  filtered.forEach(r => {
+    const rv = String(r.pri_rev || '').toLowerCase().trim();
+    const d  = parseDate(r.rel_date) || parseDate(r.tat);
+    if (!d) return;
+    const m = d.toLocaleString('default', { month: 'short' });
+    TEAM_MEMBERS.forEach(t => {
+      if (rv.includes(t.key)) {
+        teamData[t.key][m] = (teamData[t.key][m] || 0) + 1;
+      }
+    });
+  });
+
+  const datasets = TEAM_MEMBERS.map(t => ({
+    label: t.label,
+    data: labels.map(m => teamData[t.key][m] || 0),
+    backgroundColor: t.color + 'cc',
+    borderColor: t.color,
+    borderWidth: 1,
+    borderRadius: month === 'All' ? 0 : 6,
+    hoverBackgroundColor: t.color,
+  }));
+
+  const total = filtered.length;
+  const totalEl = document.getElementById('an-total-0');
+  if (totalEl) totalEl.textContent = `Total: ${total}`;
+
+  const ctx = document.getElementById('an-chart-0').getContext('2d');
+  if (anChart0) {
+    anChart0.data.labels   = labels;
+    anChart0.data.datasets = datasets;
+    anChart0.update();
+  } else {
+    anChart0 = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            padding: 12,
+            bodyFont: { size: 13 },
+            titleFont: { size: 13, weight: '600' },
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}`
+            }
+          },
+          datalabels: {
+            display: ctx => ctx.parsed.y > 0,
+            anchor: 'center',
+            align: 'center',
+            font: { size: 10, weight: 'bold' },
+            color: '#fff',
+            formatter: v => v > 0 ? v : ''
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { display: false },
+            ticks: { font: { size: 11 } }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: { precision: 0, font: { size: 11 } },
+            grid: { color: 'rgba(0,0,0,0.06)' }
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
+    });
+  }
+
+  // Custom legend
+  const legendEl = document.getElementById('an-legend-0');
+  if (legendEl) {
+    legendEl.innerHTML = TEAM_MEMBERS.map(t => {
+      const cnt = Object.values(teamData[t.key]).reduce((a, b) => a + b, 0);
+      return `<div class="an-legend-item">
+        <span class="an-legend-dot" style="background:${t.color}"></span>
+        <span class="an-legend-label">${t.label}</span>
+        <span class="an-legend-val">${cnt}</span>
+      </div>`;
+    }).join('');
+  }
 }
 
 // High-contrast, distinct color palette
